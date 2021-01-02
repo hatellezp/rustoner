@@ -18,8 +18,8 @@ output that _"hatellezp is a human"_.
 Two main approaches :
    * first an inner reasoner (for the moment implemented for 
 [dl_lite_r](https://link.springer.com/article/10.1007/s10817-007-9078-x));
-   * a translation to a [SAT](https://en.wikipedia.org/wiki/SAT) instance a use an
-    external solver.
+   * a translation to a [SAT](https://en.wikipedia.org/wiki/Boolean_satisfiability_problem) 
+   instance a use an external solver.
 
 
 ## Where are we
