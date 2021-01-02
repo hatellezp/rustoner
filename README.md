@@ -10,7 +10,7 @@ implement reasoning.
 You have a **TBox** which stores the theory 
 (e.g. _"all men are human"_) and a **ABox** which stores
 facts (e.g. _"hatellezp is a man"_).
-When you mixed both this system (_should_) arrive to
+When you mix both this system (_should_) arrive to
 output that _"hatellezp is a human"_.
 
 ## How it works
