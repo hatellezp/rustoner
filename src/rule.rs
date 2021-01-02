@@ -142,9 +142,35 @@ pub fn dl_lite_rule_four(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
 
 // fifth rule: Exists_r=>notExists_r then r=>not_r and Exists_r_inv=>notExists_r_inv
 pub fn dl_lite_rule_five(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
-    Option::None
+    if vec.len() != 1 {
+        Option::None
+    } else {
+        let tbi = vec[0];
+        let tbi_rside_child = Node::child_r(Some(&tbi.rside()), 1);
+
+        if tbi.lside().t() == DLType::ExistsConcept && tbi_rside_child.is_some(){
+            if tbi.lside() == tbi_rside_child.unwrap() {
+                let role = Node::child_r(Some(tbi.lside()), 1).unwrap().clone();
+
+                let not_role = (&role).clone().negate();
+                let inv_role = (&role).clone().inverse().unwrap();
+                let exists = (&inv_role).clone().exists().unwrap();
+                let not_exists = inv_role.exists().unwrap().negate();
+
+                let new_tbi1 = TBI::new(role, not_role).unwrap();
+                let new_tbi2 = TBI::new(exists, not_exists).unwrap();
+
+                Some(vec![new_tbi1, new_tbi2])
+            } else {
+                Option::None
+            }
+        } else {
+            Option::None
+        }
+    }
 }
 
+// TODO: verify that fifth and sixth rules are really different, for the moment I'm not implementing the sixth rule
 // sixth rule: Exists_r_inv=>notExists_r_inv then r=>not_r and Exists_r=>notExists_r
 pub fn dl_lite_rule_six(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
     Option::None
@@ -152,10 +178,60 @@ pub fn dl_lite_rule_six(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
 
 // seventh rule: r=>not_r then Exists_r=>notExists_r and Exists_r_inv=>notExists_r_inv
 pub fn dl_lite_rule_seven(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
-    Option::None
+    if vec.len() != 1 {
+        Option::None
+    } else {
+        let tbi = vec[0];
+
+        match (tbi.lside().t(), tbi.rside().t()) {
+            (DLType::BaseRole, DLType::NegatedRole) => {
+                let r = tbi.lside().clone();
+                let maybe_not_r = tbi.rside();
+
+                if &r == Node::child_r(Some(maybe_not_r), 1).unwrap() {
+                    let exists_r = (&r).clone().exists().unwrap();
+                    let not_exists_r = (&exists_r).clone().negate();
+
+                    let r_inv = (&r).clone().inverse().unwrap();
+                    let exists_r_inv = r_inv.exists().unwrap();
+                    let not_exists_r_inv = (&exists_r_inv).clone().negate();
+
+                    let new_tbi1 = TBI::new(exists_r, not_exists_r).unwrap();
+                    let new_tbi2 = TBI::new(exists_r_inv, not_exists_r_inv).unwrap();
+
+                    Some(vec![new_tbi1, new_tbi2])
+                } else {
+                    Option::None
+                }
+            },
+            (_, _) => Option::None,
+        }
+    }
 }
 
 // eight rule: r1=>r2 then r1_inv=>r2_inv and Exists_r1=>Exists_r2
 pub fn dl_lite_rule_eight(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
-    Option::None
+    if vec.len() != 1 {
+        Option::None
+    } else {
+        let tbi = vec[0];
+        match (tbi.lside().t(), tbi.rside().t()) {
+            (DLType::BaseRole, DLType::BaseRole) => {
+                let r1 = tbi.lside().clone();
+                let r2 = tbi.rside().clone();
+
+                let r1_inv = (&r1).clone().inverse().unwrap();
+                let r2_inv = (&r2).clone().inverse().unwrap();
+
+                let exists_r1 = r1.exists().unwrap();
+                let exists_r2 = r2.exists().unwrap();
+
+                let new_tbi1 = TBI::new(r1_inv, r2_inv).unwrap();
+                let new_tbi2 = TBI::new(exists_r1, exists_r2).unwrap();
+
+                Some(vec![new_tbi1, new_tbi2])
+            },
+            (_, _) => Option::None,
+        }
+    }
 }

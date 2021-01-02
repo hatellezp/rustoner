@@ -94,7 +94,9 @@ impl TB {
         &(self.completed)
     }
 
-    pub fn complete2(&mut self, verbose: bool) -> TB {
+    pub fn is_completed(&self) -> bool { self.completed }
+
+    pub fn complete2(&self, verbose: bool) -> TB {
         /*
         the strategy is as follows, for each Vec or VecDeque keeps two, one that change during the
         loop, one that is updated at the end of each loop
@@ -417,5 +419,17 @@ impl TB {
         // of course, set completed to 'true' in the new tbox
         new_tb.completed = true;
         new_tb
+    }
+
+    pub fn is_satisfiable(&self, verbose: bool) -> bool {
+        let new_tb = self.complete2(verbose);
+
+        for tbi in new_tb.items {
+            if tbi.is_contradiction() {
+                return false
+            }
+        }
+
+        return true
     }
 }
