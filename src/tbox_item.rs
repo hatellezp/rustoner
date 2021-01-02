@@ -19,7 +19,9 @@ impl fmt::Display for TBI {
 
 impl TBI {
     pub fn new(lside: Node, rside: Node) -> Option<TBI> {
-        if lside.is_negated() || !DLType::same_type(lside.t(), rside.t()) {
+        if lside.t() == DLType::Nominal || rside.t() == DLType::Nominal {
+            Option::None
+        } else if lside.is_negated() || !DLType::same_type(lside.t(), rside.t()) {
             Option::None
         } else {
             Some(TBI { lside, rside })
@@ -38,10 +40,12 @@ impl TBI {
         self.lside.is_negation(&self.rside)
     }
 
+    // this functions consumes self
     pub fn decompact(self) -> (Node, Node) {
         (self.lside, self.rside)
     }
 
+    // same but leaves self alone
     pub fn decompact_with_clone(&self) -> (Node, Node) {
         (self.clone()).decompact()
     }
@@ -60,7 +64,7 @@ impl TBI {
         }
     }
 
-    pub fn apply(one: &TBI, two: &TBI, rule: &TbRule) -> Option<TBI> {
+    pub fn apply(one: &TBI, two: &TBI, rule: &TbRule) -> Option<Vec<TBI>> {
         rule(vec![one, two])
     }
 }

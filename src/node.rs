@@ -88,6 +88,20 @@ impl Node {
         }
     }
 
+    // recursive version
+    pub fn child_r(node: Option<&Node>, depth: usize) -> Option<&Self> {
+        match node {
+            Option::None => Option::None,
+            Some(n) => {
+                match (n, depth) {
+                    (_,  0) => node,
+                    (Node::B, _) | (Node::T, _) | (Node::C(_), _) | (Node::R(_), _) | (Node::N(_), _) => Option::None,
+                    (Node::X(_, bn), _) => Node::child_r(Some(&bn), depth-1),
+                }
+            },
+        }
+    }
+
     pub fn exists(self) -> Option<Self> {
         match (&self).t() {
             DLType::BaseRole | DLType::InverseRole => Some(Node::X(Mod::E, Box::new(self))),
@@ -113,18 +127,23 @@ impl Node {
 
     pub fn is_negation(&self, other: &Node) -> bool {
         match (self, other) {
+            // bottom and top
+            (Node::B, Node::T) | (Node::T, Node::B) => true,
+            // if both are negated return false
             (Node::X(Mod::N, _), Node::X(Mod::N, _)) => false,
+            // if one is negated compare its child with the other
             (Node::X(Mod::N, bn), _) => bn.deref() == other,
             (_, Node::X(Mod::N, bn)) => self == bn.deref(),
+            // anything else is false
             (_, _) => false,
         }
     }
 
-    pub fn inverse(self) -> Self {
+    pub fn inverse(self) -> Option<Self> {
         match self {
-            Node::R(_) => Node::X(Mod::I, Box::new(self)),
-            Node::X(Mod::I, bn) => *bn,
-            _ => panic!("incorrect format for node"),
+            Node::R(_) => Some(Node::X(Mod::I, Box::new(self))),
+            Node::X(Mod::I, bn) => Some(*bn),
+            _ => Option::None,
         }
     }
 

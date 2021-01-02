@@ -186,14 +186,16 @@ impl TB {
                 for index in 0..length {
                     let item = &items[index];
 
-                    let new_item = rule_one(vec![item]);
+                    let new_item_vec = rule_one(vec![item]);
 
-                    if new_item.is_some() {
+                    // here there is some unnecessary clone stuff
+                    if new_item_vec.is_some() {
+                        let new_item = (&new_item_vec.unwrap())[0].clone();
                         length_temporal = tbox_complete_helper_add_if_necessary_one(
                             &items,
                             &mut items_temporal,
                             item,
-                            new_item.unwrap(),
+                            new_item, // always one element
                             length_temporal,
                             verbose,
                             CR::First,
@@ -321,21 +323,25 @@ impl TB {
                         let rule: &TbRule = rules[rule_index];
                         let rule_ord = rule_ordinal[rule_index];
 
-                        let new_item = TBI::apply(&current_item, &item, rule);
+                        let mut new_item_vec = TBI::apply(&current_item, &item, rule);
 
                         // if the rule succeeded
-                        if new_item.is_some() {
-                            // try to add
-                            length_temporal = tbox_complete_helper_add_if_necessary_two(
-                                &items,
-                                &mut items_temporal,
-                                &current_item,
-                                &item,
-                                new_item.unwrap(),
-                                length_temporal,
-                                verbose,
-                                rule_ord,
-                            )
+                        if new_item_vec.is_some() {
+                            let mut new_item_vec = new_item_vec.unwrap();
+                            while !(&new_item_vec.is_empty()) {
+                                let new_item = new_item_vec.pop().unwrap();
+                                // try to add
+                                length_temporal = tbox_complete_helper_add_if_necessary_two(
+                                    &items,
+                                    &mut items_temporal,
+                                    &current_item,
+                                    &item,
+                                    new_item,
+                                    length_temporal,
+                                    verbose,
+                                    rule_ord,
+                                )
+                            }
                         }
                     }
                 }
