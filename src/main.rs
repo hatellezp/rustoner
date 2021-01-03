@@ -4,6 +4,7 @@ mod rule;
 mod tbox;
 mod tbox_item;
 mod types;
+mod abox_item;
 
 //mod scratch;
 
@@ -16,32 +17,6 @@ use std::collections::VecDeque;
 fn main() {
     println!("Hello, world!");
 
-    /*
-    let a2 = Node::new(Some(2), DLType::BaseRole).unwrap();
-    let b2 = Node::new(Some(3), DLType::BaseConcept).unwrap();
-    let c2 = Node::new(Some(4), DLType::Nominal).unwrap();
-
-    println!("a2: {}, b2: {}, c2: {}", a2, b2, c2);
-     */
-
-    let mut q: VecDeque<usize> = VecDeque::new();
-    let mut index = 0;
-    for i in 1..10 {
-        q.insert(index, i);
-        index += 1;
-    }
-
-    let mut v: usize;
-    while !q.is_empty() {
-        v = q.pop_front().unwrap();
-
-        if v % 4 == 0 {
-            q.push_back((v / 4) * 13);
-        }
-        println!("{}", v);
-    }
-
-    // test, hyper stupid test
     let c1 = Node::new(Some(10), DLType::BaseConcept).unwrap();
     let c2 = Node::new(Some(11), DLType::BaseConcept).unwrap();
     let r1 = Node::new(Some(20), DLType::BaseRole).unwrap();

@@ -51,8 +51,12 @@ impl DLType {
         }
     }
 
+    pub fn all_nominals(t1: DLType, t2: DLType) -> bool {
+        t1 == DLType::Nominal && t2 == DLType::Nominal
+    }
+
     pub fn same_type(t1: DLType, t2: DLType) -> bool {
-        DLType::all_roles(t1, t2) || DLType::all_concepts(t1, t2)
+        DLType::all_roles(t1, t2) || DLType::all_concepts(t1, t2) || DLType::all_nominals(t1, t2)
     }
 }
 
