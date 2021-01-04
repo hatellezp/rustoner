@@ -1,7 +1,7 @@
+use crate::dl_lite::abox_item::ABI;
 use crate::dl_lite::node::Node;
 use crate::dl_lite::tbox_item::TBI;
 use crate::dl_lite::types::DLType;
-use crate::dl_lite::abox_item::ABI;
 
 /*
    this type englobe all type of rules for tbox items
@@ -100,7 +100,7 @@ pub fn dl_lite_rule_three(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
 
 // fourth rule: r1=>r2 and B=>notExists_r2_inv then B=>notExists_r1_inv
 pub fn dl_lite_rule_four(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
-// maybe matches are super cool but here will be more complicated, Boxes are complicated
+    // maybe matches are super cool but here will be more complicated, Boxes are complicated
     if vec.len() != 2 {
         Option::None
     } else {
@@ -150,7 +150,7 @@ pub fn dl_lite_rule_five(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
         let tbi = vec[0];
         let tbi_rside_child = Node::child_r(Some(&tbi.rside()), 1);
 
-        if tbi.lside().t() == DLType::ExistsConcept && tbi_rside_child.is_some(){
+        if tbi.lside().t() == DLType::ExistsConcept && tbi_rside_child.is_some() {
             if tbi.lside() == tbi_rside_child.unwrap() {
                 let role = Node::child_r(Some(tbi.lside()), 1).unwrap().clone();
 
@@ -205,7 +205,7 @@ pub fn dl_lite_rule_seven(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
                 } else {
                     Option::None
                 }
-            },
+            }
             (_, _) => Option::None,
         }
     }
@@ -232,7 +232,7 @@ pub fn dl_lite_rule_eight(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
                 let new_tbi2 = TBI::new(exists_r1, exists_r2).unwrap();
 
                 Some(vec![new_tbi1, new_tbi2])
-            },
+            }
             (_, _) => Option::None,
         }
     }

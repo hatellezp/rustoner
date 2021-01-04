@@ -93,12 +93,14 @@ impl Node {
     pub fn child_r(node: Option<&Node>, depth: usize) -> Option<&Self> {
         match node {
             Option::None => Option::None,
-            Some(n) => {
-                match (n, depth) {
-                    (_,  0) => node,
-                    (Node::B, _) | (Node::T, _) | (Node::C(_), _) | (Node::R(_), _) | (Node::N(_), _) => Option::None,
-                    (Node::X(_, bn), _) => Node::child_r(Some(&bn), depth-1),
-                }
+            Some(n) => match (n, depth) {
+                (_, 0) => node,
+                (Node::B, _)
+                | (Node::T, _)
+                | (Node::C(_), _)
+                | (Node::R(_), _)
+                | (Node::N(_), _) => Option::None,
+                (Node::X(_, bn), _) => Node::child_r(Some(&bn), depth - 1),
             },
         }
     }

@@ -1,25 +1,25 @@
 use std::fmt;
 
 use crate::dl_lite::node::Node;
-use crate::dl_lite::types::DLType;
-use crate::dl_lite::tbox_item::TBI;
 use crate::dl_lite::tbox::TB;
+use crate::dl_lite::tbox_item::TBI;
+use crate::dl_lite::types::DLType;
 
 // help enum for the match function in the ABI implementation
 #[derive(Eq, PartialEq, Debug, Copy, Clone, Hash)]
 pub enum Side {
     None,
     Left,
-    Right
+    Right,
 }
 
 /*
-    remember that only base roles and base concepts are allowed here !!
- */
+   remember that only base roles and base concepts are allowed here !!
+*/
 #[derive(Eq, PartialEq, Debug, Clone, Hash)]
 pub enum ABI {
     RA(Node, Node, Node), // role assertion
-    CA(Node, Node), // concept assertion
+    CA(Node, Node),       // concept assertion
 }
 
 impl fmt::Display for ABI {
@@ -86,18 +86,14 @@ impl ABI {
             WARNING: this function returns positions with numeration beginning at 0!!
          */
         match self {
-            ABI::RA(_, a, b) => {
-                match position {
-                    0 => Some(a),
-                    1 => Some(b),
-                    _ => Option::None,
-                }
+            ABI::RA(_, a, b) => match position {
+                0 => Some(a),
+                1 => Some(b),
+                _ => Option::None,
             },
-            ABI::CA(_, a) => {
-                match position {
-                    0 => Some(a),
-                    _ => Option::None,
-                }
+            ABI::CA(_, a) => match position {
+                0 => Some(a),
+                _ => Option::None,
             },
         }
     }
@@ -153,7 +149,7 @@ impl ABI {
                         if !abox_items.contains(&new_abi) {
                             abox_items.push(new_abi);
                         }
-                    },
+                    }
                     DLType::BaseConcept => {
                         let c = one.symbol().clone();
                         let a = one.nominal(0).unwrap().clone();
@@ -163,7 +159,7 @@ impl ABI {
                         if !abox_items.contains(&new_abi) {
                             abox_items.push(new_abi);
                         }
-                    },
+                    }
                     _ => (),
                 }
             }

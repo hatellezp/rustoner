@@ -2,8 +2,8 @@ use crate::dl_lite::tbox_item::TBI;
 use crate::dl_lite::types::CR;
 
 use std::collections::VecDeque;
-use std::sync::MutexGuard;
 use std::fmt::Display;
+use std::sync::MutexGuard;
 
 pub fn complete_helper_dump_from_mutex_temporal_to_current2<T: Display + PartialEq + Eq>(
     mu: &mut MutexGuard<VecDeque<T>>,

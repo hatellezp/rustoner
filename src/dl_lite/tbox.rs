@@ -4,7 +4,10 @@ use std::fmt;
 use std::sync::{Arc, Mutex};
 
 // internal imports
-use crate::dl_lite::helpers_and_utilities::{complete_helper_add_if_necessary_one, complete_helper_add_if_necessary_two, complete_helper_dump_from_mutex_temporal_to_current2};
+use crate::dl_lite::helpers_and_utilities::{
+    complete_helper_add_if_necessary_one, complete_helper_add_if_necessary_two,
+    complete_helper_dump_from_mutex_temporal_to_current2,
+};
 use crate::dl_lite::rule::{
     dl_lite_rule_eight, dl_lite_rule_five, dl_lite_rule_four, dl_lite_rule_one, dl_lite_rule_seven,
     dl_lite_rule_six, dl_lite_rule_three, dl_lite_rule_two, TbRule,
@@ -97,7 +100,9 @@ impl TB {
         &(self.completed)
     }
 
-    pub fn is_completed(&self) -> bool { self.completed }
+    pub fn is_completed(&self) -> bool {
+        self.completed
+    }
 
     pub fn complete2(&self, verbose: bool) -> TB {
         /*
@@ -429,10 +434,10 @@ impl TB {
 
         for tbi in new_tb.items {
             if tbi.is_contradiction() {
-                return false
+                return false;
             }
         }
 
-        return true
+        return true;
     }
 }

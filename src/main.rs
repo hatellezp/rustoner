@@ -1,18 +1,11 @@
-mod helpers_and_utilities;
-mod node;
-mod rule;
-mod tbox;
-mod tbox_item;
-mod types;
-mod abox_item;
+mod dl_lite;
+mod kb;
 
-//mod scratch;
-
-use crate::node::Node;
-use crate::tbox::TB;
-use crate::tbox_item::TBI;
-use crate::types::DLType;
-use std::collections::VecDeque;
+use crate::dl_lite::interpreter::Ontology;
+use crate::dl_lite::node::Node;
+use crate::dl_lite::tbox::TB;
+use crate::dl_lite::tbox_item::TBI;
+use crate::dl_lite::types::DLType;
 
 fn main() {
     println!("Hello, world!");
@@ -59,4 +52,9 @@ fn main() {
     let new_tbox = tbox.complete2(true);
 
     println!("{}", &new_tbox);
+
+    println!("=================================================================");
+
+    let onto = Ontology::new();
+    let tb = Ontology::parse_tbox_from_file_json("src/dl_lite/examples/tbox1.json");
 }

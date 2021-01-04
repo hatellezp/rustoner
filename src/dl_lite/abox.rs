@@ -31,7 +31,10 @@ impl fmt::Display for AB {
 
 impl AB {
     pub fn new() -> AB {
-        AB { items: vec![], length: 0 }
+        AB {
+            items: vec![],
+            length: 0,
+        }
     }
 
     pub fn add(&mut self, abi: ABI) -> bool {
@@ -47,15 +50,9 @@ impl AB {
         }
     }
 
-    pub fn len(&self) -> usize { self.length }
+    pub fn len(&self) -> usize {
+        self.length
+    }
 
     // pub fn complete(&self, tbox: Option<TB>) -> AB {}
 }
-
-
-
-
-
-
-
-
