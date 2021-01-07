@@ -6,6 +6,15 @@ use crate::dl_lite::tbox::TB;
 use crate::kb::knowledge_base::{Axioms, Data, Interpreter};
 use std::fs;
 
+pub enum SJT { // stand for serde_json types
+    Null,
+    Bool,
+    Number,
+    String,
+    Array,
+    Object,
+}
+
 pub struct Ontology {
     names: Vec<(String, usize)>,
     tbox: TB,
@@ -21,6 +30,49 @@ impl Ontology {
         }
     }
 
+    fn print_value(v: &Value) {
+        match v {
+            Value::Null => println!("Null"),
+            Value::Bool(b) => println!("Bool: {}", b),
+            Value::Number(n) => println!("Number: {}", n),
+            Value::String(s) => println!("String: {}", s),
+            Value::Array(vec) => println!("Array: {:?}", v),
+            Value::Object(map) => println!("Object: {:?}", map),
+        }
+    }
+
+    fn best_print_value(v: &Value) {
+        match Ontology::value_type(v) {
+            SJT::Null | SJT::Bool | SJT::Number | SJT::String | SJT::Array => Ontology::print_value(v),
+            SJT::Object => {
+                match v {
+                    Value::Object(map) => {
+                        for t in map {
+                            let s= t.0;
+                            let vv = t.1;
+                            print!("{}: {{\n    ", s);
+                            Ontology::best_print_value(vv);
+                            println!("}} \n");
+                        }
+                    },
+                    _ => (),
+                }
+            }
+            _ => println!("_"),
+        }
+    }
+
+    fn value_type(v: &Value) -> SJT {
+        match v {
+            Value::Null => SJT::Null,
+            Value::Bool(_) => SJT::Bool,
+            Value::Number(_) => SJT::Number,
+            Value::String(_) => SJT::String,
+            Value::Array(_) => SJT::Array,
+            Value::Object(_) => SJT::Object,
+        }
+    }
+
     pub fn parse_tbox_from_file_json(filename: &str) -> TB {
         let tb = TB::new();
 
@@ -28,7 +80,9 @@ impl Ontology {
 
         let value: Value = serde_json::from_str(data.as_str()).expect("Badly parsed JSON");
 
-        println!("{:?}", value["tbox"]);
+        Ontology::best_print_value(&value);
+        // Ontology::print_value(&value["tbox"]);
+        // Ontology::print_value(&value["symbols"]);
 
         tb
     }
