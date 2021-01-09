@@ -79,6 +79,17 @@ impl Node {
         }
     }
 
+    pub fn retrieve_base(node: &Node) -> &Node {
+        match node {
+            Node::B => &Node::B,
+            Node::T => &Node::T,
+            Node::C(_) => node,
+            Node::R(_) => node,
+            Node::N(_) => node,
+            Node::X(_, bn) => Node::retrieve_base(bn),
+        }
+    }
+
     pub fn child(node: Option<&Node>) -> Option<&Self> {
         match node {
             Option::None => Option::None,

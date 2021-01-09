@@ -2,11 +2,14 @@ use std::fs;
 
 use serde_json::{Error, Result, Value};
 
+use crate::dl_lite::abox::AB;
 use crate::dl_lite::abox_item::ABI;
 use crate::dl_lite::node::Node;
+use crate::dl_lite::tbox::TB;
 use crate::dl_lite::tbox_item::TBI;
 use crate::dl_lite::types::DLType;
-use std::panic::resume_unwind;
+use std::collections::HashMap;
+use std::iter::Map;
 
 #[derive(Eq, PartialEq, Debug, Copy, Clone)]
 pub enum SJT {
@@ -26,7 +29,17 @@ how this works:
           that way the whole system works with integers and after we can translate back to names
  */
 
-pub fn parse_symbol(s_vec: &Vec<Value>, latest: usize) -> (Option<((String, usize), Node)>, usize) {
+pub fn parse_value_to_string(v: &Value) -> Option<&str> {
+    match v {
+        Value::String(s) => Some(s.as_str()),
+        _ => Option::None,
+    }
+}
+
+pub fn parse_symbol(s_vec: &Vec<Value>, latest: usize) -> (Option<(&str, usize, DLType)>, usize) {
+    /*
+    how parsing works: ["r", "myrole"] -> ("myrole", number, DLType::RoleBase)
+     */
     if s_vec.len() != 2 {
         (Option::None, latest)
     } else {
@@ -46,11 +59,11 @@ pub fn parse_symbol(s_vec: &Vec<Value>, latest: usize) -> (Option<((String, usiz
             let dlt: Option<DLType>;
             let n: Node;
 
-            if roles.contains(&t.as_str()) {
+            if roles.contains(&t) {
                 dlt = Some(DLType::BaseRole);
-            } else if concepts.contains(&t.as_str()) {
+            } else if concepts.contains(&t) {
                 dlt = Some(DLType::BaseConcept);
-            } else if nominals.contains(&t.as_str()) {
+            } else if nominals.contains(&t) {
                 dlt = Some(DLType::Nominal);
             } else {
                 dlt = Option::None;
@@ -60,57 +73,177 @@ pub fn parse_symbol(s_vec: &Vec<Value>, latest: usize) -> (Option<((String, usiz
                 (Option::None, latest)
             } else {
                 let id = latest + 1;
-                n = Node::new(Some(id), dlt.unwrap()).unwrap();
 
-                (Some(((name, id), n)), id)
+                (Some((name, id, dlt.unwrap())), id)
             }
         }
     }
 }
 
-pub fn parse_value_to_node(value: &Value) -> Option<Node> {
-    Option::None
+// TODO: I noted that that the code here is highly duplicated, find a way to solve this...
+//       not there is no more duplicated code, but the idea to to better I can't apply it here
+//       because I use vectors instead of slices
+pub fn __parse_string_to_node_helper(
+    splitted: Vec<&str>,
+    symbols: &HashMap<String, (usize, DLType)>,
+) -> Option<Node> {
+    // two auxiliary functions to do everything more tidy
+    fn option_negate(n: Node) -> Option<Node> {
+        Some(n.negate())
+    }
+    fn none_default(n: Node) -> Option<Node> {
+        Option::None
+    }
+
+    match splitted.len() {
+        1 => {
+            /*
+            here are only base symbols
+             */
+            if symbols.contains_key(splitted[0]) {
+                let value = symbols[splitted[0]];
+                let new_node = Node::new(Some(value.0), value.1).unwrap();
+
+                Some(new_node)
+            } else {
+                Option::None
+            }
+        }
+        2 => {
+            /*
+            here we can have:
+                NOT r
+                NOT c
+                INV r
+                EXISTS r
+             */
+            let function_to_call = match splitted[0] {
+                "NOT" => option_negate,
+                "INV" => Node::inverse,
+                "EXISTS" => Node::exists,
+                _ => none_default,
+            };
+
+            let base_node = __parse_string_to_node_helper(vec![splitted[1]], symbols);
+
+            if base_node.is_none() {
+                Option::None
+            } else {
+                let complex_node = function_to_call(base_node.unwrap());
+
+                complex_node
+            }
+        }
+        3 => {
+            /*
+            here we can have
+            NOT INV r
+            EXISTS INV r
+             */
+            let function_to_call = match splitted[0] {
+                "NOT" => option_negate,
+                "EXISTS" => Node::exists,
+                _ => none_default,
+            };
+
+            let base_node = __parse_string_to_node_helper(vec![splitted[1], splitted[2]], symbols);
+
+            if base_node.is_none() {
+                Option::None
+            } else {
+                let complex_node = function_to_call(base_node.unwrap());
+
+                complex_node
+            }
+        }
+        4 => {
+            /*
+            here we can only have
+            NOT EXISTS INV r
+             */
+            let function_to_call = match splitted[0] {
+                "NOT" => option_negate,
+                _ => none_default,
+            };
+
+            let base_node = __parse_string_to_node_helper(vec![splitted[1], splitted[2]], symbols);
+
+            if base_node.is_none() {
+                Option::None
+            } else {
+                let complex_node = function_to_call(base_node.unwrap());
+
+                complex_node
+            }
+        }
+        _ => Option::None,
+    }
 }
 
-pub fn parse_value_to_tbi(value: &Value, symbols: Vec<&Node>) -> Option<TBI> {
-    Option::None
+pub fn parse_string_to_node(s: String, symbols: &HashMap<String, (usize, DLType)>) -> Option<Node> {
+    /*
+    this function need a symbols dictionary reference to function
+     */
+    let splitted = s.split(" ").collect::<Vec<&str>>();
+    __parse_string_to_node_helper(splitted, symbols)
+}
+
+pub fn parse_value_to_tbi(
+    value: &Value,
+    symbols: &HashMap<String, (usize, DLType)>,
+    verbose: bool,
+) -> Option<TBI> {
+    match value {
+        Value::Array(vec_of_values) => {
+            if vec_of_values.len() != 2 {
+                Option::None
+            } else {
+                let lside_op = parse_value_to_string(&vec_of_values[0]);
+                let rside_op = parse_value_to_string(&vec_of_values[1]);
+
+                match (&lside_op, &rside_op) {
+                    (Option::Some(lside), Option::Some(rside)) => {
+                        let lside = parse_string_to_node(String::from(*lside), symbols);
+                        let rside = parse_string_to_node(String::from(*rside), symbols);
+
+                        match (&lside, &rside) {
+                            (Option::Some(ls), Option::Some(rs)) => {
+                                let new_tbi = TBI::new(ls.clone(), rs.clone());
+
+                                new_tbi
+                            }
+                            (_, _) => {
+                                if verbose {
+                                    println!("could't parse: {}", &value);
+                                    Option::None
+                                } else {
+                                    Option::None
+                                }
+                            }
+                        }
+                    }
+                    (_, _) => {
+                        if verbose {
+                            println!("could't parse: {}", &value);
+                            Option::None
+                        } else {
+                            Option::None
+                        }
+                    }
+                }
+            }
+        }
+        _ => Option::None,
+    }
 }
 
 pub fn parse_value_abi(value: &Value, symbols: Vec<&Node>) -> Option<ABI> {
     Option::None
 }
 
-pub fn best_print_value(v: &Value) {
-    match value_type(v) {
-        SJT::Null | SJT::Bool | SJT::Number | SJT::String | SJT::Array => println!("{}", v),
-        SJT::Object => match v {
-            Value::Object(map) => {
-                for t in map {
-                    let s = t.0;
-                    let vv = t.1;
-                    print!("{}: {{\n    ", s);
-                    best_print_value(vv);
-                    println!("}} \n");
-                }
-            }
-            _ => (),
-        },
-        _ => println!("_"),
-    }
-}
-
-fn value_type(v: &Value) -> SJT {
-    match v {
-        Value::Null => SJT::Null,
-        Value::Bool(_) => SJT::Bool,
-        Value::Number(_) => SJT::Number,
-        Value::String(_) => SJT::String,
-        Value::Array(_) => SJT::Array,
-        Value::Object(_) => SJT::Object,
-    }
-}
-
-pub fn parse_symbols_from_json(filename: &str) -> Option<Vec<((String, usize), Node)>> {
+// when manipulating use &str to avoid unnecessary copies and when returning the data
+// then use String
+pub fn parse_symbols_from_json(filename: &str) -> Option<HashMap<String, (usize, DLType)>> {
     let data = fs::read_to_string(filename);
 
     // here I have to precise from where the 'Result' enum comes from
@@ -129,36 +262,51 @@ pub fn parse_symbols_from_json(filename: &str) -> Option<Vec<((String, usize), N
                 }
                 Result::Ok(value) => match &value {
                     Value::Object(map) => {
-                        let value_array = &map["symbols"];
 
-                        match value_array {
-                            Value::Array(vec_of_values) => {
-                                let mut vec: Vec<((String, usize), Node)> = Vec::new();
-                                let mut latest: usize = 2;
+                        if map.contains_key("symbols") {
+                            let value_array = &map["symbols"];
 
-                                for value in vec_of_values {
-                                    match value {
-                                        Value::Array(symbol_spec) => {
-                                            let result = parse_symbol(symbol_spec, latest);
+                            match value_array {
+                                Value::Array(vec_of_values) => {
+                                    let mut latest: usize = 2;
+                                    let mut result: (Option<(&str, usize, DLType)>, usize);
+                                    let mut parsed: Option<(&str, usize, DLType)>;
+                                    let mut unwrapped_parsed: (&str, usize, DLType);
 
-                                            let parsed = result.0;
-                                            latest = result.1;
+                                    let mut symbols: HashMap<String, (usize, DLType)> = HashMap::new();
 
-                                            if parsed.is_some() {
-                                                vec.push(parsed.unwrap());
+                                    for value in vec_of_values {
+                                        match value {
+                                            Value::Array(symbol_spec) => {
+                                                result = parse_symbol(symbol_spec, latest);
+
+                                                parsed = result.0;
+                                                latest = result.1;
+
+                                                if parsed.is_some() {
+                                                    unwrapped_parsed = parsed.unwrap();
+
+                                                    symbols.insert(
+                                                        String::from(unwrapped_parsed.0),
+                                                        (unwrapped_parsed.1, unwrapped_parsed.2),
+                                                    );
+                                                }
                                             }
+                                            _ => (),
                                         }
-                                        _ => (),
+                                    }
+
+                                    if symbols.len() == 0 {
+                                        Option::None
+                                    } else {
+                                        Some(symbols)
                                     }
                                 }
-
-                                if vec.len() == 0 {
-                                    Option::None
-                                } else {
-                                    Some(vec)
-                                }
+                                _ => Option::None,
                             }
-                            _ => Option::None,
+                        } else {
+                            println!("not symbols in this file: {}", &value);
+                            Option::None
                         }
                     }
                     _ => Option::None,
@@ -168,33 +316,62 @@ pub fn parse_symbols_from_json(filename: &str) -> Option<Vec<((String, usize), N
     }
 }
 
-pub fn from_vec_of_values_to_vec_of_string(v: &Value) -> Option<Vec<String>> {
-    match v {
-        Value::Array(vec_of_values) => {
-            let mut vec: Vec<String> = Vec::new();
+pub fn parse_tbox_from_json(
+    filename: &str,
+    symbols: &HashMap<String, (usize, DLType)>,
+    verbose: bool,
+) -> Option<TB> {
+    let data = fs::read_to_string(filename);
 
-            for value in vec_of_values {
-                match value {
-                    Value::String(s) => {
-                        vec.push(s.clone());
-                    }
-                    _ => (),
+    // here I have to precise from where the 'Result' enum comes from
+    match data {
+        std::result::Result::Err(e) => {
+            println!("something went wrong: {}", e);
+            Option::None
+        }
+        std::result::Result::Ok(data_string) => {
+            let result_value: Result<Value> = serde_json::from_str(data_string.as_str());
+
+            match result_value {
+                Result::Err(e) => {
+                    println!("something went wrong: {}", e);
+                    Option::None
                 }
-            }
+                Result::Ok(value) => match &value {
+                    Value::Object(map) => {
 
-            if vec.len() != 0 {
-                Some(vec)
-            } else {
-                Option::None
+                        if map.contains_key("tbox") {
+                            let value_array = &map["tbox"];
+
+                            match value_array {
+                                Value::Array(vec_of_values) => {
+                                    let mut tb = TB::new();
+                                    let mut tbi: Option<TBI>;
+
+                                    for v in vec_of_values {
+                                        tbi = parse_value_to_tbi(v, symbols, verbose);
+
+                                        if tbi.is_some() {
+                                            tb.add(tbi.unwrap());
+                                        }
+                                    }
+
+                                    Some(tb)
+                                }
+                                _ => Option::None,
+                            }
+                        } else {
+                            println!("no tbox in this file: {}", &value);
+                            Option::None
+                        }
+                    }
+                    _ => Option::None,
+                },
             }
         }
-        _ => Option::None,
     }
 }
 
-pub fn parse_value_to_string(v: &Value) -> Option<String> {
-    match v {
-        Value::String(s) => Some(s.clone()),
-        _ => Option::None,
-    }
+pub fn parse_abox_from_json(filename: &str) -> Option<AB> {
+    Option::None
 }

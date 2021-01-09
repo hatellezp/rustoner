@@ -3,6 +3,7 @@ use std::fmt;
 use crate::dl_lite::abox_item::ABI;
 use crate::kb::knowledge_base::Data;
 
+#[derive(PartialEq, Debug, Clone)]
 pub struct AB {
     items: Vec<ABI>,
     length: usize,

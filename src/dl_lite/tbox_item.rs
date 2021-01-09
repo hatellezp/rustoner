@@ -3,6 +3,7 @@ use std::fmt;
 use crate::dl_lite::node::Node;
 use crate::dl_lite::rule::TbRule;
 use crate::dl_lite::types::DLType;
+use crate::kb::knowledge_base::AxiomItem;
 
 #[derive(PartialEq, Eq, Debug, Hash, Clone)]
 pub struct TBI {
@@ -10,10 +11,12 @@ pub struct TBI {
     rside: Node,
 }
 
+impl AxiomItem for TBI {}
+
 impl fmt::Display for TBI {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // write!(f, "{}<={}", self.lside, self.rside)
-        write!(f, "{}<{}", self.lside, self.rside)
+        write!(f, "{} < {}", self.lside, self.rside)
     }
 }
 

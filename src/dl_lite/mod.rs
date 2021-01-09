@@ -2,6 +2,7 @@ pub mod abox;
 pub mod abox_item;
 pub mod helpers_and_utilities;
 pub mod interpreter;
+pub mod json_utilities;
 pub mod node;
 pub mod rule;
 pub mod tbox;
