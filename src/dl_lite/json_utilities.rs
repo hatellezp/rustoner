@@ -52,12 +52,17 @@ pub fn parse_symbol(s_vec: &Vec<Value>, latest: usize) -> (Option<(&str, usize, 
             let t = t.unwrap();
             let name = name.unwrap();
 
+            /*
+            this was a test, I'm giving now the correct values
             let roles = ["r", "R", "role", "Role"];
             let concepts = ["c", "C", "concept", "Concept"];
             let nominals = ["n", "N", "nominal", "Nominal"];
+            */
+            let roles = ["role"];
+            let concepts = ["concept"];
+            let nominals = ["nominal"];
 
             let dlt: Option<DLType>;
-            let n: Node;
 
             if roles.contains(&t) {
                 dlt = Some(DLType::BaseRole);

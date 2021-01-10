@@ -1,12 +1,11 @@
 {
   "tbox": [
     ["A", "B"],
-    ["r1", "r2"],
     ["r", "q"],
-    ["INV r1", "A"],
     ["B", "NOT C"],
     ["q", "NOT s"],
     ["EXISTS r", "EXISTS q"],
-    ["r", "NOT INV q"]
+    ["r", "NOT INV q"],
+    ["Z", "NOT B"]
   ]
 }

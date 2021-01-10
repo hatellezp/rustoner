@@ -102,6 +102,10 @@ impl TB {
         &(self.completed)
     }
 
+    pub fn contains(&self, tbi: &TBI) -> bool {
+        self.items.contains(tbi)
+    }
+
     pub fn is_completed(&self) -> bool {
         self.completed
     }

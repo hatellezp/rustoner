@@ -1,15 +1,14 @@
 {
   "symbols": [
-    ["c", "A"],
-    ["C", "B"],
-    ["Concept", "C"],
-    ["r", "r"],
+    ["concept", "A"],
+    ["concept", "B"],
+    ["concept", "C"],
+    ["role", "r"],
     ["role", "s"],
-    ["Role", "q"],
-    ["n", "a"],
-    ["N", "b"],
+    ["role", "q"],
+    ["nominal", "a"],
+    ["nominal", "b"],
     ["nominal", "c"],
-    ["Nominal", "d"],
-    ["nominani", "e"]
+    ["nominal", "d"]
   ]
 }
