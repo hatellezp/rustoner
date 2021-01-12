@@ -178,3 +178,61 @@ pub fn complete_helper_add_if_necessary_two<T: Display + PartialEq + Eq>(
 
     mu_length
 }
+
+pub fn complete_helper_add_if_necessary_general<T: Display + PartialEq + Eq + Clone>(
+    mu_all: &MutexGuard<VecDeque<T>>,
+    mu: &mut MutexGuard<VecDeque<T>>,
+    applied_items: Vec<&T>,
+    created_items: &Vec<T>,
+    mut mu_length: usize,
+    verbose: bool,
+    rn: CR,
+) -> usize {
+    for new_item in created_items {
+        if mu_all.contains(&new_item) {
+            if verbose {
+                println!("---- {} rule applied here for {}, giving {}, but the item won't be added, it already exists", rn, print_vector_of_tbi_references(&applied_items), &new_item);
+            }
+        } else {
+            if verbose {
+                println!(
+                    "---- {} rule applied here for {}, giving {}",
+                    rn, print_vector_of_tbi_references(&applied_items), &new_item
+                );
+            }
+
+            // add it to the items queue
+            mu.insert(mu_length, new_item.clone());
+
+            // update the item's counter
+            mu_length += 1;
+        }
+    }
+
+    mu_length
+}
+
+fn print_vector_of_tbi<T: Display + PartialEq + Eq>(vec: &Vec<T>) -> String{
+    let mut s = String::from("[");
+
+    for item in vec {
+        s.push_str(format!("{}, ", &item).as_str());
+    }
+
+    s.push_str("]");
+
+    s
+}
+
+fn print_vector_of_tbi_references<T: Display + PartialEq + Eq>(vec: &Vec<&T>) -> String{
+    let mut s = String::from("[");
+
+    for item in vec {
+        s.push_str(format!("{}, ", &item).as_str());
+    }
+
+    s.push_str("]");
+
+    s
+}
+

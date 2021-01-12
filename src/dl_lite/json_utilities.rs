@@ -50,7 +50,7 @@ pub fn parse_symbol(s_vec: &Vec<Value>, latest: usize) -> (Option<(&str, usize, 
             (Option::None, latest)
         } else {
             let t = t.unwrap();
-            let name = name.unwrap();
+            let mut name = name.unwrap();
 
             /*
             this was a test, I'm giving now the correct values
@@ -61,6 +61,8 @@ pub fn parse_symbol(s_vec: &Vec<Value>, latest: usize) -> (Option<(&str, usize, 
             let roles = ["role"];
             let concepts = ["concept"];
             let nominals = ["nominal"];
+            let top = ["Top", "top"];
+            let bottom = ["Botom", "bottom"];
 
             let dlt: Option<DLType>;
 
@@ -70,14 +72,34 @@ pub fn parse_symbol(s_vec: &Vec<Value>, latest: usize) -> (Option<(&str, usize, 
                 dlt = Some(DLType::BaseConcept);
             } else if nominals.contains(&t) {
                 dlt = Some(DLType::Nominal);
-            } else {
+            } else if top.contains(&t) {
+                dlt = Some(DLType::Top)
+            } else if bottom.contains(&t) {
+                dlt = Some(DLType::Bottom)
+            }
+            else {
                 dlt = Option::None;
             }
 
             if dlt.is_none() {
                 (Option::None, latest)
             } else {
-                let id = latest + 1;
+                let dlt_unwrapped = dlt.unwrap();
+                let id: usize;
+                let new_latest: usize;
+
+                if dlt_unwrapped == DLType::Bottom {
+                    name = "Bottom";
+                    id = 0;
+                    new_latest = latest;
+                } else if dlt_unwrapped == DLType::Top {
+                   name = "Top";
+                    id = 1;
+                    new_latest = latest;
+                } else {
+                    id = latest + 1;
+                    new_latest = id;
+                }
 
                 (Some((name, id, dlt.unwrap())), id)
             }

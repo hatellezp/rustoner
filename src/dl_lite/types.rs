@@ -41,10 +41,13 @@ impl DLType {
         }
     }
 
+    /*
+    I'm going to add top and bottom in concepts
+     */
     pub fn all_concepts(t1: DLType, t2: DLType) -> bool {
         match t1 {
-            DLType::BaseConcept | DLType::ExistsConcept | DLType::NegatedConcept => match t2 {
-                DLType::BaseConcept | DLType::ExistsConcept | DLType::NegatedConcept => true,
+            DLType::Bottom | DLType::Top | DLType::BaseConcept | DLType::ExistsConcept | DLType::NegatedConcept => match t2 {
+                DLType::Bottom | DLType::Top | DLType::BaseConcept | DLType::ExistsConcept | DLType::NegatedConcept => true,
                 _ => false,
             },
             _ => false,
@@ -63,6 +66,7 @@ impl DLType {
 #[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]
 pub enum CR {
     // stand for count rules
+    Zero,
     First,
     Second,
     Third,
@@ -76,6 +80,7 @@ pub enum CR {
 impl Display for CR {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            CR::Zero => write!(f, "zero"),
             CR::First => write!(f, "first"),
             CR::Second => write!(f, "second"),
             CR::Third => write!(f, "third"),
@@ -88,9 +93,3 @@ impl Display for CR {
     }
 }
 
-
-#[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
-pub enum FileType {
-    JSON,
-    NATIVE,
-}

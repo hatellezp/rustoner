@@ -6,7 +6,8 @@ mod kb;
 use crate::dl_lite::node::Node;
 use crate::dl_lite::tbox::TB;
 use crate::dl_lite::tbox_item::TBI;
-use crate::dl_lite::types::{DLType, FileType};
+use crate::dl_lite::types::DLType;
+use crate::kb::types::FileType;
 
 use crate::dl_lite::json_utilities::{parse_symbols_from_json, parse_tbox_from_json};
 use std::collections::HashMap;
@@ -24,17 +25,29 @@ fn main() {
     let fntb2 = "src/dl_lite/examples/tbox2.json";
     let fnsb1 = "src/dl_lite/examples/symbols1.json";
     let fnsb2 = "src/dl_lite/examples/symbols2.json";
+    let fntb3 = "src/dl_lite/examples/tbox3.json";
+
 
     println!("before everything:\n{}", &onto);
 
     onto.add_symbols(fnsb1, FileType::JSON);
-    onto.add_tbis(fntb1, FileType::JSON, true);
+    // onto.add_tbis(fntb1, FileType::JSON, true);
 
     println!("after first add:\n{}", &onto);
 
     onto.add_symbols(fnsb2, FileType::JSON);
-    onto.add_tbis(fntb1, FileType::JSON, true);
-    onto.add_tbis(fntb2, FileType::JSON, true);
+    // onto.add_tbis(fntb1, FileType::JSON, true);
+    // onto.add_tbis(fntb2, FileType::JSON, true);
+    onto.add_tbis(fntb3, FileType::JSON, true);
 
     println!("after second add:\n{}", &onto);
+
+
+    let new_tb = onto.complete_tbox(true);
+
+    let string_of_new_tbox = onto.tbox_to_string(&new_tb);
+
+    println!("=============================================");
+    println!("--------------after completion---------------");
+    println!("{}", &string_of_new_tbox);
 }

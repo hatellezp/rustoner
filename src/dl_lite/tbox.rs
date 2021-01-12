@@ -4,14 +4,8 @@ use std::fmt;
 use std::sync::{Arc, Mutex};
 
 // internal imports
-use crate::dl_lite::helpers_and_utilities::{
-    complete_helper_add_if_necessary_one, complete_helper_add_if_necessary_two,
-    complete_helper_dump_from_mutex_temporal_to_current2,
-};
-use crate::dl_lite::rule::{
-    dl_lite_rule_eight, dl_lite_rule_five, dl_lite_rule_four, dl_lite_rule_one, dl_lite_rule_seven,
-    dl_lite_rule_six, dl_lite_rule_three, dl_lite_rule_two, TbRule,
-};
+use crate::dl_lite::helpers_and_utilities::{complete_helper_add_if_necessary_one, complete_helper_add_if_necessary_two, complete_helper_dump_from_mutex_temporal_to_current2, complete_helper_add_if_necessary_general};
+use crate::dl_lite::rule::{dl_lite_rule_eight, dl_lite_rule_five, dl_lite_rule_four, dl_lite_rule_one, dl_lite_rule_seven, dl_lite_rule_six, dl_lite_rule_three, dl_lite_rule_two, TbRule, dl_lite_rule_zero};
 use crate::dl_lite::tbox_item::TBI;
 use crate::dl_lite::types::CR;
 use crate::kb::knowledge_base::Axioms;
@@ -151,6 +145,7 @@ impl TB {
             /*
             I WILL PUT THE RULES HERE, WE CAN ADD OTHERS IF NEEDED
             */
+            let rule_zero: TbRule = dl_lite_rule_zero;
             let rule_one: TbRule = dl_lite_rule_one;
             let rule_two: TbRule = dl_lite_rule_two;
             let rule_three: TbRule = dl_lite_rule_three;
@@ -159,6 +154,33 @@ impl TB {
             let rule_six: TbRule = dl_lite_rule_six;
             let rule_seven: TbRule = dl_lite_rule_seven;
             let rule_eight: TbRule = dl_lite_rule_eight;
+
+            /*
+            let number_of_rules: usize = 9;
+            let rules: [&TbRule; 9] = [
+                &rule_zero,
+                &rule_one,
+                &rule_two,
+                &rule_three,
+                &rule_four,
+                &rule_five,
+                &rule_six,
+                &rule_seven,
+                &rule_eight,
+            ];
+            let rule_ordinal = [
+                CR::Zero,
+                CR::First,
+                CR::Second,
+                CR::Third,
+                CR::Fourth,
+                CR::Fifth,
+                CR::Sixth,
+                CR::Seventh,
+                CR::Eight,
+            ];
+
+             */
 
             let number_of_rules: usize = 7;
             let rules: [&TbRule; 7] = [
@@ -179,6 +201,7 @@ impl TB {
                 CR::Seventh,
                 CR::Eight,
             ];
+
             /*
             RULES DECLARATION END HERE
              */
@@ -199,6 +222,67 @@ impl TB {
                 }
             }
 
+            // apply zero rule before the main loop
+            // X=>Top and Bottom=>Y
+            {
+                // first put everything in 'items_temporal'
+                {
+                    length_temporal = 0;
+                    let items = items.lock().unwrap();
+                    let mut items_temporal = items_temporal.lock().unwrap();
+
+                    for index in 0..length {
+                        let item = &items[index];
+
+                        let new_item_vec = rule_zero(vec![item]);
+
+                        // here there is some unnecessary clone stuff
+                        if new_item_vec.is_some() {
+                            // let new_item = (&new_item_vec.unwrap())[0].clone();
+
+                            length_temporal = complete_helper_add_if_necessary_general(
+                                &items,
+                                &mut items_temporal,
+                                vec![item],
+                                &new_item_vec.unwrap(), // always one element
+                                length_temporal,
+                                verbose,
+                                CR::Zero,
+                            );
+
+                            /*
+                            length_temporal = complete_helper_add_if_necessary_one(
+                                &items,
+                                &mut items_temporal,
+                                item,
+                                new_item, // always one element
+                                length_temporal,
+                                verbose,
+                                CR::Zero,
+                            )
+
+                             */
+                        }
+                    }
+                }
+
+                // then dump everything in 'items' from 'items_temporal'
+                {
+                    let mut items = items.lock().unwrap();
+                    let mut items_temporal = items_temporal.lock().unwrap();
+
+                    length = complete_helper_dump_from_mutex_temporal_to_current2(
+                        &mut items,
+                        &mut items_temporal,
+                        length,
+                        length_temporal,
+                        Option::None,
+                        verbose,
+                    );
+                }
+            }
+            // end of zero rule
+
             // apply first rule before the main loop
             // A=>notB then B=>notA
             {
@@ -215,6 +299,18 @@ impl TB {
 
                         // here there is some unnecessary clone stuff
                         if new_item_vec.is_some() {
+
+                            length_temporal = complete_helper_add_if_necessary_general(
+                                &items,
+                                &mut items_temporal,
+                                vec![item],
+                                &new_item_vec.unwrap(), // always one element
+                                length_temporal,
+                                verbose,
+                                CR::First,
+                            );
+
+                            /*
                             let new_item = (&new_item_vec.unwrap())[0].clone();
                             length_temporal = complete_helper_add_if_necessary_one(
                                 &items,
@@ -225,6 +321,8 @@ impl TB {
                                 verbose,
                                 CR::First,
                             )
+
+                             */
                         }
                     }
                 }
@@ -348,26 +446,63 @@ impl TB {
                             let rule: &TbRule = rules[rule_index];
                             let rule_ord = rule_ordinal[rule_index];
 
-                            let mut new_item_vec = TBI::apply(&current_item, &item, rule);
+                            // three different vectors
+                            // let mut new_item_vec1 = TBI::apply_one(&current_item, rule);
+                            // let mut new_item_vec2 = TBI::apply_one(&current_item, rule);
+                            let mut new_item_vec3 = TBI::apply_two(&current_item, &item, rule);
 
-                            // if the rule succeeded
-                            if new_item_vec.is_some() {
-                                let mut new_item_vec = new_item_vec.unwrap();
-                                while !(&new_item_vec.is_empty()) {
-                                    let new_item = new_item_vec.pop().unwrap();
-                                    // try to add
-                                    length_temporal = complete_helper_add_if_necessary_two(
+                            for optional_vec in vec![&new_item_vec3] {
+                                // if the rule succeeded
+
+                                if optional_vec.is_some() {
+
+                                    let mut tbis_to_add: Vec<TBI> = Vec::new();
+                                    let iterator = optional_vec.as_ref().unwrap();
+                                    // try to apply rule zero and one
+                                    for tbi in iterator {
+                                        let zero_tbi = TBI::apply_one(tbi, &rule_zero);
+                                        let one_tbi = TBI::apply_one(tbi, &rule_one);
+
+                                        tbis_to_add.push(tbi.clone());
+
+                                        if zero_tbi.is_some() {
+                                            tbis_to_add.push(zero_tbi.unwrap()[0].clone());
+                                        }
+
+                                        if one_tbi.is_some() {
+                                            tbis_to_add.push(one_tbi.unwrap()[0].clone());
+                                        }
+                                    }
+
+
+
+                                    length_temporal = complete_helper_add_if_necessary_general(
                                         &items,
                                         &mut items_temporal,
-                                        &current_item,
-                                        &item,
-                                        new_item,
+                                        vec![&current_item, &item],
+                                        &tbis_to_add, // always one element
                                         length_temporal,
                                         verbose,
                                         rule_ord,
-                                    )
+                                    );
                                 }
                             }
+
+                            /*
+                            // if the rule succeeded
+                            if new_item_vec.is_some() {
+                                length_temporal = complete_helper_add_if_necessary_general(
+                                    &items,
+                                    &mut items_temporal,
+                                    vec![&current_item, &item],
+                                    &new_item_vec.unwrap(), // always one element
+                                    length_temporal,
+                                    verbose,
+                                    rule_ord,
+                                );
+                            }
+
+                             */
                         }
                     }
                 }

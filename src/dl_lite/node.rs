@@ -1,3 +1,8 @@
+/*
+TODO: I'm making a big choice here, top will be the negated one, that way we respect that no
+      negations are present in the left hand
+ */
+
 use std::fmt;
 
 use crate::dl_lite::types::DLType;
@@ -40,8 +45,8 @@ impl fmt::Display for Node {
 impl Node {
     pub fn new(n: Option<usize>, t: DLType) -> Option<Node> {
         match (n, t) {
-            (Option::None, DLType::Bottom) => Some(Node::B),
-            (Option::None, DLType::Top) => Some(Node::T),
+            (_, DLType::Bottom) => Some(Node::B),
+            (_, DLType::Top) => Some(Node::T),
             (Option::Some(n), DLType::BaseConcept) => Some(Node::C(n)),
             (Option::Some(n), DLType::BaseRole) => Some(Node::R(n)),
             (Option::Some(n), DLType::Nominal) => Some(Node::N(n)),
@@ -134,7 +139,7 @@ impl Node {
 
     pub fn is_negated(&self) -> bool {
         match self {
-            Node::B | Node::X(Mod::N, _) => true, // it is BOTTOM which is negated !
+            Node::T | Node::X(Mod::N, _) => true, // it is BOTTOM which is negated ! UPDATE: is Top which is negated now...
             _ => false,
         }
     }

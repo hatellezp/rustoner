@@ -13,6 +13,47 @@ pub type AbRule = fn(Vec<&TBI>, Vec<&ABI>) -> Option<Vec<ABI>>;
 // for the moment we only implement for dl_lite
 
 //--------------------------------------------------------------------------------------------------
+pub fn dl_lite_rule_zero(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
+    /*
+    bottom is included in everything
+    everything is included in Top
+     */
+    if vec.len() != 1 {
+        Option::None
+    } else {
+        let tbi = vec[0];
+
+        if DLType::all_concepts(tbi.lside().t(), tbi.rside().t()) {
+
+            let bottom = Node::new(Option::None, DLType::Bottom);
+            let top = Node::new(Option::None, DLType::Top);
+
+            if  bottom.is_none() || top.is_none() {
+                Option::None
+            } else {
+                let bottom = bottom.unwrap();
+                let top = top.unwrap();
+
+                // the bottom tbis
+                let bottom1 = TBI::new((&bottom).clone(), tbi.lside().clone());
+                let bottom2 = TBI::new(bottom, tbi.rside().clone());
+
+                // the top tbis
+                let top1 = TBI::new(tbi.lside().clone(), (&top).clone());
+                let top2 = TBI::new(tbi.rside().clone(), top);
+
+                if bottom1.is_none() || bottom2.is_none() || top1.is_none() || top2.is_none() {
+                    Option::None
+                } else {
+                    Some(vec![bottom1.unwrap(), bottom2.unwrap(), top1.unwrap(), top2.unwrap()])
+                }
+            }
+        } else {
+            Option::None
+        }
+    }
+}
+
 pub fn dl_lite_rule_one(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
     /*
     negation rule

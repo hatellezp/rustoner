@@ -67,7 +67,11 @@ impl TBI {
         }
     }
 
-    pub fn apply(one: &TBI, two: &TBI, rule: &TbRule) -> Option<Vec<TBI>> {
+    pub fn apply_one(one: &TBI, rule: &TbRule) -> Option<Vec<TBI>> {
+        rule(vec![one])
+    }
+
+    pub fn apply_two(one: &TBI, two: &TBI, rule: &TbRule) -> Option<Vec<TBI>> {
         rule(vec![one, two])
     }
 }
