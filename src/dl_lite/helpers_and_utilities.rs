@@ -197,7 +197,9 @@ pub fn complete_helper_add_if_necessary_general<T: Display + PartialEq + Eq + Cl
             if verbose {
                 println!(
                     "---- {} rule applied here for {}, giving {}",
-                    rn, print_vector_of_tbi_references(&applied_items), &new_item
+                    rn,
+                    print_vector_of_tbi_references(&applied_items),
+                    &new_item
                 );
             }
 
@@ -212,7 +214,7 @@ pub fn complete_helper_add_if_necessary_general<T: Display + PartialEq + Eq + Cl
     mu_length
 }
 
-fn print_vector_of_tbi<T: Display + PartialEq + Eq>(vec: &Vec<T>) -> String{
+fn print_vector_of_tbi<T: Display + PartialEq + Eq>(vec: &Vec<T>) -> String {
     let mut s = String::from("[");
 
     for item in vec {
@@ -224,7 +226,7 @@ fn print_vector_of_tbi<T: Display + PartialEq + Eq>(vec: &Vec<T>) -> String{
     s
 }
 
-fn print_vector_of_tbi_references<T: Display + PartialEq + Eq>(vec: &Vec<&T>) -> String{
+fn print_vector_of_tbi_references<T: Display + PartialEq + Eq>(vec: &Vec<&T>) -> String {
     let mut s = String::from("[");
 
     for item in vec {
@@ -235,4 +237,3 @@ fn print_vector_of_tbi_references<T: Display + PartialEq + Eq>(vec: &Vec<&T>) ->
 
     s
 }
-

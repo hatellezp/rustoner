@@ -6,6 +6,7 @@ TODO: I'm making a big choice here, top will be the negated one, that way we res
 use std::fmt;
 
 use crate::dl_lite::types::DLType;
+use std::cmp::Ordering;
 use std::ops::Deref;
 
 #[derive(PartialEq, Eq, Debug, Hash, Copy, Clone)]
@@ -39,6 +40,106 @@ impl fmt::Display for Node {
                 Mod::E => write!(f, "E{}", *((*bn).deref())),
             },
         }
+    }
+}
+
+impl PartialOrd for Node {
+    /*
+    concepts before roles before nominals
+    in concepts: bottom before base before exists before not before top
+    in roles: base before inverse before not
+     */
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        if self == other {
+            Some(Ordering::Equal)
+        } else {
+            if self.t().is_concept_type() && !other.t().is_concept_type() {
+                Some(Ordering::Less)
+            } else if self.t().is_role_type() && other.t().is_nominal_type() {
+                Some(Ordering::Less)
+            } else if self.t().is_nominal_type() && !other.t().is_nominal_type() {
+                Some(Ordering::Greater)
+            } else if self.t().is_role_type() && other.t().is_concept_type() {
+                Some(Ordering::Greater)
+            } else if DLType::all_concepts(self.t(), other.t()) {
+                if self.t() == DLType::Bottom || other.t() == DLType::Top {
+                    Some(Ordering::Less)
+                } else if self.t() == DLType::Top || other.t() == DLType::Bottom {
+                    Some(Ordering::Greater)
+                } else {
+                    match self.t() {
+                        DLType::BaseConcept => match other.t() {
+                            DLType::BaseConcept => self.n().partial_cmp(&other.n()),
+                            DLType::ExistsConcept | DLType::NegatedConcept => Some(Ordering::Less),
+                            _ => Option::None,
+                        },
+                        DLType::ExistsConcept => match other.t() {
+                            DLType::BaseConcept => Some(Ordering::Greater),
+                            DLType::NegatedConcept => Some(Ordering::Less),
+                            DLType::ExistsConcept => match (self, other) {
+                                (Node::X(Mod::E, bnself), Node::X(Mod::E, bnother)) => {
+                                    bnself.partial_cmp(bnother)
+                                }
+                                (_, _) => Option::None,
+                            },
+                            _ => Option::None,
+                        },
+                        DLType::NegatedConcept => match other.t() {
+                            DLType::BaseConcept | DLType::ExistsConcept => Some(Ordering::Greater),
+                            DLType::NegatedConcept => match (self, other) {
+                                (Node::X(Mod::N, bnself), Node::X(Mod::N, bnother)) => {
+                                    bnself.partial_cmp(bnother)
+                                }
+                                (_, _) => Option::None,
+                            },
+                            _ => Option::None,
+                        },
+                        _ => Option::None,
+                    }
+                }
+            } else if DLType::all_roles(self.t(), other.t()) {
+                match self.t() {
+                    DLType::BaseRole => match other.t() {
+                        DLType::BaseRole => self.n().partial_cmp(&other.n()),
+                        DLType::InverseRole | DLType::NegatedRole => Some(Ordering::Less),
+                        _ => Option::None,
+                    },
+                    DLType::InverseRole => match other.t() {
+                        DLType::BaseRole => Some(Ordering::Greater),
+                        DLType::NegatedRole => Some(Ordering::Less),
+                        DLType::InverseRole => match (self, other) {
+                            (Node::X(Mod::I, bnself), Node::X(Mod::I, bnother)) => {
+                                bnself.partial_cmp(bnother)
+                            }
+                            (_, _) => Option::None,
+                        },
+                        _ => Option::None,
+                    },
+                    DLType::NegatedRole => match other.t() {
+                        DLType::BaseRole | DLType::InverseRole => Some(Ordering::Greater),
+                        DLType::NegatedRole => match (self, other) {
+                            (Node::X(Mod::N, bnself), Node::X(Mod::N, bnother)) => {
+                                bnself.partial_cmp(bnother)
+                            }
+                            (_, _) => Option::None,
+                        },
+                        _ => Option::None,
+                    },
+                    _ => Option::None,
+                }
+            } else if DLType::all_nominals(self.t(), other.t()) {
+                // forcibly all nominals...
+                self.n().partial_cmp(&other.n())
+            } else {
+                Option::None
+            }
+        }
+    }
+}
+
+impl Ord for Node {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.partial_cmp(other).unwrap()
     }
 }
 

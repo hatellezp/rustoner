@@ -31,6 +31,31 @@ impl fmt::Display for DLType {
 }
 
 impl DLType {
+    pub fn is_nominal_type(&self) -> bool {
+        match self {
+            DLType::Nominal => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_role_type(&self) -> bool {
+        match self {
+            DLType::BaseRole | DLType::InverseRole | DLType::NegatedRole => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_concept_type(&self) -> bool {
+        match self {
+            DLType::Bottom
+            | DLType::Top
+            | DLType::BaseConcept
+            | DLType::ExistsConcept
+            | DLType::NegatedConcept => true,
+            _ => false,
+        }
+    }
+
     pub fn all_roles(t1: DLType, t2: DLType) -> bool {
         match t1 {
             DLType::BaseRole | DLType::InverseRole | DLType::NegatedRole => match t2 {
@@ -46,8 +71,16 @@ impl DLType {
      */
     pub fn all_concepts(t1: DLType, t2: DLType) -> bool {
         match t1 {
-            DLType::Bottom | DLType::Top | DLType::BaseConcept | DLType::ExistsConcept | DLType::NegatedConcept => match t2 {
-                DLType::Bottom | DLType::Top | DLType::BaseConcept | DLType::ExistsConcept | DLType::NegatedConcept => true,
+            DLType::Bottom
+            | DLType::Top
+            | DLType::BaseConcept
+            | DLType::ExistsConcept
+            | DLType::NegatedConcept => match t2 {
+                DLType::Bottom
+                | DLType::Top
+                | DLType::BaseConcept
+                | DLType::ExistsConcept
+                | DLType::NegatedConcept => true,
                 _ => false,
             },
             _ => false,
@@ -92,4 +125,3 @@ impl Display for CR {
         }
     }
 }
-

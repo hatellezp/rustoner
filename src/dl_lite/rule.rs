@@ -4,6 +4,11 @@ use crate::dl_lite::tbox_item::TBI;
 use crate::dl_lite::types::DLType;
 
 /*
+   I'm changing the rule philosophy, now they (if they can) take the first
+   n tbis they need from the vector
+*/
+
+/*
    this type englobe all type of rules for tbox items
    take a number of items and generates a new if possible
 */
@@ -17,18 +22,18 @@ pub fn dl_lite_rule_zero(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
     /*
     bottom is included in everything
     everything is included in Top
+    X => Y implies X => Top, Y => Top, Bottom => X, Y => Bottom
      */
-    if vec.len() != 1 {
+    if vec.len() < 1 {
         Option::None
     } else {
         let tbi = vec[0];
 
         if DLType::all_concepts(tbi.lside().t(), tbi.rside().t()) {
-
             let bottom = Node::new(Option::None, DLType::Bottom);
             let top = Node::new(Option::None, DLType::Top);
 
-            if  bottom.is_none() || top.is_none() {
+            if bottom.is_none() || top.is_none() {
                 Option::None
             } else {
                 let bottom = bottom.unwrap();
@@ -45,7 +50,12 @@ pub fn dl_lite_rule_zero(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
                 if bottom1.is_none() || bottom2.is_none() || top1.is_none() || top2.is_none() {
                     Option::None
                 } else {
-                    Some(vec![bottom1.unwrap(), bottom2.unwrap(), top1.unwrap(), top2.unwrap()])
+                    Some(vec![
+                        bottom1.unwrap(),
+                        bottom2.unwrap(),
+                        top1.unwrap(),
+                        top2.unwrap(),
+                    ])
                 }
             }
         } else {
@@ -59,12 +69,13 @@ pub fn dl_lite_rule_one(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
     negation rule
     A=>notB then B=>notA
      */
-    if vec.len() != 1 {
+    if vec.len() < 1 {
         Option::None
     } else {
         let tbi = vec[0];
 
-        if tbi.rside().is_negated() {
+        if tbi.rside().is_negated() && tbi.rside().t() != DLType::Top {
+            // no need to be changing top
             Some(vec![tbi.reverse_negation().unwrap()])
         } else {
             Option::None
@@ -77,7 +88,7 @@ pub fn dl_lite_rule_two(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
     chain rule
     A=>B and B=>C then A=>C
      */
-    if vec.len() != 2 {
+    if vec.len() < 2 {
         Option::None
     } else {
         let tbi1 = vec[0];
@@ -86,6 +97,10 @@ pub fn dl_lite_rule_two(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
         if tbi1.rside() == tbi2.lside() {
             Some(vec![
                 TBI::new(tbi1.lside().clone(), tbi2.rside().clone()).unwrap()
+            ])
+        } else if tbi2.rside() == tbi1.lside() {
+            Some(vec![
+                TBI::new(tbi2.lside().clone(), tbi1.rside().clone()).unwrap()
             ])
         } else {
             Option::None
@@ -96,7 +111,7 @@ pub fn dl_lite_rule_two(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
 // third rule: r1=>r2 and B=>notExists_r2 then B=>notExists_r1 and Exists_r1=>notB
 pub fn dl_lite_rule_three(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
     // maybe matches are super cool but here will be more complicated, Boxes are complicated
-    if vec.len() != 2 {
+    if vec.len() < 2 {
         Option::None
     } else {
         let tbi1 = vec[0];
@@ -142,7 +157,7 @@ pub fn dl_lite_rule_three(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
 // fourth rule: r1=>r2 and B=>notExists_r2_inv then B=>notExists_r1_inv
 pub fn dl_lite_rule_four(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
     // maybe matches are super cool but here will be more complicated, Boxes are complicated
-    if vec.len() != 2 {
+    if vec.len() < 2 {
         Option::None
     } else {
         let tbi1 = vec[0];
@@ -185,7 +200,7 @@ pub fn dl_lite_rule_four(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
 
 // fifth rule: Exists_r=>notExists_r then r=>not_r and Exists_r_inv=>notExists_r_inv
 pub fn dl_lite_rule_five(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
-    if vec.len() != 1 {
+    if vec.len() < 1 {
         Option::None
     } else {
         let tbi = vec[0];
@@ -221,7 +236,7 @@ pub fn dl_lite_rule_six(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
 
 // seventh rule: r=>not_r then Exists_r=>notExists_r and Exists_r_inv=>notExists_r_inv
 pub fn dl_lite_rule_seven(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
-    if vec.len() != 1 {
+    if vec.len() < 1 {
         Option::None
     } else {
         let tbi = vec[0];
@@ -254,7 +269,7 @@ pub fn dl_lite_rule_seven(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
 
 // eight rule: r1=>r2 then r1_inv=>r2_inv and Exists_r1=>Exists_r2
 pub fn dl_lite_rule_eight(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
-    if vec.len() != 1 {
+    if vec.len() < 1 {
         Option::None
     } else {
         let tbi = vec[0];

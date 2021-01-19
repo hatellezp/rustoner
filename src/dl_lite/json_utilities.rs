@@ -1,15 +1,16 @@
 use std::fs;
 
-use serde_json::{Error, Result, Value};
+use serde_json::{Result, Value};
 
 use crate::dl_lite::abox::AB;
 use crate::dl_lite::abox_item::ABI;
-use crate::dl_lite::node::Node;
+use crate::dl_lite::node::{Mod, Node};
 use crate::dl_lite::tbox::TB;
 use crate::dl_lite::tbox_item::TBI;
 use crate::dl_lite::types::DLType;
+use serde::Deserializer;
 use std::collections::HashMap;
-use std::iter::Map;
+// use std::iter::Map;
 
 #[derive(Eq, PartialEq, Debug, Copy, Clone)]
 pub enum SJT {
@@ -76,8 +77,7 @@ pub fn parse_symbol(s_vec: &Vec<Value>, latest: usize) -> (Option<(&str, usize, 
                 dlt = Some(DLType::Top)
             } else if bottom.contains(&t) {
                 dlt = Some(DLType::Bottom)
-            }
-            else {
+            } else {
                 dlt = Option::None;
             }
 
@@ -93,7 +93,7 @@ pub fn parse_symbol(s_vec: &Vec<Value>, latest: usize) -> (Option<(&str, usize, 
                     id = 0;
                     new_latest = latest;
                 } else if dlt_unwrapped == DLType::Top {
-                   name = "Top";
+                    name = "Top";
                     id = 1;
                     new_latest = latest;
                 } else {
@@ -101,7 +101,7 @@ pub fn parse_symbol(s_vec: &Vec<Value>, latest: usize) -> (Option<(&str, usize, 
                     new_latest = id;
                 }
 
-                (Some((name, id, dlt.unwrap())), id)
+                (Some((name, id, dlt.unwrap())), new_latest) // TODO: verify this
             }
         }
     }
@@ -118,7 +118,7 @@ pub fn __parse_string_to_node_helper(
     fn option_negate(n: Node) -> Option<Node> {
         Some(n.negate())
     }
-    fn none_default(n: Node) -> Option<Node> {
+    fn none_default(_: Node) -> Option<Node> {
         Option::None
     }
 
@@ -289,7 +289,6 @@ pub fn parse_symbols_from_json(filename: &str) -> Option<HashMap<String, (usize,
                 }
                 Result::Ok(value) => match &value {
                     Value::Object(map) => {
-
                         if map.contains_key("symbols") {
                             let value_array = &map["symbols"];
 
@@ -300,7 +299,8 @@ pub fn parse_symbols_from_json(filename: &str) -> Option<HashMap<String, (usize,
                                     let mut parsed: Option<(&str, usize, DLType)>;
                                     let mut unwrapped_parsed: (&str, usize, DLType);
 
-                                    let mut symbols: HashMap<String, (usize, DLType)> = HashMap::new();
+                                    let mut symbols: HashMap<String, (usize, DLType)> =
+                                        HashMap::new();
 
                                     for value in vec_of_values {
                                         match value {
@@ -366,7 +366,6 @@ pub fn parse_tbox_from_json(
                 }
                 Result::Ok(value) => match &value {
                     Value::Object(map) => {
-
                         if map.contains_key("tbox") {
                             let value_array = &map["tbox"];
 
@@ -399,6 +398,108 @@ pub fn parse_tbox_from_json(
     }
 }
 
-pub fn parse_abox_from_json(filename: &str) -> Option<AB> {
-    Option::None
+fn find_keys_for_value(symbols: &HashMap<String, (usize, DLType)>, value: usize) -> Vec<String> {
+    symbols
+        .iter()
+        .filter_map(|(key, &val)| {
+            if val.0 == value {
+                Some(key.clone())
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
+fn node_to_string(
+    node: &Node,
+    symbols: &HashMap<String, (usize, DLType)>,
+    mut current: String,
+) -> Option<String> {
+    match node {
+        Node::B => Some(String::from("BOTTOM")),
+        Node::T => Some(String::from("TOP")),
+        Node::N(n) => {
+            let vec_of_s = find_keys_for_value(symbols, *n);
+
+            if vec_of_s.len() > 0 {
+                Some(vec_of_s[0].clone())
+            } else {
+                Option::None
+            }
+        }
+        Node::R(n) | Node::C(n) => {
+            let vec_of_s = find_keys_for_value(symbols, *n);
+
+            if vec_of_s.len() > 0 {
+                current.push_str(vec_of_s[0].as_str()); // no space here, need to account for it when doing the modifiers
+                Some(current)
+            } else {
+                Option::None
+            }
+        }
+        Node::X(m, bn) => {
+            match m {
+                Mod::I => {
+                    current.push_str("INV "); // space here
+                    node_to_string(bn, symbols, current)
+                }
+                Mod::E => {
+                    current.push_str("EXISTS "); // space here
+                    node_to_string(bn, symbols, current)
+                }
+                Mod::N => {
+                    current.push_str("NOT "); // space here
+                    node_to_string(bn, symbols, current)
+                }
+            }
+        }
+    }
+}
+fn node_to_value(node: &Node, symbols: &HashMap<String, (usize, DLType)>) -> Option<Value> {
+    let string_op = node_to_string(node, symbols, String::new());
+
+    match string_op {
+        Option::Some(s) => Some(Value::String(s)),
+        _ => Option::None,
+    }
+}
+
+fn tbi_to_value(tbi: &TBI, symbols: &HashMap<String, (usize, DLType)>) -> Option<Value> {
+    let lside_op = node_to_value(tbi.lside(), symbols);
+    let rside_op = node_to_value(tbi.rside(), symbols);
+
+    match (lside_op, rside_op) {
+        (Some(lside), Some(rside)) => Some(Value::Array(vec![lside, rside])),
+        (_, _) => Option::None,
+    }
+}
+
+pub fn tbox_to_value(
+    tbox: &TB,
+    symbols: &HashMap<String, (usize, DLType)>,
+    dont_write_trivial: bool,
+) -> Option<Value> {
+    let mut vec_of_tbis: Vec<Value> = Vec::new();
+
+    for tbi in tbox.items() {
+        let tbi_op: Option<Value>;
+
+        if dont_write_trivial && tbi.is_trivial() {
+            tbi_op = Option::None
+        } else {
+            tbi_op = tbi_to_value(tbi, symbols);
+        }
+
+        match tbi_op {
+            Some(tbi_value) => vec_of_tbis.push(tbi_value),
+            _ => (),
+        }
+    }
+
+    if vec_of_tbis.len() > 0 {
+        Some(Value::Array(vec_of_tbis))
+    } else {
+        Option::None
+    }
 }

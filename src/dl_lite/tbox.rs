@@ -4,8 +4,13 @@ use std::fmt;
 use std::sync::{Arc, Mutex};
 
 // internal imports
-use crate::dl_lite::helpers_and_utilities::{complete_helper_add_if_necessary_one, complete_helper_add_if_necessary_two, complete_helper_dump_from_mutex_temporal_to_current2, complete_helper_add_if_necessary_general};
-use crate::dl_lite::rule::{dl_lite_rule_eight, dl_lite_rule_five, dl_lite_rule_four, dl_lite_rule_one, dl_lite_rule_seven, dl_lite_rule_six, dl_lite_rule_three, dl_lite_rule_two, TbRule, dl_lite_rule_zero};
+use crate::dl_lite::helpers_and_utilities::{
+    complete_helper_add_if_necessary_general, complete_helper_dump_from_mutex_temporal_to_current2,
+};
+use crate::dl_lite::rule::{
+    dl_lite_rule_eight, dl_lite_rule_five, dl_lite_rule_four, dl_lite_rule_one, dl_lite_rule_seven,
+    dl_lite_rule_six, dl_lite_rule_three, dl_lite_rule_two, dl_lite_rule_zero, TbRule,
+};
 use crate::dl_lite::tbox_item::TBI;
 use crate::dl_lite::types::CR;
 use crate::kb::knowledge_base::Axioms;
@@ -92,6 +97,10 @@ impl TB {
         &(self.items)
     }
 
+    pub fn sort(&mut self) {
+        self.items.sort();
+    }
+
     pub fn completed(&self) -> &bool {
         &(self.completed)
     }
@@ -109,8 +118,7 @@ impl TB {
             if verbose {
                 println!("the tbox is empty, nothing to complete");
                 TB::new()
-            }
-            else {
+            } else {
                 TB::new()
             }
         } else {
@@ -127,7 +135,8 @@ impl TB {
             let to_treat: Arc<Mutex<VecDeque<usize>>> = Arc::new(Mutex::new(VecDeque::new()));
 
             // keep the index that have already been treated
-            let already_treated: Arc<Mutex<VecDeque<usize>>> = Arc::new(Mutex::new(VecDeque::new()));
+            let already_treated: Arc<Mutex<VecDeque<usize>>> =
+                Arc::new(Mutex::new(VecDeque::new()));
             let already_treated_temporal: Arc<Mutex<VecDeque<usize>>> =
                 Arc::new(Mutex::new(VecDeque::new()));
 
@@ -154,33 +163,6 @@ impl TB {
             let rule_six: TbRule = dl_lite_rule_six;
             let rule_seven: TbRule = dl_lite_rule_seven;
             let rule_eight: TbRule = dl_lite_rule_eight;
-
-            /*
-            let number_of_rules: usize = 9;
-            let rules: [&TbRule; 9] = [
-                &rule_zero,
-                &rule_one,
-                &rule_two,
-                &rule_three,
-                &rule_four,
-                &rule_five,
-                &rule_six,
-                &rule_seven,
-                &rule_eight,
-            ];
-            let rule_ordinal = [
-                CR::Zero,
-                CR::First,
-                CR::Second,
-                CR::Third,
-                CR::Fourth,
-                CR::Fifth,
-                CR::Sixth,
-                CR::Seventh,
-                CR::Eight,
-            ];
-
-             */
 
             let number_of_rules: usize = 7;
             let rules: [&TbRule; 7] = [
@@ -234,7 +216,7 @@ impl TB {
                     for index in 0..length {
                         let item = &items[index];
 
-                        let new_item_vec = rule_zero(vec![item]);
+                        let new_item_vec = TBI::apply_rule(vec![item], &rule_zero);
 
                         // here there is some unnecessary clone stuff
                         if new_item_vec.is_some() {
@@ -249,19 +231,6 @@ impl TB {
                                 verbose,
                                 CR::Zero,
                             );
-
-                            /*
-                            length_temporal = complete_helper_add_if_necessary_one(
-                                &items,
-                                &mut items_temporal,
-                                item,
-                                new_item, // always one element
-                                length_temporal,
-                                verbose,
-                                CR::Zero,
-                            )
-
-                             */
                         }
                     }
                 }
@@ -295,11 +264,10 @@ impl TB {
                     for index in 0..length {
                         let item = &items[index];
 
-                        let new_item_vec = rule_one(vec![item]);
+                        let new_item_vec = TBI::apply_rule(vec![item], &rule_one);
 
                         // here there is some unnecessary clone stuff
                         if new_item_vec.is_some() {
-
                             length_temporal = complete_helper_add_if_necessary_general(
                                 &items,
                                 &mut items_temporal,
@@ -309,20 +277,6 @@ impl TB {
                                 verbose,
                                 CR::First,
                             );
-
-                            /*
-                            let new_item = (&new_item_vec.unwrap())[0].clone();
-                            length_temporal = complete_helper_add_if_necessary_one(
-                                &items,
-                                &mut items_temporal,
-                                item,
-                                new_item, // always one element
-                                length_temporal,
-                                verbose,
-                                CR::First,
-                            )
-
-                             */
                         }
                     }
                 }
@@ -363,7 +317,9 @@ impl TB {
                         let to_treat = to_treat.lock().unwrap();
                         let already_treated = already_treated.lock().unwrap();
 
-                        println!("===================================================================");
+                        println!(
+                            "==================================================================="
+                        );
                         println!(
                             "--------this is the status at beginning of iteration {}------------",
                             iterations
@@ -371,7 +327,9 @@ impl TB {
                         println!("-- items: {:?}", &items);
                         println!("-- to_treat: {:?}", &to_treat);
                         println!("-- already_treated: {:?}", &already_treated);
-                        println!("-------------------------------------------------------------------");
+                        println!(
+                            "-------------------------------------------------------------------"
+                        );
                     }
                 }
 
@@ -447,21 +405,19 @@ impl TB {
                             let rule_ord = rule_ordinal[rule_index];
 
                             // three different vectors
-                            // let mut new_item_vec1 = TBI::apply_one(&current_item, rule);
-                            // let mut new_item_vec2 = TBI::apply_one(&current_item, rule);
-                            let mut new_item_vec3 = TBI::apply_two(&current_item, &item, rule);
+                            let mut new_item_vec3 =
+                                TBI::apply_rule(vec![&current_item, &item], rule);
 
                             for optional_vec in vec![&new_item_vec3] {
                                 // if the rule succeeded
 
                                 if optional_vec.is_some() {
-
                                     let mut tbis_to_add: Vec<TBI> = Vec::new();
                                     let iterator = optional_vec.as_ref().unwrap();
                                     // try to apply rule zero and one
                                     for tbi in iterator {
-                                        let zero_tbi = TBI::apply_one(tbi, &rule_zero);
-                                        let one_tbi = TBI::apply_one(tbi, &rule_one);
+                                        let zero_tbi = TBI::apply_rule(vec![tbi], &rule_zero);
+                                        let one_tbi = TBI::apply_rule(vec![tbi], &rule_one);
 
                                         tbis_to_add.push(tbi.clone());
 
@@ -474,8 +430,6 @@ impl TB {
                                         }
                                     }
 
-
-
                                     length_temporal = complete_helper_add_if_necessary_general(
                                         &items,
                                         &mut items_temporal,
@@ -487,22 +441,6 @@ impl TB {
                                     );
                                 }
                             }
-
-                            /*
-                            // if the rule succeeded
-                            if new_item_vec.is_some() {
-                                length_temporal = complete_helper_add_if_necessary_general(
-                                    &items,
-                                    &mut items_temporal,
-                                    vec![&current_item, &item],
-                                    &new_item_vec.unwrap(), // always one element
-                                    length_temporal,
-                                    verbose,
-                                    rule_ord,
-                                );
-                            }
-
-                             */
                         }
                     }
                 }
