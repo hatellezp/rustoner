@@ -31,6 +31,12 @@ impl fmt::Display for ABI {
     }
 }
 
+/*
+the language only allows for base concept and role assertions,
+here we however, we will allow for negation of and other complex constructions
+this will allow for finding that 'a doesn't belong to A'
+ */
+
 impl ABI {
     pub fn new_ra(r: Node, a: Node, b: Node) -> Option<ABI> {
         let is_base_role = r.t() == DLType::BaseRole;

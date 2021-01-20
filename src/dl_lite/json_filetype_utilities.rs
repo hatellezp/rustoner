@@ -10,18 +10,7 @@ use crate::dl_lite::tbox_item::TBI;
 use crate::dl_lite::types::DLType;
 use serde::Deserializer;
 use std::collections::HashMap;
-// use std::iter::Map;
-
-#[derive(Eq, PartialEq, Debug, Copy, Clone)]
-pub enum SJT {
-    // stand for serde_json types
-    Null,
-    Bool,
-    Number,
-    String,
-    Array,
-    Object,
-}
+use crate::dl_lite::string_formatter::{node_to_string, string_to_node};
 
 /*
 how this works:
@@ -107,114 +96,6 @@ pub fn parse_symbol(s_vec: &Vec<Value>, latest: usize) -> (Option<(&str, usize, 
     }
 }
 
-// TODO: I noted that that the code here is highly duplicated, find a way to solve this...
-//       not there is no more duplicated code, but the idea to to better I can't apply it here
-//       because I use vectors instead of slices
-pub fn __parse_string_to_node_helper(
-    splitted: Vec<&str>,
-    symbols: &HashMap<String, (usize, DLType)>,
-) -> Option<Node> {
-    // two auxiliary functions to do everything more tidy
-    fn option_negate(n: Node) -> Option<Node> {
-        Some(n.negate())
-    }
-    fn none_default(_: Node) -> Option<Node> {
-        Option::None
-    }
-
-    match splitted.len() {
-        1 => {
-            /*
-            here are only base symbols
-             */
-            if symbols.contains_key(splitted[0]) {
-                let value = symbols[splitted[0]];
-                let new_node = Node::new(Some(value.0), value.1).unwrap();
-
-                Some(new_node)
-            } else {
-                Option::None
-            }
-        }
-        2 => {
-            /*
-            here we can have:
-                NOT r
-                NOT c
-                INV r
-                EXISTS r
-             */
-            let function_to_call = match splitted[0] {
-                "NOT" => option_negate,
-                "INV" => Node::inverse,
-                "EXISTS" => Node::exists,
-                _ => none_default,
-            };
-
-            let base_node = __parse_string_to_node_helper(vec![splitted[1]], symbols);
-
-            if base_node.is_none() {
-                Option::None
-            } else {
-                let complex_node = function_to_call(base_node.unwrap());
-
-                complex_node
-            }
-        }
-        3 => {
-            /*
-            here we can have
-            NOT INV r
-            EXISTS INV r
-             */
-            let function_to_call = match splitted[0] {
-                "NOT" => option_negate,
-                "EXISTS" => Node::exists,
-                _ => none_default,
-            };
-
-            let base_node = __parse_string_to_node_helper(vec![splitted[1], splitted[2]], symbols);
-
-            if base_node.is_none() {
-                Option::None
-            } else {
-                let complex_node = function_to_call(base_node.unwrap());
-
-                complex_node
-            }
-        }
-        4 => {
-            /*
-            here we can only have
-            NOT EXISTS INV r
-             */
-            let function_to_call = match splitted[0] {
-                "NOT" => option_negate,
-                _ => none_default,
-            };
-
-            let base_node = __parse_string_to_node_helper(vec![splitted[1], splitted[2]], symbols);
-
-            if base_node.is_none() {
-                Option::None
-            } else {
-                let complex_node = function_to_call(base_node.unwrap());
-
-                complex_node
-            }
-        }
-        _ => Option::None,
-    }
-}
-
-pub fn parse_string_to_node(s: String, symbols: &HashMap<String, (usize, DLType)>) -> Option<Node> {
-    /*
-    this function need a symbols dictionary reference to function
-     */
-    let splitted = s.split(" ").collect::<Vec<&str>>();
-    __parse_string_to_node_helper(splitted, symbols)
-}
-
 pub fn parse_value_to_tbi(
     value: &Value,
     symbols: &HashMap<String, (usize, DLType)>,
@@ -230,8 +111,8 @@ pub fn parse_value_to_tbi(
 
                 match (&lside_op, &rside_op) {
                     (Option::Some(lside), Option::Some(rside)) => {
-                        let lside = parse_string_to_node(String::from(*lside), symbols);
-                        let rside = parse_string_to_node(String::from(*rside), symbols);
+                        let lside = string_to_node(lside, symbols);
+                        let rside = string_to_node(rside, symbols);
 
                         match (&lside, &rside) {
                             (Option::Some(ls), Option::Some(rs)) => {
@@ -398,64 +279,6 @@ pub fn parse_tbox_from_json(
     }
 }
 
-fn find_keys_for_value(symbols: &HashMap<String, (usize, DLType)>, value: usize) -> Vec<String> {
-    symbols
-        .iter()
-        .filter_map(|(key, &val)| {
-            if val.0 == value {
-                Some(key.clone())
-            } else {
-                None
-            }
-        })
-        .collect()
-}
-
-fn node_to_string(
-    node: &Node,
-    symbols: &HashMap<String, (usize, DLType)>,
-    mut current: String,
-) -> Option<String> {
-    match node {
-        Node::B => Some(String::from("BOTTOM")),
-        Node::T => Some(String::from("TOP")),
-        Node::N(n) => {
-            let vec_of_s = find_keys_for_value(symbols, *n);
-
-            if vec_of_s.len() > 0 {
-                Some(vec_of_s[0].clone())
-            } else {
-                Option::None
-            }
-        }
-        Node::R(n) | Node::C(n) => {
-            let vec_of_s = find_keys_for_value(symbols, *n);
-
-            if vec_of_s.len() > 0 {
-                current.push_str(vec_of_s[0].as_str()); // no space here, need to account for it when doing the modifiers
-                Some(current)
-            } else {
-                Option::None
-            }
-        }
-        Node::X(m, bn) => {
-            match m {
-                Mod::I => {
-                    current.push_str("INV "); // space here
-                    node_to_string(bn, symbols, current)
-                }
-                Mod::E => {
-                    current.push_str("EXISTS "); // space here
-                    node_to_string(bn, symbols, current)
-                }
-                Mod::N => {
-                    current.push_str("NOT "); // space here
-                    node_to_string(bn, symbols, current)
-                }
-            }
-        }
-    }
-}
 fn node_to_value(node: &Node, symbols: &HashMap<String, (usize, DLType)>) -> Option<Value> {
     let string_op = node_to_string(node, symbols, String::new());
 
