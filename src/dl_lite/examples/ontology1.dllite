@@ -1,0 +1,11 @@
+// test
+BEGINSYMBOL
+concept: Person
+concept: Professor
+concept: Student
+concept: Course
+concept: Bac_Course
+concept: Ms_Course
+role: attends
+role: teaches
+role: teachedby
