@@ -8,11 +8,12 @@ use crate::dl_lite::tbox_item::TBI;
 use crate::kb::types::FileType;
 use serde_json::json;
 use serde_json::Value;
-use std::fmt;
+use std::{fmt, io};
 use std::fs::File;
 use std::io::Write;
 use std::iter::Map;
 use crate::dl_lite::native_filetype_utilities::{parse_symbols_native, parse_tbox_native};
+use crate::dl_lite::abox::AB;
 /*
 an ontology model
     - name is the name of the ontology
@@ -156,10 +157,12 @@ impl Ontology {
         contains_contradiction
     }
 
-    pub fn find_consequences(&self, abox_filename: &str) -> Vec<ABI> {
-        let vec: Vec<ABI> = Vec::new();
+    pub fn find_consequences(&self, abox: &AB) -> AB {
+        AB::new()
+    }
 
-        vec
+    pub fn find_consequences_from_file(&self, filename: &str, filetype: FileType) -> io::Result<AB> {
+        Ok(AB::new())
     }
 
     pub fn symbols(&self) -> &HashMap<String, (usize, DLType)> {

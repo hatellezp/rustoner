@@ -5,7 +5,5 @@
     * [x] add tbox items from file 
     * [x] avoid adding redundant tbox items while completing
     * read an abox file and output a consequences file (json would be good)
-  
+    * implement smart completion for abox, without generating tbox consequencees 
 * that's all for the moment
-
-* there are two string equivalents for TOP,top and BOTTOM,Bottom, solve this

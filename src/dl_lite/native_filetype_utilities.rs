@@ -119,8 +119,8 @@ pub fn parse_symbols_native(
                 unsorted_symbols.sort();
 
                 // symbols sorted, so now I put everyting in symbols
-                symbols.insert(String::from("BOTTOM"), (0, DLType::Bottom));
-                symbols.insert(String::from("TOP"), (1, DLType::Top));
+                symbols.insert(String::from("Bottom"), (0, DLType::Bottom));
+                symbols.insert(String::from("Top"), (1, DLType::Top));
 
                 let unsorted_size = unsorted_symbols.len();
 

@@ -16,6 +16,7 @@ use crate::dl_lite::tbox_item::TBI;
 use crate::dl_lite::types::DLType;
 use std::mem;
 use std::iter::Filter;
+use std::process::id;
 // use std::fs::File;
 
 fn main() {
@@ -23,41 +24,20 @@ fn main() {
 
     println!("Hello, world!");
 
-    let mut onto = Ontology::new(String::from("test2"));
+    let json = FileType::JSON;
+    let native = FileType::NATIVE;
+    let mut onto = Ontology::new("Ontology1".to_string());
 
-    let fntb1 = "src/dl_lite/examples/tbox1.json";
-    let fntb2 = "src/dl_lite/examples/tbox2.json";
-    let fnsb1 = "src/dl_lite/examples/symbols1.json";
-    let fnsb2 = "src/dl_lite/examples/symbols2.json";
-    let fntb3 = "src/dl_lite/examples/tbox3.json";
-    let fntb4 = "src/dl_lite/examples/tbox4.json";
+    let ontology1 = "src/dl_lite/examples/ontology1.dllite";
 
-    onto.add_symbols(fnsb1, FileType::JSON);
-    onto.add_symbols(fnsb2, FileType::JSON);
+    onto.add_symbols(ontology1, native);
+    onto.add_tbis(ontology1, native, false);
 
-    // onto.add_tbis(fntb1, FileType::JSON, false);
-    // onto.add_tbis(fntb2, FileType::JSON, false);
-    // onto.add_tbis(fntb3, FileType::JSON, false);
-    onto.add_tbis(fntb4, FileType::JSON, false);
+    println!("{}", &onto);
 
-    // println!("before completion:\n{}", &onto);
-
+    println!("--------------------------------------");
     onto.auto_complete(false);
-    onto.sort();
-
-    // println!("onto sorted:\n{}", &onto);
-
-    let fntb_dumped1 = "src/dl_lite/examples/tbox_dumped1.json";
-    onto.tbox_to_file(fntb_dumped1, FileType::JSON, true);
-
-    let symbols_native1 = "src/dl_lite/examples/symbols1.dllite";
-    let tbox_native1 = "src/dl_lite/examples/tbox1.dllite";
-
-
-    let mut onto2 = Ontology::new("test2".to_string());
-    onto2.add_symbols(symbols_native1, FileType::NATIVE);
-    onto2.add_tbis(tbox_native1, FileType::NATIVE, true);
-
-    println!("{}", &onto2);
+    println!("{}", &onto);
 
 }
+
