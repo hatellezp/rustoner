@@ -7,6 +7,8 @@ use std::io;
 use std::hash::Hash;
 use crate::dl_lite::tbox_item::TBI;
 use crate::dl_lite::abox_item::ABI;
+use std::hint::spin_loop;
+use crate::dl_lite::json_filetype_utilities::invalid_data_result;
 
 //--------------------------------------------------------------------------------------------------
 
@@ -100,45 +102,107 @@ pub fn node_to_string(
     }
 }
 
-pub fn string_to_tbi(s: &str, symbols: &HashMap<String, (usize, DLType)>) -> io::Result<TBI> {
-    let splitted = s.trim();
-    let splitted: Vec<&str> = splitted.split(":").collect();
+pub fn string_to_tbi(s: &str, symbols: &HashMap<String, (usize, DLType)>) -> io::Result<Vec<TBI>> {
+    let pre_splitted = s.trim();
 
-    if splitted.len() != 2 {
-        let new_error = Error::new(
-            ErrorKind::InvalidData,
-            "badly formatted symbol: there must be exactly one ':' character",
-        );
+    let equiv = pre_splitted.contains("=");
+    let sub = pre_splitted.contains("<");
 
-        Err(new_error)
-    } else {
-        let lside_result = string_to_node(splitted[0], symbols);
-        let rside_result = string_to_node(splitted[1], symbols);
+    match (sub, equiv) {
+        (true, true) => {
+            let new_error = Error::new(ErrorKind::InvalidData, format!("badly formed file '=' and '<' bot appear").as_str());
+            Err(new_error)
+        },
+        (false, false) => {
+            let new_error = Error::new(ErrorKind::InvalidData, format!("badly formed file not '=' nor '<' found").as_str());
+            Err(new_error)
+        },
+        (_, _) => {
+            let mut lside_result1 = invalid_data_result("not done yet");
+            let mut rside_result1 = invalid_data_result("not done yet");
+            let mut lside_result2 = invalid_data_result("not done yet");
+            let mut rside_result2 = invalid_data_result("not done yet");
+            let mut splitted: Vec<&str>;
+            let mut tuples: Vec<(io::Result<Node>, io::Result<Node>)>;
+            let mut tbis: Vec<TBI> = Vec::new();
 
-        match (&lside_result, &rside_result) {
-            (Err(e1), Err(e2)) => {
-                let new_error = Error::new(ErrorKind::InvalidData, format!("several errors, error1: {}, error2: {}", e1.to_string(), e2.to_string()));
+            if sub {
+                splitted = pre_splitted.split("<").collect();
+            } else {
+                splitted = pre_splitted.split("=").collect();
+            }
+
+            if splitted.len() != 2 {
+                let new_error = Error::new(
+                    ErrorKind::InvalidData,
+                    "badly formatted symbol: there must be exactly one ':' character",
+                );
+
                 Err(new_error)
-            },
-            (Err(e), _) => {
-                let new_error = Error::new(ErrorKind::InvalidData, format!("couldn't parse left side {}", e.to_string()));
-                Err(new_error)
-            },
-            (_, Err(e)) => {
-                let new_error = Error::new(ErrorKind::InvalidData, format!("couldn't parse right side {}", e.to_string()));
-                Err(new_error)
-            },
-            (Ok(lside), Ok(rside)) => {
-                let new_tbi_op = TBI::new(lside.clone(), rside.clone());
+            } else {
 
-                match new_tbi_op {
-                    Some(new_tbi) => Ok(new_tbi),
-                    _ => {
-                        let new_error = Error::new(ErrorKind::InvalidData, format!("invalid tbox item {}", s));
-                        Err(new_error)
-                    },
+                if sub {
+                    lside_result1 = string_to_node(splitted[0], symbols);
+                    rside_result1 = string_to_node(splitted[1], symbols);
+
+                    tuples = vec![(lside_result1, rside_result1)];
+                } else {
+                    lside_result1 = string_to_node(splitted[0], symbols);
+                    rside_result1 = string_to_node(splitted[1], symbols);
+                    lside_result2 = string_to_node(splitted[1], symbols);
+                    rside_result2 = string_to_node(splitted[0], symbols);
+
+                    tuples = vec![(lside_result1, rside_result1), (lside_result2, rside_result2)];
                 }
-            },
+
+                let mut error_happened = false;
+                let mut try_to_add: Result<Vec<TBI>, Error> = Ok(Vec::new());
+                while !tuples.is_empty() {
+                    let (lside_result, rside_result) = tuples.pop().unwrap();
+
+                    try_to_add = match (&lside_result, &rside_result) {
+                        (Err(e1), Err(e2)) => {
+                            let new_error = Error::new(ErrorKind::InvalidData, format!("several errors, error1: {}, error2: {}", e1.to_string(), e2.to_string()));
+                            Err(new_error)
+                        },
+                        (Err(e), _) => {
+                            let new_error = Error::new(ErrorKind::InvalidData, format!("couldn't parse left side {}", e.to_string()));
+                            Err(new_error)
+                        },
+                        (_, Err(e)) => {
+                            let new_error = Error::new(ErrorKind::InvalidData, format!("couldn't parse right side {}", e.to_string()));
+                            Err(new_error)
+                        },
+                        (Ok(lside), Ok(rside)) => {
+                            let new_tbi_op = TBI::new(lside.clone(), rside.clone());
+
+                            match new_tbi_op {
+                                Some(new_tbi) => {
+                                    tbis.push(new_tbi);
+                                    Ok(Vec::new())
+                                },
+                                _ => {
+                                    let new_error = Error::new(ErrorKind::InvalidData, format!("invalid tbox item {}", s));
+                                    Err(new_error)
+                                },
+                            }
+                        },
+                    };
+
+                    if try_to_add.is_err() {
+                        error_happened = true;
+                        break;
+                    } else {
+                        continue;
+                    }
+                }
+
+                if error_happened {
+                    try_to_add
+                } else {
+                    Ok(tbis)
+                }
+            }
         }
     }
 }

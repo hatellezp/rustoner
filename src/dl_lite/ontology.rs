@@ -145,6 +145,8 @@ impl Ontology {
         let tb = self.complete_tbox(verbose);
 
         self.add_tbox(&tb);
+
+        self.tbox.remove_trivial();
     }
 
     pub fn contains_contradiction(&self) -> bool {

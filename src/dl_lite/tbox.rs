@@ -113,6 +113,23 @@ impl TB {
         self.completed
     }
 
+    pub fn remove_trivial(&mut self) {
+
+        if !self.items.is_empty() {
+            let mut new_items: Vec<TBI> = Vec::new();
+
+            while !self.items.is_empty() {
+                let tbi = self.items.pop().unwrap();
+
+                if !(&tbi).is_trivial() {
+                    new_items.push(tbi);
+                }
+            }
+
+            self.items = new_items;
+        }
+    }
+
     pub fn complete2(&self, verbose: bool) -> TB {
         if self.items.len() == 0 {
             if verbose {

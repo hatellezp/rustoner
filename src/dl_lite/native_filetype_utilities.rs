@@ -204,8 +204,13 @@ pub fn parse_tbox_native(filename: &str, symbols: &HashMap<String, (usize, DLTyp
                             let parsed = string_to_tbi(&not_ignored, symbols);
 
                             match parsed {
-                                Ok(tbi) => {
-                                    tb.add(tbi);
+                                Ok(mut tbi_vec) => {
+                                    if !(&tbi_vec).is_empty() {
+                                        while !(&tbi_vec).is_empty() {
+                                            let tbi = tbi_vec.pop().unwrap();
+                                            tb.add(tbi);
+                                        }
+                                    }
                                 },
                                 Err(e) => {
                                     if verbose {

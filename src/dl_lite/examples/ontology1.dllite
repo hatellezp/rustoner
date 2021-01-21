@@ -14,11 +14,13 @@ ENDSYMBOL
 
 // because I'm a MAD man, I'm going to put the TBox here too, buahahahah
 BEGINTBOX
-Professor : Person
-Student : Person
-Person: NOT Course
-Bac_Course: Course
-Ms_Course: Course
-teaches : INV teachedby
-teachedby : INV teaches
+Professor < Person // of course a professor is a person
+Student < Person
+Person <NOT Course
+Bac_Course< Course // all types of courses are courses (awesome)
+Ms_Course< Course
+teaches = INV teachedby
+Banana : Fruit
+Professor < EXISTS teaches
+Course < EXISTS INV teaches
 ENDTBOX
