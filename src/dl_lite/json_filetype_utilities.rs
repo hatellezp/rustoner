@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, io};
 
 use serde_json::{Result, Value};
 
@@ -11,6 +11,7 @@ use crate::dl_lite::types::DLType;
 use serde::Deserializer;
 use std::collections::HashMap;
 use crate::dl_lite::string_formatter::{node_to_string, string_to_node};
+use std::io::{Error, ErrorKind};
 
 /*
 how this works:
@@ -19,79 +20,87 @@ how this works:
           that way the whole system works with integers and after we can translate back to names
  */
 
-pub fn parse_value_to_string(v: &Value) -> Option<&str> {
+pub fn parse_value_to_string(v: &Value) -> io::Result<&str> {
     match v {
-        Value::String(s) => Some(s.as_str()),
-        _ => Option::None,
+        Value::String(s) => Ok(s.as_str()),
+        _ => {
+            invalid_data_result(format!("not a string json type: {}", v).as_str())
+        },
     }
 }
 
-pub fn parse_symbol(s_vec: &Vec<Value>, latest: usize) -> (Option<(&str, usize, DLType)>, usize) {
+pub fn parse_symbol(s_vec: &Vec<Value>, latest: usize) -> (io::Result<(&str, usize, DLType)>, usize) {
     /*
     how parsing works: ["r", "myrole"] -> ("myrole", number, DLType::RoleBase)
      */
     if s_vec.len() != 2 {
-        (Option::None, latest)
+        let new_error = Error::new(ErrorKind::InvalidData, format!("bad number of elements in list: {}", s_vec.len()).as_str());
+        (Err(new_error), latest)
     } else {
-        let t = parse_value_to_string(&s_vec[0]);
-        let name = parse_value_to_string(&s_vec[1]);
+        let t_result = parse_value_to_string(&s_vec[0]);
+        let name_result = parse_value_to_string(&s_vec[1]);
 
-        if t.is_none() || name.is_none() {
-            (Option::None, latest)
-        } else {
-            let t = t.unwrap();
-            let mut name = name.unwrap();
+        match (t_result, name_result) {
+            (Err(e1), Err(e2)) => {
+                let new_error = Error::new(ErrorKind::InvalidData, format!("multiples errors ocurred e1: {}, e2: {}", e1.to_string(), e2.to_string()));
+                (Err(new_error), latest)
+            },
+            (Err(e1), _) => {
+                let new_error = Error::new(ErrorKind::InvalidData, format!("couldn't trasform to string: {}", e1.to_string()));
+                (Err(new_error), latest)
+            },
+            (_, Err(e2)) => {
+                let new_error = Error::new(ErrorKind::InvalidData, format!("couldn't trasform to string: {}", e2.to_string()));
+                (Err(new_error), latest)
+            },
+            (Ok(t), Ok(mut name)) => {
 
-            /*
-            this was a test, I'm giving now the correct values
-            let roles = ["r", "R", "role", "Role"];
-            let concepts = ["c", "C", "concept", "Concept"];
-            let nominals = ["n", "N", "nominal", "Nominal"];
-            */
-            let roles = ["role"];
-            let concepts = ["concept"];
-            let nominals = ["nominal"];
-            let top = ["Top", "top"];
-            let bottom = ["Botom", "bottom"];
+                let roles = ["role"];
+                let concepts = ["concept"];
+                let nominals = ["nominal"];
+                let top = ["Top", "top"];
+                let bottom = ["Botom", "bottom"];
 
-            let dlt: Option<DLType>;
+                let dlt: Option<DLType>;
 
-            if roles.contains(&t) {
-                dlt = Some(DLType::BaseRole);
-            } else if concepts.contains(&t) {
-                dlt = Some(DLType::BaseConcept);
-            } else if nominals.contains(&t) {
-                dlt = Some(DLType::Nominal);
-            } else if top.contains(&t) {
-                dlt = Some(DLType::Top)
-            } else if bottom.contains(&t) {
-                dlt = Some(DLType::Bottom)
-            } else {
-                dlt = Option::None;
-            }
-
-            if dlt.is_none() {
-                (Option::None, latest)
-            } else {
-                let dlt_unwrapped = dlt.unwrap();
-                let id: usize;
-                let new_latest: usize;
-
-                if dlt_unwrapped == DLType::Bottom {
-                    name = "Bottom";
-                    id = 0;
-                    new_latest = latest;
-                } else if dlt_unwrapped == DLType::Top {
-                    name = "Top";
-                    id = 1;
-                    new_latest = latest;
+                if roles.contains(&t) {
+                    dlt = Some(DLType::BaseRole);
+                } else if concepts.contains(&t) {
+                    dlt = Some(DLType::BaseConcept);
+                } else if nominals.contains(&t) {
+                    dlt = Some(DLType::Nominal);
+                } else if top.contains(&t) {
+                    dlt = Some(DLType::Top)
+                } else if bottom.contains(&t) {
+                    dlt = Some(DLType::Bottom)
                 } else {
-                    id = latest + 1;
-                    new_latest = id;
+                    dlt = Option::None;
                 }
 
-                (Some((name, id, dlt.unwrap())), new_latest) // TODO: verify this
-            }
+                if dlt.is_none() {
+                    let new_error = Error::new(ErrorKind::InvalidData, format!("not a valid dl type: {}", &t));
+                    (Err(new_error), latest)
+                } else {
+                    let dlt_unwrapped = dlt.unwrap();
+                    let id: usize;
+                    let new_latest: usize;
+
+                    if dlt_unwrapped == DLType::Bottom {
+                        name = "Bottom";
+                        id = 0;
+                        new_latest = latest;
+                    } else if dlt_unwrapped == DLType::Top {
+                        name = "Top";
+                        id = 1;
+                        new_latest = latest;
+                    } else {
+                        id = latest + 1;
+                        new_latest = id;
+                    }
+
+                    (Ok((name, id, dlt.unwrap())), latest)
+                }
+            },
         }
     }
 }
@@ -100,48 +109,60 @@ pub fn parse_value_to_tbi(
     value: &Value,
     symbols: &HashMap<String, (usize, DLType)>,
     verbose: bool,
-) -> Option<TBI> {
+) -> io::Result<TBI> {
     match value {
         Value::Array(vec_of_values) => {
             if vec_of_values.len() != 2 {
-                Option::None
+                let new_error = Error::new(ErrorKind::InvalidData, format!("bad number of elements on list: {}", &vec_of_values.len()));
+                Err(new_error)
             } else {
-                let lside_op = parse_value_to_string(&vec_of_values[0]);
-                let rside_op = parse_value_to_string(&vec_of_values[1]);
+                let lside_result = parse_value_to_string(&vec_of_values[0]);
+                let rside_result = parse_value_to_string(&vec_of_values[1]);
 
-                match (&lside_op, &rside_op) {
-                    (Option::Some(lside), Option::Some(rside)) => {
+                match (lside_result, rside_result) {
+                    (Err(e1), Err(e2)) => {
+                        let new_error = Error::new(ErrorKind::InvalidData, format!("multiples errors ocurred e1: {}, e2: {}", e1.to_string(), e2.to_string()));
+                        Err(new_error)
+                    },
+                    (Err(e1), _) => {
+                        let new_error = Error::new(ErrorKind::InvalidData, format!("couldn't trasform to string: {}", e1.to_string()));
+                        Err(new_error)
+                    },
+                    (_, Err(e2)) => {
+                        let new_error = Error::new(ErrorKind::InvalidData, format!("couldn't trasform to string: {}", e2.to_string()));
+                        Err(new_error)
+                    },
+                    (Ok(lside), Ok(rside)) => {
                         let lside = string_to_node(lside, symbols);
                         let rside = string_to_node(rside, symbols);
 
                         match (&lside, &rside) {
-                            (Option::Some(ls), Option::Some(rs)) => {
-                                let new_tbi = TBI::new(ls.clone(), rs.clone());
+                            (Err(e1), Err(e2)) => {
+                                Err(Error::new(ErrorKind::InvalidData, format!("mutiple errors, e1: {}, e2: {}", e1.to_string(), e2.to_string())))
+                            },
+                            (Err(e1), _) => Err(Error::new(ErrorKind::InvalidData, e1.to_string())),
+                            (_, Err(e2)) => Err(Error::new(ErrorKind::InvalidData, e2.to_string())),
+                            (Ok(ls), Ok(rs)) => {
+                                let new_tbi_op = TBI::new(ls.clone(), rs.clone());
 
-                                new_tbi
-                            }
-                            (_, _) => {
-                                if verbose {
-                                    println!("could't parse: {}", &value);
-                                    Option::None
-                                } else {
-                                    Option::None
+                                match new_tbi_op {
+                                    Some(new_tbi) => {
+                                        Ok(new_tbi)
+                                    },
+                                    _ => {
+                                        let new_error = Error::new(ErrorKind::InvalidData, format!("invalid syntax: {}", value));
+                                        Err(new_error)
+                                    },
                                 }
                             }
                         }
-                    }
-                    (_, _) => {
-                        if verbose {
-                            println!("could't parse: {}", &value);
-                            Option::None
-                        } else {
-                            Option::None
-                        }
-                    }
+                    },
                 }
             }
-        }
-        _ => Option::None,
+        },
+        _ => {
+            invalid_data_result(format!("not valid type of json value: {}", &value).as_str())
+        },
     }
 }
 
@@ -151,22 +172,23 @@ pub fn parse_value_abi(value: &Value, symbols: Vec<&Node>) -> Option<ABI> {
 
 // when manipulating use &str to avoid unnecessary copies and when returning the data
 // then use String
-pub fn parse_symbols_from_json(filename: &str) -> Option<HashMap<String, (usize, DLType)>> {
+pub fn parse_symbols_json(filename: &str) -> io::Result<HashMap<String, (usize, DLType)>> {
     let data = fs::read_to_string(filename);
 
     // here I have to precise from where the 'Result' enum comes from
     match data {
         std::result::Result::Err(e) => {
             println!("something went wrong: {}", e);
-            Option::None
+            let new_error = Error::new(e.kind(), e.to_string());
+            Err(new_error)
         }
         std::result::Result::Ok(data_string) => {
             let result_value: Result<Value> = serde_json::from_str(data_string.as_str());
 
             match result_value {
-                Result::Err(e) => {
-                    println!("something went wrong: {}", e);
-                    Option::None
+                Result::Err(error) => {
+                    let new_error = Error::new(ErrorKind::InvalidData, format!("something went wrong during parsing: {}", error.to_string()));
+                    Err(new_error)
                 }
                 Result::Ok(value) => match &value {
                     Value::Object(map) => {
@@ -176,8 +198,8 @@ pub fn parse_symbols_from_json(filename: &str) -> Option<HashMap<String, (usize,
                             match value_array {
                                 Value::Array(vec_of_values) => {
                                     let mut latest: usize = 2;
-                                    let mut result: (Option<(&str, usize, DLType)>, usize);
-                                    let mut parsed: Option<(&str, usize, DLType)>;
+                                    let mut result: (io::Result<(&str, usize, DLType)>, usize);
+                                    let mut parsed_result: io::Result<(&str, usize, DLType)>;
                                     let mut unwrapped_parsed: (&str, usize, DLType);
 
                                     let mut symbols: HashMap<String, (usize, DLType)> =
@@ -188,63 +210,68 @@ pub fn parse_symbols_from_json(filename: &str) -> Option<HashMap<String, (usize,
                                             Value::Array(symbol_spec) => {
                                                 result = parse_symbol(symbol_spec, latest);
 
-                                                parsed = result.0;
+                                                parsed_result = result.0;
                                                 latest = result.1;
 
-                                                if parsed.is_some() {
-                                                    unwrapped_parsed = parsed.unwrap();
-
-                                                    symbols.insert(
-                                                        String::from(unwrapped_parsed.0),
-                                                        (unwrapped_parsed.1, unwrapped_parsed.2),
-                                                    );
+                                                match parsed_result {
+                                                    Err(error) => {
+                                                        println!("couldn't add symbol: {}", &error.to_string());
+                                                        // result_from_error(&error)
+                                                    },
+                                                    Ok(parsed) => {
+                                                        symbols.insert(
+                                                            String::from(parsed.0),
+                                                            (parsed.1, parsed.2),
+                                                        );
+                                                    },
                                                 }
-                                            }
-                                            _ => (),
+                                            },
+                                            _ => () // invalid_data_result(format!("not a list item: {}", &value).as_str()),
                                         }
                                     }
 
                                     if symbols.len() == 0 {
-                                        Option::None
+                                        invalid_data_result("not symbols were added")
                                     } else {
-                                        Some(symbols)
+                                        Ok(symbols)
                                     }
-                                }
-                                _ => Option::None,
+                                },
+                                _ => invalid_data_result(format!("not a list item: {}", &value_array).as_str()),
                             }
                         } else {
                             println!("not symbols in this file: {}", &value);
-                            Option::None
+                            invalid_data_result(format!("no symbols in this file: {}", &value).as_str())
                         }
-                    }
-                    _ => Option::None,
+                    },
+                    _ => invalid_data_result(format!("not a map item: {}", &value).as_str()),
                 },
             }
         }
     }
 }
 
-pub fn parse_tbox_from_json(
+pub fn parse_tbox_json(
     filename: &str,
     symbols: &HashMap<String, (usize, DLType)>,
     verbose: bool,
-) -> Option<TB> {
+) -> io::Result<TB> {
     let data = fs::read_to_string(filename);
 
     // here I have to precise from where the 'Result' enum comes from
     match data {
-        std::result::Result::Err(e) => {
-            println!("something went wrong: {}", e);
-            Option::None
-        }
+        std::result::Result::Err(error) => {
+            println!("something went wrong: {}", &error);
+            result_from_error(&error)
+        },
         std::result::Result::Ok(data_string) => {
             let result_value: Result<Value> = serde_json::from_str(data_string.as_str());
 
             match result_value {
-                Result::Err(e) => {
-                    println!("something went wrong: {}", e);
-                    Option::None
-                }
+                Result::Err(error) => {
+                    println!("something went wrong: {}", &error);
+                    let new_error = Error::new(ErrorKind::InvalidData, format!("couldn't parse the file: {}", &error.to_string()));
+                    Err(new_error)
+                },
                 Result::Ok(value) => match &value {
                     Value::Object(map) => {
                         if map.contains_key("tbox") {
@@ -253,29 +280,36 @@ pub fn parse_tbox_from_json(
                             match value_array {
                                 Value::Array(vec_of_values) => {
                                     let mut tb = TB::new();
-                                    let mut tbi: Option<TBI>;
+                                    let mut tbi_result: io::Result<TBI>;
 
                                     for v in vec_of_values {
-                                        tbi = parse_value_to_tbi(v, symbols, verbose);
+                                        tbi_result = parse_value_to_tbi(v, symbols, verbose);
 
-                                        if tbi.is_some() {
-                                            tb.add(tbi.unwrap());
-                                        }
+                                        match tbi_result {
+                                            Err(error) => {
+                                                println!("couldn't parse value: {}, error: {}", value, &error);
+                                            },
+                                            Ok(tbi) => {
+                                                tb.add(tbi);
+                                            }
+                                        };
                                     }
 
-                                    Some(tb)
+                                    Ok(tb)
                                 }
-                                _ => Option::None,
+                                _ => {
+                                    invalid_data_result(format!("not a list of values: {}", &value_array).as_str())
+                                },
                             }
                         } else {
                             println!("no tbox in this file: {}", &value);
-                            Option::None
+                            invalid_data_result(format!("the file doesn't containt a 'tbox' item: {}", &value).as_str())
                         }
-                    }
-                    _ => Option::None,
+                    },
+                    _ => invalid_data_result(format!("not a map item : {}", &value).as_str()),
                 },
             }
-        }
+        },
     }
 }
 
@@ -325,4 +359,15 @@ pub fn tbox_to_value(
     } else {
         Option::None
     }
+}
+
+
+pub fn invalid_data_result<T>(error: &str) -> io::Result<T> {
+    let new_error = Error::new(ErrorKind::InvalidData, error);
+    Err(new_error)
+}
+
+pub fn result_from_error<T>(error: &Error) -> io::Result<T> {
+    let new_error = Error::new(error.kind(), error.to_string());
+    Err(new_error)
 }

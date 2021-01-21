@@ -1,11 +1,8 @@
 use crate::dl_lite::tbox::TB;
 use crate::dl_lite::types::DLType;
 use std::collections::HashMap;
-// use crate::dl_lite::abox::AB;
 use crate::dl_lite::abox_item::ABI;
-use crate::dl_lite::json_filetype_utilities::{
-    parse_symbols_from_json, parse_tbox_from_json, tbox_to_value,
-};
+use crate::dl_lite::json_filetype_utilities::{parse_symbols_json, parse_tbox_json, tbox_to_value, result_from_error, parse_symbol};
 use crate::dl_lite::node::{Mod, Node};
 use crate::dl_lite::tbox_item::TBI;
 use crate::kb::types::FileType;
@@ -15,6 +12,7 @@ use std::fmt;
 use std::fs::File;
 use std::io::Write;
 use std::iter::Map;
+use crate::dl_lite::native_filetype_utilities::{parse_symbols_native, parse_tbox_native};
 /*
 an ontology model
     - name is the name of the ontology
@@ -86,39 +84,41 @@ impl Ontology {
     }
 
     pub fn add_symbols(&mut self, filename: &str, filetype: FileType) {
-        match filetype {
+        let new_symbols_result = match filetype {
             FileType::JSON => {
-                let new_symbols_op = parse_symbols_from_json(filename);
-
-                if new_symbols_op.is_some() {
-                    let new_symbols = new_symbols_op.unwrap();
-
-                    for (key, _) in &new_symbols {
-                        self.add_symbol(&new_symbols, key);
-                    }
+                parse_symbols_json(filename)
+            },
+            FileType::NATIVE => {
+                parse_symbols_native(filename, false) // don't like this :/ (this is a smiley face)
+            },
+        };
+        match new_symbols_result {
+            Err(error) => {
+                println!("couldn't parse symbols from json file: {}", &error.to_string());
+            },
+            Ok(new_symbols) => {
+                for (key, _) in &new_symbols {
+                    self.add_symbol(&new_symbols, key);
                 }
-            }
-            _ => panic!("error while trying to add from file, unimplemented for this file type!"),
+            },
         }
     }
 
     pub fn add_tbis(&mut self, filename: &str, filetype: FileType, verbose: bool) {
         if self.symbols.len() != 0 {
-            match filetype {
-                FileType::JSON => {
-                    let tb_op = parse_tbox_from_json(filename, self.symbols(), verbose);
-
-                    if tb_op.is_some() {
-                        let tb = tb_op.unwrap();
-
-                        for tbi in tb.items() {
-                            self.add_tbi(tbi);
-                        }
+            let tb_result = match filetype {
+                FileType::JSON => parse_tbox_json(filename, &self.symbols, verbose),
+                FileType::NATIVE => parse_tbox_native(filename, &self.symbols, verbose),
+            };
+            match tb_result {
+                Err(error) => {
+                    println!("couldn't parse tbox from file: {}", &error);
+                },
+                Ok(tb) => {
+                    for tbi in tb.items() {
+                        self.add_tbi(tbi);
                     }
-                }
-                _ => {
-                    panic!("error while trying to add from file, unimplemented for this file type!")
-                }
+                },
             }
         } else {
             println!("warning: no symbols detected, no tbox item will be added");

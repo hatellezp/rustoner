@@ -4,46 +4,10 @@ use std::collections::{HashMap, VecDeque};
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader, Error, ErrorKind};
-use crate::dl_lite::string_formatter::{string_to_symbol, PS};
+use crate::dl_lite::string_formatter::{string_to_symbol, PS, string_to_tbi};
+use crate::dl_lite::tbox::TB;
 
-pub fn read_file_and_print_line_by_line(filename: &str) -> io::Result<()> {
-    let file_result = File::open(filename);
-
-    match file_result {
-        Err(e) => {
-            println!("couldn't read the file: {}", e);
-            Result::Err(e)
-        }
-        Ok(file) => {
-            let reader = BufReader::new(file);
-
-            for line_result in reader.lines() {
-                match line_result {
-                    Err(_) => (),
-                    Ok(line) => {
-                        println!("---- original line: {}", &line);
-                        let mut vec: Vec<&str> = line.split("//").collect();
-
-                        let not_ignored = vec[0].clone();
-
-                        /*
-                        here I'm doing this to verify that after '//' everything is well ignored
-                        but in a real file we forget this
-                         */
-                        let ignored: String = vec[1..].join("//");
-
-                        println!("this part is not ignored: {}", not_ignored);
-                        println!("this part is ignored: {}", ignored);
-                    }
-                }
-            }
-
-            Result::Ok(())
-        }
-    }
-}
-
-pub fn parse_symbols(
+pub fn parse_symbols_native(
     filename: &str,
     verbose: bool,
 ) -> io::Result<HashMap<String, (usize, DLType)>> {
@@ -171,6 +135,107 @@ pub fn parse_symbols(
 
                 Result::Ok((symbols))
             }
-        }
+        },
+    }
+}
+
+pub fn parse_tbox_native(filename: &str, symbols: &HashMap<String, (usize, DLType)>, verbose: bool) -> io::Result<TB> {
+    let file_result = File::open(filename);
+
+    match file_result {
+        Err(e) => {
+            println!("couldn't read the file: {}", e);
+            Result::Err(e)
+        },
+        Ok(file) => {
+            let reader = BufReader::new(file);
+
+            let mut begin_tbox_encountered = false;
+            let mut end_tbox_encountered = false;
+
+            let mut tb = TB::new();
+
+            for line_result in reader.lines() {
+                match line_result {
+                    Err(e) => {
+                        if verbose {
+                            println!("passing this line: {}", e);
+                        }
+                    }
+                    Ok(line) => {
+                        if verbose {
+                            println!("trying to parse: {}", &line);
+                        }
+
+                        let line_trimmed = line.trim();
+
+                        if line_trimmed == "BEGINTBOX" {
+                            begin_tbox_encountered = true;
+
+                            if verbose {
+                                println!("'BEGINTBOX' found, begin parsing");
+                            }
+
+                            continue;
+                        }
+
+                        if line_trimmed == "ENDTBOX" {
+                            end_tbox_encountered = true;
+
+                            if verbose {
+                                println!("'ENDTBOX' found, ending parsing");
+                            }
+                            continue;
+                        }
+
+                        if begin_tbox_encountered && !end_tbox_encountered {
+                            let mut vec: Vec<&str> = line_trimmed.split("//").collect();
+
+                            let not_ignored = vec[0].clone();
+
+                            if verbose {
+                                let ignored: String = String::from(vec[1..].join("//").trim());
+
+                                if &ignored != "" {
+                                    println!("this comment will be ignored: {}", &ignored);
+                                }
+                            }
+
+                            let parsed = string_to_tbi(&not_ignored, symbols);
+
+                            match parsed {
+                                Ok(tbi) => {
+                                    tb.add(tbi);
+                                },
+                                Err(e) => {
+                                    if verbose {
+                                        println!("couldn't parse: {}", &e);
+                                    }
+                                },
+                            }
+                        } else {
+                            if verbose {
+                                println!("line won't be parsed, not in between 'BEGINTBOX' and 'ENDTBOX' bounds");
+                            }
+                        }
+                    }
+                }
+            }
+
+            if !end_tbox_encountered {
+                if verbose {
+                    println!("'ENDTBOX' not encountered, returning nothing");
+                }
+
+                let new_error = Error::new(
+                    ErrorKind::UnexpectedEof,
+                    "'ENDTBOX' not found before file ended",
+                );
+
+                Result::Err(new_error)
+            } else {
+                Result::Ok((tb))
+            }
+        },
     }
 }

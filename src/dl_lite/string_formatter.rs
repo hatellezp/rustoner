@@ -22,7 +22,7 @@ pub fn string_to_symbol(string: &str) -> io::Result<(&str, DLType)> {
         Err(new_error)
     } else {
         let type_in_string = vec_of_string[0].trim();
-        let name = vec_of_string[1];
+        let name = vec_of_string[1].trim();
 
         let t_op = match type_in_string {
             "concept" => Some(DLType::BaseConcept),
@@ -48,7 +48,9 @@ pub fn string_to_node(s: &str, symbols: &HashMap<String, (usize, DLType)>) -> io
     /*
     this function need a symbols dictionary reference to function
      */
-    let splitted = s.split(" ").collect::<Vec<&str>>();
+    let splitted = s.trim();
+    let splitted = splitted.split(" ").collect::<Vec<&str>>();
+
     __parse_string_to_node_helper(splitted, symbols)
 }
 
@@ -98,8 +100,47 @@ pub fn node_to_string(
     }
 }
 
-pub fn string_to_tbi(s: &str, symbols: &HashMap<String, (usize, DLType)>) -> Option<TBI> {
-    Option::None
+pub fn string_to_tbi(s: &str, symbols: &HashMap<String, (usize, DLType)>) -> io::Result<TBI> {
+    let splitted = s.trim();
+    let splitted: Vec<&str> = splitted.split(":").collect();
+
+    if splitted.len() != 2 {
+        let new_error = Error::new(
+            ErrorKind::InvalidData,
+            "badly formatted symbol: there must be exactly one ':' character",
+        );
+
+        Err(new_error)
+    } else {
+        let lside_result = string_to_node(splitted[0], symbols);
+        let rside_result = string_to_node(splitted[1], symbols);
+
+        match (&lside_result, &rside_result) {
+            (Err(e1), Err(e2)) => {
+                let new_error = Error::new(ErrorKind::InvalidData, format!("several errors, error1: {}, error2: {}", e1.to_string(), e2.to_string()));
+                Err(new_error)
+            },
+            (Err(e), _) => {
+                let new_error = Error::new(ErrorKind::InvalidData, format!("couldn't parse left side {}", e.to_string()));
+                Err(new_error)
+            },
+            (_, Err(e)) => {
+                let new_error = Error::new(ErrorKind::InvalidData, format!("couldn't parse right side {}", e.to_string()));
+                Err(new_error)
+            },
+            (Ok(lside), Ok(rside)) => {
+                let new_tbi_op = TBI::new(lside.clone(), rside.clone());
+
+                match new_tbi_op {
+                    Some(new_tbi) => Ok(new_tbi),
+                    _ => {
+                        let new_error = Error::new(ErrorKind::InvalidData, format!("invalid tbox item {}", s));
+                        Err(new_error)
+                    },
+                }
+            },
+        }
+    }
 }
 
 pub fn tbi_to_string(tbi: &TBI, symbols: &HashMap<String, (usize, DLType)>) -> Option<String> {
@@ -133,13 +174,14 @@ fn __parse_string_to_node_helper(
             /*
             here are only base symbols
              */
+
             if symbols.contains_key(splitted[0]) {
                 let value = symbols[splitted[0]];
                 let new_node = Node::new(Some(value.0), value.1).unwrap();
 
                 Ok(new_node)
             } else {
-                let new_error = Error::new(ErrorKind::InvalidData, format!("this symbols is not recognized {}", splitted[0]));
+                let new_error = Error::new(ErrorKind::InvalidData, format!("this symbols is not recognized '{}'", splitted[0]));
                 Err(new_error)
             }
         }

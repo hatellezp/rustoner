@@ -9,6 +9,7 @@ concept: B // of course B comes after A
 role : r // this is the base role I use
 // the super role s
 concept: Z
+role: s
 ENDSYMBOL
 role : s
 // role q

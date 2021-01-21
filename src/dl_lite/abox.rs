@@ -9,7 +9,38 @@ pub struct AB {
     length: usize,
 }
 
-impl Data for AB {}
+impl Data for AB {
+    /*
+    fn items(&self) -> Vec<&ABI> {
+        let mut vec: Vec<&ABI> = Vec::new();
+
+        for item in &self.items {
+            vec.push(item);
+        }
+
+        vec
+    }
+
+    fn len(&self) -> usize {
+        self.length
+    }
+
+    fn add(&mut self, item: ABI) -> bool {
+        if !self.items.contains(&item) {
+            self.items.push(item);
+            true
+        } else {
+            false
+        }
+    }
+
+    fn contains(&self, item: &ABI) -> bool {
+        self.items.contains(item)
+    }
+
+
+     */
+}
 
 impl fmt::Display for AB {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -51,9 +82,4 @@ impl AB {
         }
     }
 
-    pub fn len(&self) -> usize {
-        self.length
-    }
-
-    // pub fn complete(&self, tbox: Option<TB>) -> AB {}
 }
