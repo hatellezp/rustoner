@@ -7,8 +7,7 @@ use std::io;
 use std::hash::Hash;
 use crate::dl_lite::tbox_item::TBI;
 use crate::dl_lite::abox_item::ABI;
-use std::hint::spin_loop;
-use crate::dl_lite::json_filetype_utilities::invalid_data_result;
+use crate::dl_lite::json_filetype_utilities::{invalid_data_result, result_from_error};
 
 //--------------------------------------------------------------------------------------------------
 
@@ -62,8 +61,8 @@ pub fn node_to_string(
     mut current: String,
 ) -> Option<String> {
     match node {
-        Node::B => Some(String::from("BOTTOM")),
-        Node::T => Some(String::from("TOP")),
+        Node::B => Some(String::from("Bottom")),
+        Node::T => Some(String::from("Top")),
         Node::N(n) => {
             let vec_of_s = find_keys_for_value(symbols, *n);
 
@@ -208,11 +207,110 @@ pub fn string_to_tbi(s: &str, symbols: &HashMap<String, (usize, DLType)>) -> io:
 }
 
 pub fn tbi_to_string(tbi: &TBI, symbols: &HashMap<String, (usize, DLType)>) -> Option<String> {
-    Option::None
+    let lstr_op = node_to_string(tbi.lside(), symbols, "".to_string());
+    let rstr_op = node_to_string(tbi.rside(), symbols, "".to_string());
+
+    match (lstr_op, rstr_op) {
+        (Some(lstr), Some(rstr)) => {
+            let mut res = String::new();
+            res.push_str(lstr.as_str());
+            res.push_str(" : ");
+            res.push_str(rstr.as_str());
+
+            Some(res)
+        },
+        (_, _) => Option::None,
+    }
 }
 
-pub fn string_to_abi(s: &str, symbols: &HashMap<String, (usize, DLType)>) -> Option<ABI> {
-    Option::None
+// this approach is a dynamic one, concepts must be present in symbols,
+// but nominals are added dynamically
+pub fn string_to_abi(s: &str, symbols: &HashMap<String, (usize, DLType)>, mut current_id: usize) -> io::Result<(ABI, Vec<(String, (usize, DLType))>, usize)> {
+    let mut splitted = s.trim();
+    let mut splitted: Vec<&str> = splitted.split(":").collect();
+
+    if splitted.len() != 2 {
+       invalid_data_result(format!("abox item must have exactly one ':' character {}", s).as_str())
+    } else {
+        // remeber that abi must have only base concepts
+        let abox_symbol = splitted[1].trim();
+
+        if symbols.contains_key(abox_symbol) {
+            let (_, dltype) = symbols[abox_symbol];
+            let abox_symbol = string_to_node(abox_symbol, symbols);
+
+            match &abox_symbol {
+                Err(e) => result_from_error(e),
+                Ok(abi_symbol) => {
+                    let constants: Vec<&str> = splitted[0].trim().split(",").collect();
+                    let mut to_be_added: Vec<(String, (usize, DLType))>;
+
+                    match (dltype, constants.len()) {
+                        (DLType::BaseRole, 2) => {
+                            let a1 = constants[0].trim();
+                            let a2 = constants[1].trim();
+
+                            // before augmenting current_id we need to know that the elements are not in symbols
+                            to_be_added = Vec::new();
+                            let node1: Node;
+                            let node2: Node;
+
+                            // each nominal
+                            if !symbols.contains_key(a1) {
+                                node1 = Node::new(Some(current_id), DLType::Nominal).unwrap();
+
+                                to_be_added.push((a1.to_string(), (current_id, DLType::Nominal)));
+                                current_id += 1;
+                            } else {
+                                let (id1, _) = symbols[a1];
+                                node1 = Node::new(Some(id1), DLType::Nominal).unwrap();
+                            }
+
+                            // then a2
+                            if !symbols.contains_key(a2) {
+                                node2 = Node::new(Some(current_id), DLType::Nominal).unwrap();
+
+                                to_be_added.push((a2.to_string(), (current_id, DLType::Nominal)));
+                                current_id += 1;
+                            } else {
+                                let (id2, _) = symbols[a2];
+                                node2 = Node::new(Some(id2), DLType::Nominal).unwrap();
+                            }
+
+                            let abi = ABI::new_ra(abi_symbol.clone(), node1, node2).unwrap();
+
+                            Ok((abi, to_be_added, current_id))
+                        },
+                        (DLType::BaseConcept, 1) => {
+                            let a1 = constants[0].trim();
+
+                            // before augmenting current_id we need to know that the elements are not in symbols
+                            to_be_added = Vec::new();
+                            let node1: Node;
+
+                            // each nominal
+                            if !symbols.contains_key(a1) {
+                                node1 = Node::new(Some(current_id), DLType::Nominal).unwrap();
+
+                                to_be_added.push((a1.to_string(), (current_id, DLType::Nominal)));
+                                current_id += 1;
+                            } else {
+                                let (id1, _) = symbols[a1];
+                                node1 = Node::new(Some(id1), DLType::Nominal).unwrap();
+                            }
+
+                            let abi = ABI::new_ca(abi_symbol.clone(), node1).unwrap();
+
+                            Ok((abi, to_be_added, current_id))
+                        },
+                        (_, _) => invalid_data_result(format!("incompatible type for abox item with number of elements: {}", s).as_str())
+                    }
+                },
+            }
+        } else {
+            invalid_data_result(format!("unknown symbol in abox item: {}", abox_symbol).as_str())
+        }
+    }
 }
 
 pub fn abi_to_string(tbi: &ABI, symbols: &HashMap<String, (usize, DLType)>) -> Option<String> {

@@ -139,6 +139,35 @@ pub fn parse_symbols_native(
     }
 }
 
+pub fn parse_abox_native(filename: &str, mut symbols: &HashMap<String, (usize, DLType)>, verbose: bool) -> io::Result<TB> {
+    /*
+    this function might add nominal symbols dynamically, so we need to actuallize symbols :/
+    dangerous manipulation here...
+     */
+    let file_result  = File::open(filename);
+
+    match file_result {
+        Err(e) => {
+            println!("couldn't read the file: {}", e);
+            Result::Err(e)
+        },
+        Ok(file) => {
+            let reader = BufReader::new(file);
+
+            let mut begin_abox_encountered = false;
+            let mut end_abox_encountered = false;
+
+            let mut tb = TB::new();
+
+            for line_result in reader.lines() {
+                match line_result {
+
+                }
+            }
+        },
+    }
+}
+
 pub fn parse_tbox_native(filename: &str, symbols: &HashMap<String, (usize, DLType)>, verbose: bool) -> io::Result<TB> {
     let file_result = File::open(filename);
 
