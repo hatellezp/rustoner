@@ -12,8 +12,9 @@ use std::{fmt, io};
 use std::fs::File;
 use std::io::Write;
 use std::iter::Map;
-use crate::dl_lite::native_filetype_utilities::{parse_symbols_native, parse_tbox_native};
+use crate::dl_lite::native_filetype_utilities::{parse_symbols_native, parse_tbox_native, parse_abox_native};
 use crate::dl_lite::abox::AB;
+
 /*
 an ontology model
     - name is the name of the ontology
@@ -28,6 +29,7 @@ pub struct Ontology {
     name: String,
     symbols: HashMap<String, (usize, DLType)>,
     tbox: TB,
+    current_abox: AB,
 }
 
 impl fmt::Display for Ontology {
@@ -48,6 +50,10 @@ impl fmt::Display for Ontology {
 
         // add the tbox
         formatted = format!("----<TBox>\n{}\n", &self.tbox_to_string(&self.tbox));
+        s.push_str(formatted.as_str());
+
+        // add the tbox
+        formatted = format!("----<ABox>\n{}\n", &self.abox_to_string(&self.current_abox));
         s.push_str(formatted.as_str());
 
         // last bracket
@@ -74,9 +80,17 @@ impl Ontology {
             name: s,
             symbols,
             tbox: TB::new(),
+            current_abox: AB::new(),
         }
     }
 
+    pub fn abox(&self) -> &AB {
+        &self.current_abox
+    }
+
+    pub fn symbols_as_mut(&mut self) -> &mut HashMap<String, (usize, DLType)> {
+        &mut self.symbols
+    }
     // ------------------------------------------------------------------------
     // modifications of the ontology
 
@@ -123,6 +137,67 @@ impl Ontology {
             }
         } else {
             println!("warning: no symbols detected, no tbox item will be added");
+        }
+    }
+
+    pub fn new_abox(&mut self, filename: &str, filetype: FileType, verbose: bool) {
+        if self.symbols.len() != 0 {
+           match filetype {
+               FileType::JSON => {
+                   if verbose {
+                       println!("the json parser is not yet implemented");
+                   }
+
+                   panic!("not implemented yet!")},
+               FileType::NATIVE => {
+                   let ab_result = parse_abox_native(filename, &mut self.symbols, verbose);
+
+                   match ab_result {
+                       Err(error) => {
+                            if verbose {
+                                println!("couldn't parse abox from file: {}", filename);
+                            }
+                       },
+                       Ok(ab) => {
+                          self.current_abox = ab;
+                       }
+                   }
+               },
+           }
+        } else {
+            println!("warning: no symbols detected, no abox item will be added");
+        }
+    }
+
+    pub fn add_abis(&mut self, filename: &str, filetype: FileType, verbose: bool) {
+        if self.symbols.len() != 0 {
+            match filetype {
+                FileType::JSON => {
+                    if verbose {
+                        println!("the json parser is not yet implemented");
+                    }
+
+                    panic!("not implemented yet!")},
+                FileType::NATIVE => {
+                    let ab_result = parse_abox_native(filename, &mut self.symbols, verbose);
+
+                    match ab_result {
+                        Err(error) => {
+                            if verbose {
+                                println!("couldn't parse abox from file: {}", filename);
+                            }
+                        },
+                        Ok(ab) => {
+                            for item in ab.items() {
+                                self.current_abox.add(item.clone());
+                            }
+                            self.current_abox = ab;
+                        }
+                    }
+                },
+            }
+        } else {
+            println!("warning: no symbols detected, no abox item will be added");
         }
     }
 
@@ -354,6 +429,23 @@ impl Ontology {
         s
     }
 
+    pub fn abox_to_string(&self, ab: &AB) -> String {
+        let mut s = String::from("    {\n");
+
+        for abi in ab.items() {
+            let abi_string = self.abi_to_string(abi);
+
+            println!("{} gave {}", abi, &abi_string);
+
+            let abi_formatted = format!("     : {}\n", abi_string);
+
+            s.push_str(abi_formatted.as_str());
+        }
+
+        s.push_str("    }");
+        s
+    }
+
     // I suppose that the tbi is in the self.tbox
     fn tbi_to_string(&self, tbi: &TBI) -> String {
         let lside = self.node_to_string(tbi.lside());
@@ -364,14 +456,27 @@ impl Ontology {
         s
     }
 
-    /*
-    fn to_serde_json(&self) -> Value {
-        let tbis: Vec<Value> = Vec::new();
+    fn abi_to_string(&self, abi: &ABI) -> String {
+        let s = match abi {
+            ABI::RA(r, a, b) => {
+                let r = self.node_to_string(r);
+                let a = self.node_to_string(a);
+                let b = self.node_to_string(b);
 
+                let s = format!("{},{} : {}", a, b, r);
+                s
+            },
+            ABI::CA(c, a) => {
+                let c = self.node_to_string(c);
+                let a = self.node_to_string(a);
 
+                let s = format!("{} : {}", a, c);
+                s
+            },
+        };
+
+        s
     }
-
-     */
 
     pub fn tbox_to_file(
         &self,

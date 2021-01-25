@@ -225,12 +225,12 @@ pub fn tbi_to_string(tbi: &TBI, symbols: &HashMap<String, (usize, DLType)>) -> O
 
 // this approach is a dynamic one, concepts must be present in symbols,
 // but nominals are added dynamically
-pub fn string_to_abi(s: &str, symbols: &HashMap<String, (usize, DLType)>, mut current_id: usize) -> io::Result<(ABI, Vec<(String, (usize, DLType))>, usize)> {
+pub fn string_to_abi(s: &str, symbols: &mut HashMap<String, (usize, DLType)>, mut current_id: usize) -> (io::Result<(ABI, Vec<(String, (usize, DLType))>)>, usize) {
     let mut splitted = s.trim();
     let mut splitted: Vec<&str> = splitted.split(":").collect();
 
     if splitted.len() != 2 {
-       invalid_data_result(format!("abox item must have exactly one ':' character {}", s).as_str())
+        (invalid_data_result(format!("abox item must have exactly one ':' character {}", s).as_str()), current_id)
     } else {
         // remeber that abi must have only base concepts
         let abox_symbol = splitted[1].trim();
@@ -240,7 +240,7 @@ pub fn string_to_abi(s: &str, symbols: &HashMap<String, (usize, DLType)>, mut cu
             let abox_symbol = string_to_node(abox_symbol, symbols);
 
             match &abox_symbol {
-                Err(e) => result_from_error(e),
+                Err(e) => (result_from_error(e), current_id),
                 Ok(abi_symbol) => {
                     let constants: Vec<&str> = splitted[0].trim().split(",").collect();
                     let mut to_be_added: Vec<(String, (usize, DLType))>;
@@ -279,7 +279,7 @@ pub fn string_to_abi(s: &str, symbols: &HashMap<String, (usize, DLType)>, mut cu
 
                             let abi = ABI::new_ra(abi_symbol.clone(), node1, node2).unwrap();
 
-                            Ok((abi, to_be_added, current_id))
+                            (Ok((abi, to_be_added)), current_id)
                         },
                         (DLType::BaseConcept, 1) => {
                             let a1 = constants[0].trim();
@@ -301,14 +301,14 @@ pub fn string_to_abi(s: &str, symbols: &HashMap<String, (usize, DLType)>, mut cu
 
                             let abi = ABI::new_ca(abi_symbol.clone(), node1).unwrap();
 
-                            Ok((abi, to_be_added, current_id))
+                            (Ok((abi, to_be_added)), current_id)
                         },
-                        (_, _) => invalid_data_result(format!("incompatible type for abox item with number of elements: {}", s).as_str())
+                        (_, _) => (invalid_data_result(format!("incompatible type for abox item with number of elements: {}", s).as_str()), current_id)
                     }
                 },
             }
         } else {
-            invalid_data_result(format!("unknown symbol in abox item: {}", abox_symbol).as_str())
+            (invalid_data_result(format!("unknown symbol in abox item: {}", abox_symbol).as_str()), current_id)
         }
     }
 }

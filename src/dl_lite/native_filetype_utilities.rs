@@ -4,8 +4,9 @@ use std::collections::{HashMap, VecDeque};
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader, Error, ErrorKind};
-use crate::dl_lite::string_formatter::{string_to_symbol, PS, string_to_tbi};
+use crate::dl_lite::string_formatter::{string_to_symbol, PS, string_to_tbi, string_to_abi};
 use crate::dl_lite::tbox::TB;
+use crate::dl_lite::abox::AB;
 
 pub fn parse_symbols_native(
     filename: &str,
@@ -139,7 +140,7 @@ pub fn parse_symbols_native(
     }
 }
 
-pub fn parse_abox_native(filename: &str, mut symbols: &HashMap<String, (usize, DLType)>, verbose: bool) -> io::Result<TB> {
+pub fn parse_abox_native(filename: &str, symbols: &mut HashMap<String, (usize, DLType)>, verbose: bool) -> io::Result<AB> {
     /*
     this function might add nominal symbols dynamically, so we need to actuallize symbols :/
     dangerous manipulation here...
@@ -148,7 +149,9 @@ pub fn parse_abox_native(filename: &str, mut symbols: &HashMap<String, (usize, D
 
     match file_result {
         Err(e) => {
-            println!("couldn't read the file: {}", e);
+            if verbose {
+                println!("couldn't read the file: {}", e);
+            }
             Result::Err(e)
         },
         Ok(file) => {
@@ -157,12 +160,100 @@ pub fn parse_abox_native(filename: &str, mut symbols: &HashMap<String, (usize, D
             let mut begin_abox_encountered = false;
             let mut end_abox_encountered = false;
 
-            let mut tb = TB::new();
+            let (_, id_bound) = find_bound_of_symbols(symbols);
+            let mut current_id = id_bound + 1;
+
+            let mut ab = AB::new();
 
             for line_result in reader.lines() {
-                match line_result {
-
+                if verbose {
+                    println!("now parsing: {:?}", line_result);
                 }
+
+                match line_result {
+                    Err(e) => {
+                        if verbose {
+                            println!("passing this line because of: {}", &e);
+                        }
+                    },
+                    Ok(line) => {
+                        let line_trimmed = line.trim();
+
+                        if line_trimmed == "BEGINABOX" {
+                            begin_abox_encountered = true;
+
+                            if verbose {
+                                println!("'BEGINABOX' found, begin parsing");
+                            }
+
+                            continue;
+                        }
+
+                        if line_trimmed == "ENDABOX" {
+                            end_abox_encountered = true;
+
+                            if verbose {
+                                println!("'ENDABOX' found, ending parsing");
+                            }
+                            continue;
+                        }
+
+                        if begin_abox_encountered && !end_abox_encountered {
+                            let mut vec: Vec<&str> = line_trimmed.split("//").collect();
+
+                            let not_ignored = vec[0].clone();
+
+                            if verbose {
+                                let ignored: String = String::from(vec[1..].join("//").trim());
+
+                                if &ignored != "" {
+                                    println!("this comment will be ignored: {}", &ignored);
+                                }
+                            }
+
+                            let (parsed_result, current_id_result) = string_to_abi(&not_ignored, symbols, current_id);
+                            current_id = current_id_result;
+
+                            match parsed_result {
+                                Ok((abi, mut to_be_added)) => {
+                                    ab.add(abi);
+
+                                    if !to_be_added.is_empty() {
+                                        while !(&to_be_added).is_empty() {
+                                            let (s, (id, dltype)) = to_be_added.pop().unwrap();
+
+                                            symbols.insert(s, (id, dltype));
+                                        }
+                                    }
+                                },
+                                Err(e) => {
+                                    if verbose {
+                                        println!("couldn't parse: {}", &e);
+                                    }
+                                },
+                            }
+                        } else {
+                            if verbose {
+                                println!("line won't be parsed, not in between 'BEGINTBOX' and 'ENDTBOX' bounds");
+                            }
+                        }
+                    },
+                }
+            }
+
+            if !end_abox_encountered {
+                if verbose {
+                    println!("'ENDTBOX' not encountered, returning nothing");
+                }
+
+                let new_error = Error::new(
+                    ErrorKind::UnexpectedEof,
+                    "'ENDABOX' not found before file ended",
+                );
+
+                Result::Err(new_error)
+            } else {
+                Result::Ok((ab))
             }
         },
     }
@@ -271,5 +362,40 @@ pub fn parse_tbox_native(filename: &str, symbols: &HashMap<String, (usize, DLTyp
                 Result::Ok((tb))
             }
         },
+    }
+}
+
+pub fn find_bound_of_symbols(symbols: &HashMap<String, (usize, DLType)>) -> (usize, usize) {
+    if symbols.is_empty() {
+        (0, 0)
+    } else {
+        let mut lower: Option<usize> = Option::None;
+        let mut upper: Option<usize> = Option::None;
+
+        for (_, (id, _)) in symbols {
+            lower = match lower {
+                Option::None => Some(*id),
+                Some(old_id) => {
+                    if old_id > *id {
+                        Some(*id)
+                    } else {
+                       Some(old_id)
+                    }
+                }
+            };
+
+            upper = match upper {
+                Option::None => Some(*id),
+                Some(old_id) => {
+                    if old_id < *id {
+                        Some(*id)
+                    } else {
+                        Some(old_id)
+                    }
+                }
+            };
+        }
+
+        (lower.unwrap(), upper.unwrap())
     }
 }

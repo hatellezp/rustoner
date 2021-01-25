@@ -17,6 +17,8 @@ use crate::dl_lite::types::DLType;
 use std::mem;
 use std::iter::Filter;
 use std::process::id;
+use crate::dl_lite::native_filetype_utilities::parse_abox_native;
+use std::collections::HashMap;
 // use std::fs::File;
 
 fn main() {
@@ -39,5 +41,14 @@ fn main() {
     onto.auto_complete(false);
     println!("{}", &onto);
 
+    let abox1_native = "src/dl_lite/examples/abox1.dllite";
+    let mut symbols = onto.symbols_as_mut();
+
+    let ab = parse_abox_native(abox1_native, symbols, true);
+
+    onto.new_abox(abox1_native, FileType::NATIVE, true);
+
+    println!("{:?}", ab);
+    println!("{}", &onto);
 }
 
