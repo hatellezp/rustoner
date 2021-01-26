@@ -31,24 +31,17 @@ fn main() {
     let mut onto = Ontology::new("Ontology1".to_string());
 
     let ontology1 = "src/dl_lite/examples/ontology1.dllite";
+    let abox1 = "src/dl_lite/examples/abox1.dllite";
+    let abox2 = "src/dl_lite/examples/abox2.dllite";
 
     onto.add_symbols(ontology1, native);
     onto.add_tbis(ontology1, native, false);
 
-    println!("{}", &onto);
-
-    println!("--------------------------------------");
     onto.auto_complete(false);
-    println!("{}", &onto);
 
-    let abox1_native = "src/dl_lite/examples/abox1.dllite";
-    let mut symbols = onto.symbols_as_mut();
+    onto.new_abox(abox1, FileType::NATIVE, false);
+    onto.add_abis(abox2, FileType::NATIVE, false);
 
-    let ab = parse_abox_native(abox1_native, symbols, true);
-
-    onto.new_abox(abox1_native, FileType::NATIVE, true);
-
-    println!("{:?}", ab);
     println!("{}", &onto);
 }
 
