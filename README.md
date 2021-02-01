@@ -16,24 +16,36 @@ for implicit information in your data (reason and inference).
 
 ## Use
 
-```shell script
-./dllitemm
+### Completing axioms 
+Suppose you want to complete a group of axioms 
+_"a man is human"_ and _"a human is mortal"_.
+Then put them in a text file *__are_men_mortals__*:
 ```
 BEGINSYMBOL
 concept : Man
 concept : Human
-ENDSYMBOL
+concept : Mortal
+ENDSYMBOL // you can put a comment here if you want
 
 BEGINTBOX
-Man : Human // this is a comment
+Man : Human
+Human : Mortal
 ENDTBOX
-// this is also a comment
-
-BEGINABOX
-hatellezp : Man
-// Socrates : Man (this line is also ignored)
-ENDABOX
 ```
+and if you want your answer in a file called *__answer__* then call 
+rustoner as follows:
+```shell script
+./rustoner --task ctb --path_tbox are_men_mortals --path_output answer
+```
+
+You should get something like this in *__answer__*:
+```
+BEGINTBOX
+Man : Mortal
+ENDTBOX
+```
+
+### Finding Consequences
 
 
 The idea is really simple, this engine uses a DL formalim to
