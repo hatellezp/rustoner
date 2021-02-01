@@ -1,5 +1,5 @@
 [package]
-name = "dllitemm"
+name = "rustoner"
 version = "0.1.0"
 authors = ["hatellezp <hatellezp@gmail.com>"]
 edition = "2018"
@@ -9,4 +9,5 @@ edition = "2018"
 [dependencies]
 serde = { version = "*", features = ["derive"] }
 serde_json = "*"
-# serde_derive = "*"
+structopt = { version = "0.3", features = ["paw"] }
+paw = "1.0"

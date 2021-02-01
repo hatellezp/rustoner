@@ -1,8 +1,40 @@
 # rustoner: a Description Logic reasoner written in rust
-**(under heavy developpement)**
+**(under heavy (not that heavy now...) developpement)**
 
 
 ## Description 
+
+[Description Logics](http://dl.kr.org) allow for fast and accurate reasoner systems. It is the main objective of DLs.
+This project has a first objective to implement in [rust](https://www.rust-lang.org/) a reasoner for the simple logic
+[dl_lite_r](https://link.springer.com/article/10.1007/s10817-007-9078-x).
+
+DLs works like model theory, where you have axioms (that we put in a TBox) and also some grounded knowledge 
+(that we put in ABoxes).
+From this you can, under the limitations of the logic that you use (*dl_lite_r* here), ask
+question (queries), know if there are problems in your data (consistency verification) and sometimes ask
+for implicit information in your data (reason and inference).
+
+## Use
+
+```shell script
+./dllitemm
+```
+BEGINSYMBOL
+concept : Man
+concept : Human
+ENDSYMBOL
+
+BEGINTBOX
+Man : Human // this is a comment
+ENDTBOX
+// this is also a comment
+
+BEGINABOX
+hatellezp : Man
+// Socrates : Man (this line is also ignored)
+ENDABOX
+```
+
 
 The idea is really simple, this engine uses a DL formalim to
 implement reasoning.
