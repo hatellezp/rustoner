@@ -14,7 +14,6 @@ use crate::dl_lite::ontology::Ontology;
 use crate::dl_lite::tbox::TB;
 use crate::dl_lite::tbox_item::TBI;
 use crate::dl_lite::types::DLType;
-use std::mem;
 use std::iter::Filter;
 use std::process::id;
 use crate::dl_lite::native_filetype_utilities::parse_abox_native;
@@ -43,5 +42,9 @@ fn main() {
     onto.add_abis(abox2, FileType::NATIVE, false);
 
     println!("{}", &onto);
+
+    onto.tbox_to_file("src/dl_lite/examples/tbox_dumped2.dllite", FileType::NATIVE, false);
+    onto.abox_to_file("src/dl_lite/examples/abox_dumped1.dllite", FileType::NATIVE, false);
+
 }
 

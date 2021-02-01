@@ -4,7 +4,7 @@ use std::collections::{HashMap, VecDeque};
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader, Error, ErrorKind};
-use crate::dl_lite::string_formatter::{string_to_symbol, PS, string_to_tbi, string_to_abi};
+use crate::dl_lite::string_formatter::{string_to_symbol, PS, string_to_tbi, string_to_abi, tbi_to_string, abi_to_string};
 use crate::dl_lite::tbox::TB;
 use crate::dl_lite::abox::AB;
 
@@ -363,6 +363,60 @@ pub fn parse_tbox_native(filename: &str, symbols: &HashMap<String, (usize, DLTyp
             }
         },
     }
+}
+
+pub fn tbox_to_native_string(tbox: &TB, symbols: &HashMap<String, (usize, DLType)>, dont_write_trivial: bool) -> Option<String> {
+    let mut res = String::new();
+
+    // I should define a header for this files
+    let header = "";
+    res.push_str(header);
+
+    res.push_str("BEGINTBOX\n");
+
+    for tbi in tbox.items() {
+        if !(tbi.is_trivial() && dont_write_trivial) {
+            let tbi_str_op = tbi_to_string(tbi, symbols);
+
+            match tbi_str_op {
+                Some(tbi_str) => {
+                    res.push_str(tbi_str.as_str());
+                    res.push_str("\n");
+                },
+                _ => (),
+            }
+        }
+    }
+
+    res.push_str("ENDTBOX\n");
+    Some(res)
+}
+
+pub fn abox_to_native_string(abox: &AB, symbols: &HashMap<String, (usize, DLType)>, dont_write_trivial: bool) -> Option<String> {
+    let mut res = String::new();
+
+    // I should define a header for this files
+    let header = "";
+    res.push_str(header);
+
+    res.push_str("BEGINABOX\n");
+
+    for abi in abox.items() {
+        if !(abi.is_trivial() && dont_write_trivial) {
+            let abi_str_op = abi_to_string(abi, symbols);
+
+            match abi_str_op {
+                Some(abi_str) => {
+                    res.push_str(abi_str.as_str());
+                    res.push_str("\n");
+                },
+                _ => (),
+            }
+        }
+    }
+
+    res.push_str("ENDABOX\n");
+    Some(res)
 }
 
 pub fn find_bound_of_symbols(symbols: &HashMap<String, (usize, DLType)>) -> (usize, usize) {

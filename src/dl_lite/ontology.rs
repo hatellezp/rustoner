@@ -12,7 +12,7 @@ use std::{fmt, io};
 use std::fs::File;
 use std::io::Write;
 use std::iter::Map;
-use crate::dl_lite::native_filetype_utilities::{parse_symbols_native, parse_tbox_native, parse_abox_native};
+use crate::dl_lite::native_filetype_utilities::{parse_symbols_native, parse_tbox_native, parse_abox_native, abox_to_native_string, tbox_to_native_string};
 use crate::dl_lite::abox::AB;
 
 /*
@@ -191,7 +191,7 @@ impl Ontology {
                             for item in ab.items() {
                                 self.current_abox.add(item.clone());
                             }
-                            self.current_abox = ab;
+                            // self.current_abox = ab; // stupid line :(
                         }
                     }
                 },
@@ -435,7 +435,7 @@ impl Ontology {
         for abi in ab.items() {
             let abi_string = self.abi_to_string(abi);
 
-            println!("{} gave {}", abi, &abi_string);
+            // println!("{} gave {}", abi, &abi_string);
 
             let abi_formatted = format!("     : {}\n", abi_string);
 
@@ -517,11 +517,88 @@ impl Ontology {
                     }
                     _ => false,
                 }
-            }
+            },
+            FileType::NATIVE => {
+                let tbox_as_string_op = tbox_to_native_string(&self.tbox, &self.symbols, dont_write_trivial);
+
+                match tbox_as_string_op {
+                    Some(tbox_as_string) => {
+                        let mut file_res = File::create(filename);
+
+                        match file_res {
+                            Result::Err(e) => {
+                                println!("something went wrong: {}", e);
+                                false
+                            }
+                            Result::Ok(mut file) => {
+                                let result = file.write(tbox_as_string.as_bytes());
+
+                                match result {
+                                    Result::Err(e) => {
+                                        println!(
+                                            "something went wrong while writting to the file: {}",
+                                            e
+                                        );
+                                        false
+                                    }
+                                    Result::Ok(_) => true,
+                                }
+                            }
+                        }
+                    }
+                    _ => false,
+                }
+            },
             _ => {
                 println!("not implemented!");
                 false
             }
         }
     }
+
+    pub fn abox_to_file(
+        &self,
+        filename: &str,
+        filetype: FileType,
+        dont_write_trivial: bool,
+    ) -> bool {
+        match filetype {
+            FileType::NATIVE => {
+                let abox_as_string_op = abox_to_native_string(&self.current_abox, &self.symbols, dont_write_trivial);
+
+                match abox_as_string_op {
+                    Some(abox_as_string) => {
+                        let mut file_res = File::create(filename);
+
+                        match file_res {
+                            Result::Err(e) => {
+                                println!("something went wrong: {}", e);
+                                false
+                            }
+                            Result::Ok(mut file) => {
+                                let result = file.write(abox_as_string.as_bytes());
+
+                                match result {
+                                    Result::Err(e) => {
+                                        println!(
+                                            "something went wrong while writting to the file: {}",
+                                            e
+                                        );
+                                        false
+                                    }
+                                    Result::Ok(_) => true,
+                                }
+                            }
+                        }
+                    }
+                    _ => false,
+                }
+            },
+            _ => {
+                println!("not implemented!");
+                false
+            }
+        }
+    }
+
 }

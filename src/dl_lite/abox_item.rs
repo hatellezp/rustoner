@@ -59,6 +59,13 @@ impl ABI {
         }
     }
 
+    pub fn is_trivial(&self) -> bool {
+        match self {
+            ABI::CA(c, a) => c.t() == DLType::Top,
+            _ => false,
+        }
+    }
+
     pub fn t(&self) -> DLType {
         match self {
             ABI::RA(_, _, _) => DLType::BaseRole,

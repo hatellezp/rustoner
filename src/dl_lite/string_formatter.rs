@@ -67,7 +67,8 @@ pub fn node_to_string(
             let vec_of_s = find_keys_for_value(symbols, *n);
 
             if vec_of_s.len() > 0 {
-                Some(vec_of_s[0].clone())
+                current.push_str(vec_of_s[0].as_str());
+                Some(current)
             } else {
                 Option::None
             }
@@ -313,8 +314,45 @@ pub fn string_to_abi(s: &str, symbols: &mut HashMap<String, (usize, DLType)>, mu
     }
 }
 
-pub fn abi_to_string(tbi: &ABI, symbols: &HashMap<String, (usize, DLType)>) -> Option<String> {
-    Option::None
+pub fn abi_to_string(abi: &ABI, symbols: &HashMap<String, (usize, DLType)>) -> Option<String> {
+    match abi {
+        ABI::CA(c, a) => {
+            let c_str_op = node_to_string(c, symbols, "".to_string());
+            let a_str_op = node_to_string(a, symbols, "".to_string());
+
+            match (c_str_op, a_str_op) {
+                (Some(c_str), Some(a_str)) => {
+                    let mut res = String::new();
+                    res.push_str(a_str.as_str());
+                    res.push_str(" : ");
+                    res.push_str(c_str.as_str());
+
+                    Some(res)
+                },
+                (_, _) => Option::None,
+            }
+        },
+        ABI::RA(r, a, b) => {
+            let r_str_op = node_to_string(r, symbols, "".to_string());
+            let a_str_op = node_to_string(a, symbols, "".to_string());
+            let b_str_op = node_to_string(b, symbols, "".to_string());
+
+            match (r_str_op, a_str_op, b_str_op) {
+                (Some(r_str), Some(a_str), Some(b_str)) => {
+                    let mut res = String::from("(");
+                    res.push_str(a_str.as_str());
+                    res.push_str(", ");
+                    res.push_str(b_str.as_str());
+                    res.push_str(")");
+                    res.push_str(" : ");
+                    res.push_str(r_str.as_str());
+
+                    Some(res)
+                },
+                (_, _, _) => Option::None,
+            }
+        },
+    }
 }
 
 //-------------------------------------------------------------------------------------------------
