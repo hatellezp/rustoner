@@ -215,7 +215,7 @@ pub fn tbi_to_string(tbi: &TBI, symbols: &HashMap<String, (usize, DLType)>) -> O
         (Some(lstr), Some(rstr)) => {
             let mut res = String::new();
             res.push_str(lstr.as_str());
-            res.push_str(" : ");
+            res.push_str(" < ");
             res.push_str(rstr.as_str());
 
             Some(res)

@@ -98,13 +98,13 @@ impl Ontology {
         self.tbox.sort();
     }
 
-    pub fn add_symbols(&mut self, filename: &str, filetype: FileType) {
+    pub fn add_symbols(&mut self, filename: &str, filetype: FileType, verbose: bool) {
         let new_symbols_result = match filetype {
             FileType::JSON => {
                 parse_symbols_json(filename)
             },
             FileType::NATIVE => {
-                parse_symbols_native(filename, false) // don't like this :/ (this is a smiley face)
+                parse_symbols_native(filename, verbose) // don't like this :/ (this is a smiley face)
             },
         };
         match new_symbols_result {

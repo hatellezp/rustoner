@@ -65,7 +65,28 @@ pub fn parse_symbols_native(
                         if begin_symbol_encountered && !end_symbol_encountered {
                             let mut vec: Vec<&str> = line_trimmed.split("//").collect();
 
-                            let not_ignored = vec[0].clone();
+                            let not_ignored = vec[0].clone().trim();
+
+                            if not_ignored == "BEGINSYMBOL" {
+                                begin_symbol_encountered = true;
+
+                                if verbose {
+                                    println!("'BEGINSYMBOL' found, begin parsing");
+                                }
+
+                                continue;
+                            }
+
+                            if not_ignored == "ENDSYMBOL" {
+                                end_symbol_encountered = true;
+
+                                if verbose {
+                                    println!("'ENDSYMBOL' found, ending parsing");
+                                }
+                                continue;
+                            }
+
+
 
                             if verbose {
                                 let ignored: String = String::from(vec[1..].join("//").trim());
@@ -109,7 +130,7 @@ pub fn parse_symbols_native(
                 if verbose {
                     println!("'ENDSYMBOL' not encountered, returning nothing");
                 }
-
+                println!("putaindljfldfldjf-----------------");
                 let new_error = Error::new(
                     ErrorKind::UnexpectedEof,
                     "'ENDSYMBOL' not found before file ended",
@@ -311,7 +332,27 @@ pub fn parse_tbox_native(filename: &str, symbols: &HashMap<String, (usize, DLTyp
                         if begin_tbox_encountered && !end_tbox_encountered {
                             let mut vec: Vec<&str> = line_trimmed.split("//").collect();
 
-                            let not_ignored = vec[0].clone();
+                            let not_ignored = vec[0].clone().trim();
+
+                            if not_ignored == "BEGINTBOX" {
+                                begin_tbox_encountered = true;
+
+                                if verbose {
+                                    println!("'BEGINTBOX' found, begin parsing");
+                                }
+
+                                continue;
+                            }
+
+                            if not_ignored == "ENDTBOX" {
+                                end_tbox_encountered = true;
+
+                                if verbose {
+                                    println!("'ENDTBOX' found, ending parsing");
+                                }
+                                continue;
+                            }
+
 
                             if verbose {
                                 let ignored: String = String::from(vec[1..].join("//").trim());

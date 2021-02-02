@@ -33,6 +33,9 @@ pub struct Cli {
     #[structopt(short="t", long="task")]
     pub task: Task,
 
+    #[structopt(long="verbose")]
+    pub verbose: bool,
+
     #[structopt(parse(from_os_str), long="tbox")]
     pub path_tbox: std::path::PathBuf,
 

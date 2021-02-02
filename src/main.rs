@@ -30,14 +30,15 @@ fn main() {
                     let path_symbols = path_symbols.to_str().unwrap();
                     let symbols_ft = get_filetype(path_symbols);
 
-                    onto.add_symbols(path_symbols, symbols_ft);
+                    onto.add_symbols(path_symbols, symbols_ft, args.verbose);
                 },
                 Option::None => {
-                    onto.add_symbols(path_tbox, tbox_ft);
+                    println!("here: {:?} and {:?}", &path_tbox, &tbox_ft);
+                    onto.add_symbols(path_tbox, tbox_ft, args.verbose);
                 },
             }
 
-            onto.add_tbis(path_tbox, tbox_ft, false);
+            onto.add_tbis(path_tbox, tbox_ft, args.verbose);
             onto.auto_complete(false);
 
             match path_output_op {
