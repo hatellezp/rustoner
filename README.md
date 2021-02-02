@@ -29,8 +29,8 @@ role : eats // and role are binary relations (that we don't use in this really s
 ENDSYMBOL // you can put a comment here if you want
 
 BEGINTBOX
-Man : Human
-Human : Mortal
+Man < Human
+Human < Mortal
 ENDTBOX
 ```
 and if you want your answer in a file called *__answer__* then call 
@@ -53,7 +53,15 @@ the option
 ```
 
 **Note**: if you don't specify an output file, you will get your answer
-on _stdout_.
+on _stdout_:
+```shell script
+----<TBox>
+    {
+     : Man (<) Mortal
+     : Human (<) Mortal
+     : Man (<) Human
+    }
+```
 
 ### Finding Consequences
 
@@ -67,8 +75,8 @@ concept : Mortal
 ENDSYMBOL 
 
 BEGINTBOX
-Man : Human
-Human : Mortal
+Man < Human
+Human < Mortal
 ENDTBOX
 ```
 
@@ -89,6 +97,7 @@ You should get the following in **answer**:
 BEGINABOX:
 Socrates: Human
 Socreates: Mortal
+ENDABOX
 ```
 
 ### Queriyng
