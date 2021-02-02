@@ -11,7 +11,7 @@ This project has a first objective to implement in [rust](https://www.rust-lang.
 DLs works like model theory, where you have axioms (that we put in a TBox) and also some grounded knowledge 
 (that we put in ABoxes).
 From this you can, under the limitations of the logic that you use (*dl_lite_r* here), ask
-question (queries), know if there are problems in your data (consistency verification) and sometimes ask
+questions (queries), know if there are problems in your data (consistency verification) and sometimes ask
 for implicit information in your data (reason and inference).
 
 ## Use
@@ -36,7 +36,7 @@ ENDTBOX
 and if you want your answer in a file called *__answer__* then call 
 rustoner as follows:
 ```shell script
-./rustoner --task ctb --path_tbox are_men_mortals --path_output answer
+./rustoner --task ctb --tbox are_men_mortals --output answer
 ```
 
 You should get something like this in *__answer__*:
@@ -46,7 +46,52 @@ Man : Mortal
 ENDTBOX
 ```
 
+You can put your *symbols* declaration in a file elsewhere and specify it with
+the option
+```
+--symbol path_to_symbol_file
+```
+
+**Note**: if you don't specify an output file, you will get your answer
+on _stdout_.
+
 ### Finding Consequences
+
+Same as the previous task, only know you want to know consequences of
+grounded assertions. Put your axioms in  **are_men_mortals**:
+```
+BEGINSYMBOL
+concept : Man
+concept : Human
+concept : Mortal
+ENDSYMBOL 
+
+BEGINTBOX
+Man : Human
+Human : Mortal
+ENDTBOX
+```
+
+and you knowledge in a file **a_man**:
+```
+BEGINABOX
+Socrates: Man
+ENDABOX
+```
+
+Call **rustoner** with the complete abox task:
+```shell script
+./rustoner --task cab --tbox --abox a_man --output answer
+```
+
+You should get the following in **answer**:
+```
+BEGINABOX:
+Socrates: Human
+Socreates: Mortal
+```
+
+### Queriyng
 
 ### Ranking Assertions
 
