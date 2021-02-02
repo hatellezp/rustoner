@@ -2,13 +2,14 @@ use std::{fs, io};
 
 use serde_json::{Result, Value};
 
-use crate::dl_lite::abox::AB;
+// use crate::dl_lite::abox::AB;
 use crate::dl_lite::abox_item::ABI;
-use crate::dl_lite::node::{Mod, Node};
+use crate::dl_lite::node::Node;
+// use crate::dl_lite::node::Mod;
 use crate::dl_lite::tbox::TB;
 use crate::dl_lite::tbox_item::TBI;
 use crate::dl_lite::types::DLType;
-use serde::Deserializer;
+// use serde::Deserializer;
 use std::collections::HashMap;
 use crate::dl_lite::string_formatter::{node_to_string, string_to_node};
 use std::io::{Error, ErrorKind};
@@ -98,7 +99,7 @@ pub fn parse_symbol(s_vec: &Vec<Value>, latest: usize) -> (io::Result<(&str, usi
                         new_latest = id;
                     }
 
-                    (Ok((name, id, dlt.unwrap())), latest)
+                    (Ok((name, id, dlt.unwrap())), new_latest)
                 }
             },
         }

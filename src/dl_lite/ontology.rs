@@ -2,16 +2,16 @@ use crate::dl_lite::tbox::TB;
 use crate::dl_lite::types::DLType;
 use std::collections::HashMap;
 use crate::dl_lite::abox_item::ABI;
-use crate::dl_lite::json_filetype_utilities::{parse_symbols_json, parse_tbox_json, tbox_to_value, result_from_error, parse_symbol};
+use crate::dl_lite::json_filetype_utilities::{parse_symbols_json, parse_tbox_json, tbox_to_value};
 use crate::dl_lite::node::{Mod, Node};
 use crate::dl_lite::tbox_item::TBI;
 use crate::kb::types::FileType;
 use serde_json::json;
-use serde_json::Value;
+// use serde_json::Value;
 use std::{fmt, io};
 use std::fs::File;
 use std::io::Write;
-use std::iter::Map;
+// use std::iter::Map;
 use crate::dl_lite::native_filetype_utilities::{parse_symbols_native, parse_tbox_native, parse_abox_native, abox_to_native_string, tbox_to_native_string};
 use crate::dl_lite::abox::AB;
 
@@ -549,10 +549,6 @@ impl Ontology {
                     _ => false,
                 }
             },
-            _ => {
-                println!("not implemented!");
-                false
-            }
         }
     }
 

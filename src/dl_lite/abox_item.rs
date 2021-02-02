@@ -61,7 +61,7 @@ impl ABI {
 
     pub fn is_trivial(&self) -> bool {
         match self {
-            ABI::CA(c, a) => c.t() == DLType::Top,
+            ABI::CA(c, _) => c.t() == DLType::Top,
             _ => false,
         }
     }

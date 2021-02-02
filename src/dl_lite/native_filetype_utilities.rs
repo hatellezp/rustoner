@@ -1,6 +1,7 @@
 use crate::dl_lite::types::DLType;
-use std::cmp::Ordering;
-use std::collections::{HashMap, VecDeque};
+// use std::cmp::Ordering;
+// use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader, Error, ErrorKind};
@@ -133,8 +134,7 @@ pub fn parse_symbols_native(
 
                     symbols.insert(String::from(name), (i + 2, t));
                 }
-
-                Result::Ok((symbols))
+                Result::Ok(symbols)
             }
         },
     }
@@ -253,7 +253,7 @@ pub fn parse_abox_native(filename: &str, symbols: &mut HashMap<String, (usize, D
 
                 Result::Err(new_error)
             } else {
-                Result::Ok((ab))
+                Result::Ok(ab)
             }
         },
     }
@@ -359,7 +359,7 @@ pub fn parse_tbox_native(filename: &str, symbols: &HashMap<String, (usize, DLTyp
 
                 Result::Err(new_error)
             } else {
-                Result::Ok((tb))
+                Result::Ok(tb)
             }
         },
     }
