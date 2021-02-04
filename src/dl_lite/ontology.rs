@@ -8,12 +8,14 @@ use crate::dl_lite::tbox_item::TBI;
 use crate::kb::types::FileType;
 use serde_json::json;
 // use serde_json::Value;
-use std::{fmt, io};
+use std::{fmt, io, path};
 use std::fs::File;
 use std::io::Write;
 // use std::iter::Map;
 use crate::dl_lite::native_filetype_utilities::{parse_symbols_native, parse_tbox_native, parse_abox_native, abox_to_native_string, tbox_to_native_string};
 use crate::dl_lite::abox::AB;
+
+use rusqlite::{params, Connection, Result, NO_PARAMS};
 
 /*
 an ontology model
@@ -597,4 +599,96 @@ impl Ontology {
         }
     }
 
+
+    pub fn to_db(&self, mut path_to_db: path::PathBuf) -> bool {
+        let mut db_name = self.name.clone();
+        db_name.push_str(".db");
+        path_to_db.push(db_name);
+
+        if path_to_db.exists() {
+            println!("database exists!");
+        }
+
+        let conn = Connection::open(path_to_db);
+
+        match conn {
+            Result::Err(e) => {
+                println!("something went wrong: {}", &e);
+                false
+            },
+            Result::Ok(c) => {
+                let conn = c;
+
+                Ontology::add_basic_tables_db(&conn);
+                Ontology::add_symbols_db(&self, &conn);
+                true
+            },
+        }
+    }
+
+    pub fn add_symbols_db(&self, conn: &Connection) {
+        conn.execute("\
+        CREATE TABLE IF NOT EXISTS symbols(
+            id INTEGER PRIMARY KEY,
+            name TEXT NON NULL,
+            type TEXT NON NULL,
+            UNIQUE(id, name, type)
+        )
+        ", NO_PARAMS);
+
+       for symbol in &self.symbols {
+           let name = symbol.0;
+           let id = symbol.1.0;
+           let t = symbol.1.1.for_db();
+
+           let command = format!("INSERT OR IGNORE INTO symbols VALUES({}, '{}', '{}')",id, name, t);
+
+           println!("command: {}", &command);
+
+           conn.execute(command.as_str(), NO_PARAMS);
+       }
+    }
+
+    pub fn add_basic_tables_db(conn: &Connection) {
+        // create relation types
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS relation(\
+                type TEXT NON NULL PRIMARY KEY
+            )", NO_PARAMS
+        );
+
+        conn.execute(
+            "INSERT OR IGNORE INTO relation(type) VALUES ('role')",
+            NO_PARAMS
+        );
+
+        conn.execute(
+            "INSERT OR IGNORE INTO relation(type) VALUES ('concept')",
+            NO_PARAMS
+        );
+
+        // create dl type
+        // create relation types
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS dltype(
+                id INTEGER PRIMARY KEY,
+                type TEXT NON NULL,
+                UNIQUE(id, type)
+            )", NO_PARAMS
+        );
+
+        let ids_dltype = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+        let dltypes = ["bottom", "top", "baseconcept", "baserole", "inverserole", "negatedrole", "existsconcept", "negatedconcept", "nominal"];
+
+        for i in 0..9 {
+            let id = ids_dltype[i];
+            let dltype = dltypes[i];
+
+            let command = format!("INSERT OR IGNORE INTO dltype(id, type) VALUES ({}, '{}')", id, dltype);
+
+            println!("command: {}", &command);
+
+            conn.execute(command.as_str(), NO_PARAMS);
+        }
+    }
 }

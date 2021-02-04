@@ -13,7 +13,7 @@ use crate::dl_lite::types::DLType;
    take a number of items and generates a new if possible
 */
 pub type TbRule = fn(Vec<&TBI>) -> Option<Vec<TBI>>;
-pub type AbRule = fn(Vec<&TBI>, Vec<&ABI>) -> Option<Vec<ABI>>;
+pub type AbRule = fn(Vec<&ABI>, Vec<&TBI>) -> Option<Vec<ABI>>;
 
 // for the moment we only implement for dl_lite
 
@@ -293,3 +293,6 @@ pub fn dl_lite_rule_eight(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
         }
     }
 }
+
+//-----------------------------------------------------------------------------------------------
+// here I will put the rules for aboxes

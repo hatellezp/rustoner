@@ -4,6 +4,7 @@ use crate::dl_lite::node::Node;
 use crate::dl_lite::tbox::TB;
 use crate::dl_lite::tbox_item::TBI;
 use crate::dl_lite::types::DLType;
+use crate::dl_lite::rule::AbRule;
 
 // help enum for the match function in the ABI implementation
 #[derive(Eq, PartialEq, Debug, Copy, Clone, Hash)]
@@ -186,4 +187,30 @@ impl ABI {
     }
 
     // pub fn apply_two(one: &ABI, two: &ABI, tbox: &TB) -> Option<Vec<ABI>> {}
+    pub fn apply_rule(abis: Vec<&ABI>, tbis: Vec<&TBI>, rule: &AbRule) -> Option<Vec<ABI>> {
+        let prov_vec = match tbis.len() {
+            1 => rule(abis, tbis),
+            2 => rule(abis, tbis),
+            _ => Option::None,
+        };
+
+        if prov_vec.is_none() {
+            Option::None
+        } else {
+            let prov_vec: Vec<ABI> = prov_vec.unwrap();
+            let mut final_vec: Vec<ABI> = Vec::new();
+
+            for item in &prov_vec {
+                // println!("trying to add: {}", item);
+
+                if !item.is_trivial() {
+                    // println!("    success");
+
+                    final_vec.push(item.clone());
+                }
+            }
+
+            Some(final_vec)
+        }
+    }
 }

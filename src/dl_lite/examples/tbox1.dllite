@@ -1,7 +1,0 @@
-// this line should be ignored
-BEGINTBOX
-A : B
-// this line also should be ignored
-   r : INV s
-ENDTBOX
-// and this line too

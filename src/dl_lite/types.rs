@@ -94,6 +94,23 @@ impl DLType {
     pub fn same_type(t1: DLType, t2: DLType) -> bool {
         DLType::all_roles(t1, t2) || DLType::all_concepts(t1, t2) || DLType::all_nominals(t1, t2)
     }
+
+    pub fn for_db(&self) -> String {
+        let res = match self {
+            DLType::Bottom => "bottom",
+            DLType::Top => "top",
+            DLType::BaseConcept => "baseconcept",
+            DLType::BaseRole => "baserole",
+            DLType::InverseRole => "inverserole",
+            DLType::NegatedRole => "negatedrole",
+            DLType::ExistsConcept => "existsconcept",
+            DLType::NegatedConcept => "negatedconcept",
+            DLType::Nominal => "nominal",
+        };
+
+        let res =String::from(res);
+        res
+    }
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]

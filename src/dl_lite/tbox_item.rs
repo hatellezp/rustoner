@@ -70,6 +70,14 @@ impl TBI {
         self.lside.t() == DLType::Bottom || self.rside.t() == DLType::Top
     }
 
+    pub fn is_negative_inclusion(&self) -> bool {
+        self.rside.is_negated()
+    }
+
+    pub fn is_positive_inclusion(&self) -> bool {
+        !self.is_negative_inclusion()
+    }
+
     // this functions consumes self
     pub fn decompact(self) -> (Node, Node) {
         (self.lside, self.rside)

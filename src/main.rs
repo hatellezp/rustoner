@@ -12,6 +12,14 @@ use crate::interface::cli::{Cli, Task};
 use crate::interface::utilities::get_filetype;
 
 
+// test
+use rusqlite::{Connection, Result};
+use rusqlite::NO_PARAMS;
+use std::path::PathBuf;
+use std::str::FromStr;
+
+const path_to_project: &str = "/home/horacio/Langs/rust/rustoner/";
+
 fn main() {
     let args = Cli::from_args();
 
@@ -53,9 +61,32 @@ fn main() {
                     println!("{}", s);
                 },
             }
+
+
+            //sqlite stuff
+            println!("-----------------------------------------------");
+            println!("sqlites tuff");
+
+            let mut path_to_db = String::from(path_to_project);
+            path_to_db.push_str("examples/");
+
+            let path_to_db = PathBuf::from_str(path_to_db.as_str()).unwrap();
+
+            onto.to_db(path_to_db);
         },
         Task::CAB | Task::RNK => println!("not implemented"),
         Task::UNDEFINED => println!("unrecognized task!"),
     }
+
+
+    // also
+    /*
+    let conn = Connection::open("examples/example1.db").unwrap();
+
+    let res = conn.execute("SELECT * from teaches", NO_PARAMS);
+
+    println!("{:?}", &res);
+
+     */
 }
 
