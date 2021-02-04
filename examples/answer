@@ -1,0 +1,5 @@
+BEGINTBOX
+Man < Mortal
+Human < Mortal
+Man < Human
+ENDTBOX

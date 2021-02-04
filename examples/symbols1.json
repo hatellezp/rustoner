@@ -1,0 +1,14 @@
+{
+  "symbols": [
+    ["concept", "A"],
+    ["concept", "B"],
+    ["concept", "C"],
+    ["role", "r"],
+    ["role", "s"],
+    ["role", "q"],
+    ["nominal", "a"],
+    ["nominal", "b"],
+    ["nominal", "c"],
+    ["nominal", "d"]
+  ]
+}
