@@ -63,6 +63,12 @@ on _stdout_:
     }
 ```
 
+**Note**: if you want a lot of explanations you can specify a 
+verbose option:
+```
+--verbose
+```
+
 ### Finding Consequences
 
 Same as the previous task, only know you want to know consequences of
@@ -92,7 +98,7 @@ Call **rustoner** with the complete abox task:
 ./rustoner --task cab --tbox --abox a_man --output answer
 ```
 
-You should get the following in **answer**:
+You should get the following in the **answer** file:
 ```
 BEGINABOX:
 Socrates: Human
