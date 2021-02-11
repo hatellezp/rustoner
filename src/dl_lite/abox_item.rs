@@ -1,10 +1,10 @@
 use std::fmt;
 
 use crate::dl_lite::node::Node;
+use crate::dl_lite::rule::AbRule;
 use crate::dl_lite::tbox::TB;
 use crate::dl_lite::tbox_item::TBI;
 use crate::dl_lite::types::DLType;
-use crate::dl_lite::rule::AbRule;
 
 // help enum for the match function in the ABI implementation
 #[derive(Eq, PartialEq, Debug, Copy, Clone, Hash)]

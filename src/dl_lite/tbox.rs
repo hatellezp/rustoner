@@ -114,7 +114,6 @@ impl TB {
     }
 
     pub fn remove_trivial(&mut self) {
-
         if !self.items.is_empty() {
             let mut new_items: Vec<TBI> = Vec::new();
 

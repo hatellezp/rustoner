@@ -5,49 +5,19 @@ use crate::kb::knowledge_base::Data;
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct AB {
+    name: String,
     items: Vec<ABI>,
     length: usize,
 }
 
-impl Data for AB {
-    /*
-    fn items(&self) -> Vec<&ABI> {
-        let mut vec: Vec<&ABI> = Vec::new();
-
-        for item in &self.items {
-            vec.push(item);
-        }
-
-        vec
-    }
-
-    fn len(&self) -> usize {
-        self.length
-    }
-
-    fn add(&mut self, item: ABI) -> bool {
-        if !self.items.contains(&item) {
-            self.items.push(item);
-            true
-        } else {
-            false
-        }
-    }
-
-    fn contains(&self, item: &ABI) -> bool {
-        self.items.contains(item)
-    }
-
-
-     */
-}
+impl Data for AB {}
 
 impl fmt::Display for AB {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.length == 0 {
             write!(f, "<AB>[]")
         } else {
-            let mut s: String = String::from("<AB>[");
+            let mut s: String = format!("<AB({}>[", self.name);
 
             for item in &self.items {
                 s.push_str(item.to_string().as_str());
@@ -62,11 +32,20 @@ impl fmt::Display for AB {
 }
 
 impl AB {
-    pub fn new() -> AB {
+    pub fn new(name: &str) -> AB {
         AB {
+            name: name.to_string(),
             items: vec![],
             length: 0,
         }
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn len(&self) -> usize {
+        self.length
     }
 
     pub fn add(&mut self, abi: ABI) -> bool {
@@ -85,5 +64,4 @@ impl AB {
     pub fn items(&self) -> &Vec<ABI> {
         &self.items
     }
-
 }

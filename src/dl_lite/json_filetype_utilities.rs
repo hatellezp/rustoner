@@ -10,8 +10,8 @@ use crate::dl_lite::tbox::TB;
 use crate::dl_lite::tbox_item::TBI;
 use crate::dl_lite::types::DLType;
 // use serde::Deserializer;
-use std::collections::HashMap;
 use crate::dl_lite::string_formatter::{node_to_string, string_to_node};
+use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 
 /*
@@ -24,18 +24,22 @@ how this works:
 pub fn parse_value_to_string(v: &Value) -> io::Result<&str> {
     match v {
         Value::String(s) => Ok(s.as_str()),
-        _ => {
-            invalid_data_result(format!("not a string json type: {}", v).as_str())
-        },
+        _ => invalid_data_result(format!("not a string json type: {}", v).as_str()),
     }
 }
 
-pub fn parse_symbol(s_vec: &Vec<Value>, latest: usize) -> (io::Result<(&str, usize, DLType)>, usize) {
+pub fn parse_symbol(
+    s_vec: &Vec<Value>,
+    latest: usize,
+) -> (io::Result<(&str, usize, DLType)>, usize) {
     /*
     how parsing works: ["r", "myrole"] -> ("myrole", number, DLType::RoleBase)
      */
     if s_vec.len() != 2 {
-        let new_error = Error::new(ErrorKind::InvalidData, format!("bad number of elements in list: {}", s_vec.len()).as_str());
+        let new_error = Error::new(
+            ErrorKind::InvalidData,
+            format!("bad number of elements in list: {}", s_vec.len()).as_str(),
+        );
         (Err(new_error), latest)
     } else {
         let t_result = parse_value_to_string(&s_vec[0]);
@@ -43,19 +47,31 @@ pub fn parse_symbol(s_vec: &Vec<Value>, latest: usize) -> (io::Result<(&str, usi
 
         match (t_result, name_result) {
             (Err(e1), Err(e2)) => {
-                let new_error = Error::new(ErrorKind::InvalidData, format!("multiples errors ocurred e1: {}, e2: {}", e1.to_string(), e2.to_string()));
+                let new_error = Error::new(
+                    ErrorKind::InvalidData,
+                    format!(
+                        "multiples errors ocurred e1: {}, e2: {}",
+                        e1.to_string(),
+                        e2.to_string()
+                    ),
+                );
                 (Err(new_error), latest)
-            },
+            }
             (Err(e1), _) => {
-                let new_error = Error::new(ErrorKind::InvalidData, format!("couldn't trasform to string: {}", e1.to_string()));
+                let new_error = Error::new(
+                    ErrorKind::InvalidData,
+                    format!("couldn't trasform to string: {}", e1.to_string()),
+                );
                 (Err(new_error), latest)
-            },
+            }
             (_, Err(e2)) => {
-                let new_error = Error::new(ErrorKind::InvalidData, format!("couldn't trasform to string: {}", e2.to_string()));
+                let new_error = Error::new(
+                    ErrorKind::InvalidData,
+                    format!("couldn't trasform to string: {}", e2.to_string()),
+                );
                 (Err(new_error), latest)
-            },
+            }
             (Ok(t), Ok(mut name)) => {
-
                 let roles = ["role"];
                 let concepts = ["concept"];
                 let nominals = ["nominal"];
@@ -79,7 +95,10 @@ pub fn parse_symbol(s_vec: &Vec<Value>, latest: usize) -> (io::Result<(&str, usi
                 }
 
                 if dlt.is_none() {
-                    let new_error = Error::new(ErrorKind::InvalidData, format!("not a valid dl type: {}", &t));
+                    let new_error = Error::new(
+                        ErrorKind::InvalidData,
+                        format!("not a valid dl type: {}", &t),
+                    );
                     (Err(new_error), latest)
                 } else {
                     let dlt_unwrapped = dlt.unwrap();
@@ -101,7 +120,7 @@ pub fn parse_symbol(s_vec: &Vec<Value>, latest: usize) -> (io::Result<(&str, usi
 
                     (Ok((name, id, dlt.unwrap())), new_latest)
                 }
-            },
+            }
         }
     }
 }
@@ -114,7 +133,10 @@ pub fn parse_value_to_tbi(
     match value {
         Value::Array(vec_of_values) => {
             if vec_of_values.len() != 2 {
-                let new_error = Error::new(ErrorKind::InvalidData, format!("bad number of elements on list: {}", &vec_of_values.len()));
+                let new_error = Error::new(
+                    ErrorKind::InvalidData,
+                    format!("bad number of elements on list: {}", &vec_of_values.len()),
+                );
                 Err(new_error)
             } else {
                 let lside_result = parse_value_to_string(&vec_of_values[0]);
@@ -122,48 +144,65 @@ pub fn parse_value_to_tbi(
 
                 match (lside_result, rside_result) {
                     (Err(e1), Err(e2)) => {
-                        let new_error = Error::new(ErrorKind::InvalidData, format!("multiples errors ocurred e1: {}, e2: {}", e1.to_string(), e2.to_string()));
+                        let new_error = Error::new(
+                            ErrorKind::InvalidData,
+                            format!(
+                                "multiples errors ocurred e1: {}, e2: {}",
+                                e1.to_string(),
+                                e2.to_string()
+                            ),
+                        );
                         Err(new_error)
-                    },
+                    }
                     (Err(e1), _) => {
-                        let new_error = Error::new(ErrorKind::InvalidData, format!("couldn't trasform to string: {}", e1.to_string()));
+                        let new_error = Error::new(
+                            ErrorKind::InvalidData,
+                            format!("couldn't trasform to string: {}", e1.to_string()),
+                        );
                         Err(new_error)
-                    },
+                    }
                     (_, Err(e2)) => {
-                        let new_error = Error::new(ErrorKind::InvalidData, format!("couldn't trasform to string: {}", e2.to_string()));
+                        let new_error = Error::new(
+                            ErrorKind::InvalidData,
+                            format!("couldn't trasform to string: {}", e2.to_string()),
+                        );
                         Err(new_error)
-                    },
+                    }
                     (Ok(lside), Ok(rside)) => {
                         let lside = string_to_node(lside, symbols);
                         let rside = string_to_node(rside, symbols);
 
                         match (&lside, &rside) {
-                            (Err(e1), Err(e2)) => {
-                                Err(Error::new(ErrorKind::InvalidData, format!("mutiple errors, e1: {}, e2: {}", e1.to_string(), e2.to_string())))
-                            },
+                            (Err(e1), Err(e2)) => Err(Error::new(
+                                ErrorKind::InvalidData,
+                                format!(
+                                    "mutiple errors, e1: {}, e2: {}",
+                                    e1.to_string(),
+                                    e2.to_string()
+                                ),
+                            )),
                             (Err(e1), _) => Err(Error::new(ErrorKind::InvalidData, e1.to_string())),
                             (_, Err(e2)) => Err(Error::new(ErrorKind::InvalidData, e2.to_string())),
                             (Ok(ls), Ok(rs)) => {
                                 let new_tbi_op = TBI::new(ls.clone(), rs.clone());
 
                                 match new_tbi_op {
-                                    Some(new_tbi) => {
-                                        Ok(new_tbi)
-                                    },
+                                    Some(new_tbi) => Ok(new_tbi),
                                     _ => {
-                                        let new_error = Error::new(ErrorKind::InvalidData, format!("invalid syntax: {}", value));
+                                        let new_error = Error::new(
+                                            ErrorKind::InvalidData,
+                                            format!("invalid syntax: {}", value),
+                                        );
                                         Err(new_error)
-                                    },
+                                    }
                                 }
                             }
                         }
-                    },
+                    }
                 }
             }
-        },
-        _ => {
-            invalid_data_result(format!("not valid type of json value: {}", &value).as_str())
-        },
+        }
+        _ => invalid_data_result(format!("not valid type of json value: {}", &value).as_str()),
     }
 }
 
@@ -188,7 +227,10 @@ pub fn parse_symbols_json(filename: &str) -> io::Result<HashMap<String, (usize, 
 
             match result_value {
                 Result::Err(error) => {
-                    let new_error = Error::new(ErrorKind::InvalidData, format!("something went wrong during parsing: {}", error.to_string()));
+                    let new_error = Error::new(
+                        ErrorKind::InvalidData,
+                        format!("something went wrong during parsing: {}", error.to_string()),
+                    );
                     Err(new_error)
                 }
                 Result::Ok(value) => match &value {
@@ -216,18 +258,21 @@ pub fn parse_symbols_json(filename: &str) -> io::Result<HashMap<String, (usize, 
 
                                                 match parsed_result {
                                                     Err(error) => {
-                                                        println!("couldn't add symbol: {}", &error.to_string());
+                                                        println!(
+                                                            "couldn't add symbol: {}",
+                                                            &error.to_string()
+                                                        );
                                                         // result_from_error(&error)
-                                                    },
+                                                    }
                                                     Ok(parsed) => {
                                                         symbols.insert(
                                                             String::from(parsed.0),
                                                             (parsed.1, parsed.2),
                                                         );
-                                                    },
+                                                    }
                                                 }
-                                            },
-                                            _ => () // invalid_data_result(format!("not a list item: {}", &value).as_str()),
+                                            }
+                                            _ => (), // invalid_data_result(format!("not a list item: {}", &value).as_str()),
                                         }
                                     }
 
@@ -236,14 +281,18 @@ pub fn parse_symbols_json(filename: &str) -> io::Result<HashMap<String, (usize, 
                                     } else {
                                         Ok(symbols)
                                     }
-                                },
-                                _ => invalid_data_result(format!("not a list item: {}", &value_array).as_str()),
+                                }
+                                _ => invalid_data_result(
+                                    format!("not a list item: {}", &value_array).as_str(),
+                                ),
                             }
                         } else {
                             println!("not symbols in this file: {}", &value);
-                            invalid_data_result(format!("no symbols in this file: {}", &value).as_str())
+                            invalid_data_result(
+                                format!("no symbols in this file: {}", &value).as_str(),
+                            )
                         }
-                    },
+                    }
                     _ => invalid_data_result(format!("not a map item: {}", &value).as_str()),
                 },
             }
@@ -263,16 +312,19 @@ pub fn parse_tbox_json(
         std::result::Result::Err(error) => {
             println!("something went wrong: {}", &error);
             result_from_error(&error)
-        },
+        }
         std::result::Result::Ok(data_string) => {
             let result_value: Result<Value> = serde_json::from_str(data_string.as_str());
 
             match result_value {
                 Result::Err(error) => {
                     println!("something went wrong: {}", &error);
-                    let new_error = Error::new(ErrorKind::InvalidData, format!("couldn't parse the file: {}", &error.to_string()));
+                    let new_error = Error::new(
+                        ErrorKind::InvalidData,
+                        format!("couldn't parse the file: {}", &error.to_string()),
+                    );
                     Err(new_error)
-                },
+                }
                 Result::Ok(value) => match &value {
                     Value::Object(map) => {
                         if map.contains_key("tbox") {
@@ -288,8 +340,11 @@ pub fn parse_tbox_json(
 
                                         match tbi_result {
                                             Err(error) => {
-                                                println!("couldn't parse value: {}, error: {}", value, &error);
-                                            },
+                                                println!(
+                                                    "couldn't parse value: {}, error: {}",
+                                                    value, &error
+                                                );
+                                            }
                                             Ok(tbi) => {
                                                 tb.add(tbi);
                                             }
@@ -298,19 +353,22 @@ pub fn parse_tbox_json(
 
                                     Ok(tb)
                                 }
-                                _ => {
-                                    invalid_data_result(format!("not a list of values: {}", &value_array).as_str())
-                                },
+                                _ => invalid_data_result(
+                                    format!("not a list of values: {}", &value_array).as_str(),
+                                ),
                             }
                         } else {
                             println!("no tbox in this file: {}", &value);
-                            invalid_data_result(format!("the file doesn't containt a 'tbox' item: {}", &value).as_str())
+                            invalid_data_result(
+                                format!("the file doesn't containt a 'tbox' item: {}", &value)
+                                    .as_str(),
+                            )
                         }
-                    },
+                    }
                     _ => invalid_data_result(format!("not a map item : {}", &value).as_str()),
                 },
             }
-        },
+        }
     }
 }
 
@@ -361,7 +419,6 @@ pub fn tbox_to_value(
         Option::None
     }
 }
-
 
 pub fn invalid_data_result<T>(error: &str) -> io::Result<T> {
     let new_error = Error::new(ErrorKind::InvalidData, error);

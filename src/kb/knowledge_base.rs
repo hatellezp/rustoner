@@ -11,23 +11,29 @@ What is what define 'dl_lite':
  */
 
 use std::collections::HashMap;
-use std::io;
-use std::fmt::{Display, Debug};
+use std::fmt::{Debug, Display};
 use std::hash::Hash;
+use std::io;
 
 pub trait LType: PartialOrd + Ord + PartialEq + Eq + Debug + Hash + Display + Sized {
     fn same_type(&self, other: &Self) -> bool;
 }
 
 pub trait Expression: PartialOrd + Ord + PartialEq + Eq + Debug + Hash + Display + Sized {
-    fn string_to_expression<LT: LType>(s: &str, symbols: &HashMap<String, (usize, LT)>) -> io::Result<Self>;
+    fn string_to_expression<LT: LType>(
+        s: &str,
+        symbols: &HashMap<String, (usize, LT)>,
+    ) -> io::Result<Self>;
 
     // this method is different of 'Display', it is for writing to file
     fn expression_to_string(&self) -> String;
 }
 
-pub trait DataItem: PartialOrd + Ord + PartialEq + Eq + Debug + Hash + Display + Sized{
-    fn string_to_data_item<LT: LType>(s: &str, symbols: &HashMap<String, (usize, LT)>) -> io::Result<Self>;
+pub trait DataItem: PartialOrd + Ord + PartialEq + Eq + Debug + Hash + Display + Sized {
+    fn string_to_data_item<LT: LType>(
+        s: &str,
+        symbols: &HashMap<String, (usize, LT)>,
+    ) -> io::Result<Self>;
 
     fn data_item_to_string(&self) -> String;
 }

@@ -1,13 +1,13 @@
-use std::collections::HashMap;
-use crate::dl_lite::types::DLType;
-use crate::dl_lite::node::{Node, Mod};
-use std::io::{ErrorKind, Error};
-use std::cmp::Ordering;
-use std::io;
-use std::hash::Hash;
-use crate::dl_lite::tbox_item::TBI;
 use crate::dl_lite::abox_item::ABI;
 use crate::dl_lite::json_filetype_utilities::{invalid_data_result, result_from_error};
+use crate::dl_lite::node::{Mod, Node};
+use crate::dl_lite::tbox_item::TBI;
+use crate::dl_lite::types::DLType;
+use std::cmp::Ordering;
+use std::collections::HashMap;
+use std::hash::Hash;
+use std::io;
+use std::io::{Error, ErrorKind};
 
 //--------------------------------------------------------------------------------------------------
 
@@ -110,13 +110,19 @@ pub fn string_to_tbi(s: &str, symbols: &HashMap<String, (usize, DLType)>) -> io:
 
     match (sub, equiv) {
         (true, true) => {
-            let new_error = Error::new(ErrorKind::InvalidData, format!("badly formed file '=' and '<' bot appear").as_str());
+            let new_error = Error::new(
+                ErrorKind::InvalidData,
+                format!("badly formed file '=' and '<' bot appear").as_str(),
+            );
             Err(new_error)
-        },
+        }
         (false, false) => {
-            let new_error = Error::new(ErrorKind::InvalidData, format!("badly formed file not '=' nor '<' found").as_str());
+            let new_error = Error::new(
+                ErrorKind::InvalidData,
+                format!("badly formed file not '=' nor '<' found").as_str(),
+            );
             Err(new_error)
-        },
+        }
         (_, _) => {
             let mut lside_result1 = invalid_data_result("not done yet");
             let mut rside_result1 = invalid_data_result("not done yet");
@@ -140,7 +146,6 @@ pub fn string_to_tbi(s: &str, symbols: &HashMap<String, (usize, DLType)>) -> io:
 
                 Err(new_error)
             } else {
-
                 if sub {
                     lside_result1 = string_to_node(splitted[0], symbols);
                     rside_result1 = string_to_node(splitted[1], symbols);
@@ -152,7 +157,10 @@ pub fn string_to_tbi(s: &str, symbols: &HashMap<String, (usize, DLType)>) -> io:
                     lside_result2 = string_to_node(splitted[1], symbols);
                     rside_result2 = string_to_node(splitted[0], symbols);
 
-                    tuples = vec![(lside_result1, rside_result1), (lside_result2, rside_result2)];
+                    tuples = vec![
+                        (lside_result1, rside_result1),
+                        (lside_result2, rside_result2),
+                    ];
                 }
 
                 let mut error_happened = false;
@@ -162,17 +170,30 @@ pub fn string_to_tbi(s: &str, symbols: &HashMap<String, (usize, DLType)>) -> io:
 
                     try_to_add = match (&lside_result, &rside_result) {
                         (Err(e1), Err(e2)) => {
-                            let new_error = Error::new(ErrorKind::InvalidData, format!("several errors, error1: {}, error2: {}", e1.to_string(), e2.to_string()));
+                            let new_error = Error::new(
+                                ErrorKind::InvalidData,
+                                format!(
+                                    "several errors, error1: {}, error2: {}",
+                                    e1.to_string(),
+                                    e2.to_string()
+                                ),
+                            );
                             Err(new_error)
-                        },
+                        }
                         (Err(e), _) => {
-                            let new_error = Error::new(ErrorKind::InvalidData, format!("couldn't parse left side {}", e.to_string()));
+                            let new_error = Error::new(
+                                ErrorKind::InvalidData,
+                                format!("couldn't parse left side {}", e.to_string()),
+                            );
                             Err(new_error)
-                        },
+                        }
                         (_, Err(e)) => {
-                            let new_error = Error::new(ErrorKind::InvalidData, format!("couldn't parse right side {}", e.to_string()));
+                            let new_error = Error::new(
+                                ErrorKind::InvalidData,
+                                format!("couldn't parse right side {}", e.to_string()),
+                            );
                             Err(new_error)
-                        },
+                        }
                         (Ok(lside), Ok(rside)) => {
                             let new_tbi_op = TBI::new(lside.clone(), rside.clone());
 
@@ -180,13 +201,16 @@ pub fn string_to_tbi(s: &str, symbols: &HashMap<String, (usize, DLType)>) -> io:
                                 Some(new_tbi) => {
                                     tbis.push(new_tbi);
                                     Ok(Vec::new())
-                                },
+                                }
                                 _ => {
-                                    let new_error = Error::new(ErrorKind::InvalidData, format!("invalid tbox item {}", s));
+                                    let new_error = Error::new(
+                                        ErrorKind::InvalidData,
+                                        format!("invalid tbox item {}", s),
+                                    );
                                     Err(new_error)
-                                },
+                                }
                             }
-                        },
+                        }
                     };
 
                     if try_to_add.is_err() {
@@ -219,19 +243,28 @@ pub fn tbi_to_string(tbi: &TBI, symbols: &HashMap<String, (usize, DLType)>) -> O
             res.push_str(rstr.as_str());
 
             Some(res)
-        },
+        }
         (_, _) => Option::None,
     }
 }
 
 // this approach is a dynamic one, concepts must be present in symbols,
 // but nominals are added dynamically
-pub fn string_to_abi(s: &str, symbols: &mut HashMap<String, (usize, DLType)>, mut current_id: usize) -> (io::Result<(ABI, Vec<(String, (usize, DLType))>)>, usize) {
+pub fn string_to_abi(
+    s: &str,
+    symbols: &mut HashMap<String, (usize, DLType)>,
+    mut current_id: usize,
+) -> (io::Result<(ABI, Vec<(String, (usize, DLType))>)>, usize) {
     let mut splitted = s.trim();
     let mut splitted: Vec<&str> = splitted.split(":").collect();
 
     if splitted.len() != 2 {
-        (invalid_data_result(format!("abox item must have exactly one ':' character {}", s).as_str()), current_id)
+        (
+            invalid_data_result(
+                format!("abox item must have exactly one ':' character {}", s).as_str(),
+            ),
+            current_id,
+        )
     } else {
         // remeber that abi must have only base concepts
         let abox_symbol = splitted[1].trim();
@@ -281,7 +314,7 @@ pub fn string_to_abi(s: &str, symbols: &mut HashMap<String, (usize, DLType)>, mu
                             let abi = ABI::new_ra(abi_symbol.clone(), node1, node2).unwrap();
 
                             (Ok((abi, to_be_added)), current_id)
-                        },
+                        }
                         (DLType::BaseConcept, 1) => {
                             let a1 = constants[0].trim();
 
@@ -303,13 +336,27 @@ pub fn string_to_abi(s: &str, symbols: &mut HashMap<String, (usize, DLType)>, mu
                             let abi = ABI::new_ca(abi_symbol.clone(), node1).unwrap();
 
                             (Ok((abi, to_be_added)), current_id)
-                        },
-                        (_, _) => (invalid_data_result(format!("incompatible type for abox item with number of elements: {}", s).as_str()), current_id)
+                        }
+                        (_, _) => (
+                            invalid_data_result(
+                                format!(
+                                    "incompatible type for abox item with number of elements: {}",
+                                    s
+                                )
+                                .as_str(),
+                            ),
+                            current_id,
+                        ),
                     }
-                },
+                }
             }
         } else {
-            (invalid_data_result(format!("unknown symbol in abox item: {}", abox_symbol).as_str()), current_id)
+            (
+                invalid_data_result(
+                    format!("unknown symbol in abox item: {}", abox_symbol).as_str(),
+                ),
+                current_id,
+            )
         }
     }
 }
@@ -328,10 +375,10 @@ pub fn abi_to_string(abi: &ABI, symbols: &HashMap<String, (usize, DLType)>) -> O
                     res.push_str(c_str.as_str());
 
                     Some(res)
-                },
+                }
                 (_, _) => Option::None,
             }
-        },
+        }
         ABI::RA(r, a, b) => {
             let r_str_op = node_to_string(r, symbols, "".to_string());
             let a_str_op = node_to_string(a, symbols, "".to_string());
@@ -348,10 +395,10 @@ pub fn abi_to_string(abi: &ABI, symbols: &HashMap<String, (usize, DLType)>) -> O
                     res.push_str(r_str.as_str());
 
                     Some(res)
-                },
+                }
                 (_, _, _) => Option::None,
             }
-        },
+        }
     }
 }
 
@@ -381,7 +428,10 @@ fn __parse_string_to_node_helper(
 
                 Ok(new_node)
             } else {
-                let new_error = Error::new(ErrorKind::InvalidData, format!("this symbols is not recognized '{}'", splitted[0]));
+                let new_error = Error::new(
+                    ErrorKind::InvalidData,
+                    format!("this symbols is not recognized '{}'", splitted[0]),
+                );
                 Err(new_error)
             }
         }
@@ -407,15 +457,19 @@ fn __parse_string_to_node_helper(
                     let complex_node_op = function_to_call(basenode);
 
                     match complex_node_op {
-                        Some(complex_node) => {
-                            Ok(complex_node)
-                        },
+                        Some(complex_node) => Ok(complex_node),
                         _ => {
-                            let new_error = Error::new(ErrorKind::InvalidData, format!("couldn't build a valid node with this combination {} and {}", splitted[0], splitted[1]));
+                            let new_error = Error::new(
+                                ErrorKind::InvalidData,
+                                format!(
+                                    "couldn't build a valid node with this combination {} and {}",
+                                    splitted[0], splitted[1]
+                                ),
+                            );
                             Err(new_error)
                         }
                     }
-                },
+                }
                 Err(_) => base_node_result,
             }
         }
@@ -430,22 +484,21 @@ fn __parse_string_to_node_helper(
                 "EXISTS" => Node::exists,
                 _ => none_default,
             };
-            let base_node_result = __parse_string_to_node_helper(vec![splitted[1], splitted[2]], symbols);
+            let base_node_result =
+                __parse_string_to_node_helper(vec![splitted[1], splitted[2]], symbols);
 
             match base_node_result {
                 Ok(basenode) => {
                     let complex_node_op = function_to_call(basenode);
 
                     match complex_node_op {
-                        Some(complex_node) => {
-                            Ok(complex_node)
-                        },
+                        Some(complex_node) => Ok(complex_node),
                         _ => {
                             let new_error = Error::new(ErrorKind::InvalidData, format!("couldn't build a valid node with this combination {}, {} and {}", splitted[0], splitted[1], splitted[2]));
                             Err(new_error)
                         }
                     }
-                },
+                }
                 Err(_) => base_node_result,
             }
         }
@@ -458,29 +511,31 @@ fn __parse_string_to_node_helper(
                 "NOT" => option_negate,
                 _ => none_default,
             };
-            let base_node_result = __parse_string_to_node_helper(vec![splitted[1], splitted[2], splitted[3]], symbols);
+            let base_node_result =
+                __parse_string_to_node_helper(vec![splitted[1], splitted[2], splitted[3]], symbols);
 
             match base_node_result {
                 Ok(basenode) => {
                     let complex_node_op = function_to_call(basenode);
 
                     match complex_node_op {
-                        Some(complex_node) => {
-                            Ok(complex_node)
-                        },
+                        Some(complex_node) => Ok(complex_node),
                         _ => {
                             let new_error = Error::new(ErrorKind::InvalidData, format!("couldn't build a valid node with this combination {}, {}, {} and {}", splitted[0], splitted[1], splitted[2], splitted[3]));
                             Err(new_error)
                         }
                     }
-                },
+                }
                 Err(_) => base_node_result,
             }
         }
         _ => {
-            let new_error = Error::new(ErrorKind::InvalidData, format!("invalid input: {:?}", splitted));
+            let new_error = Error::new(
+                ErrorKind::InvalidData,
+                format!("invalid input: {:?}", splitted),
+            );
             Err(new_error)
-        },
+        }
     }
 }
 
@@ -496,9 +551,6 @@ fn find_keys_for_value(symbols: &HashMap<String, (usize, DLType)>, value: usize)
         })
         .collect()
 }
-
-
-
 
 /*
 I need this so the compilator can leave me alone
@@ -547,8 +599,3 @@ impl Ord for PS {
         self.partial_cmp(other).unwrap()
     }
 }
-
-
-
-
-

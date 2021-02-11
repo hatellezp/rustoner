@@ -1,13 +1,16 @@
 use crate::dl_lite::types::DLType;
 // use std::cmp::Ordering;
 // use std::collections::{HashMap, VecDeque};
+use crate::dl_lite::abox::AB;
+use crate::dl_lite::string_formatter::{
+    abi_to_string, string_to_abi, string_to_symbol, string_to_tbi, tbi_to_string, PS,
+};
+use crate::dl_lite::tbox::TB;
+use crate::interface::utilities::parse_name_from_filename;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader, Error, ErrorKind};
-use crate::dl_lite::string_formatter::{string_to_symbol, PS, string_to_tbi, string_to_abi, tbi_to_string, abi_to_string};
-use crate::dl_lite::tbox::TB;
-use crate::dl_lite::abox::AB;
 
 pub fn parse_symbols_native(
     filename: &str,
@@ -86,8 +89,6 @@ pub fn parse_symbols_native(
                                 continue;
                             }
 
-
-
                             if verbose {
                                 let ignored: String = String::from(vec[1..].join("//").trim());
 
@@ -96,8 +97,7 @@ pub fn parse_symbols_native(
                                 }
                             }
 
-                            let parsed: io::Result<(&str, DLType)> =
-                                string_to_symbol(&not_ignored);
+                            let parsed: io::Result<(&str, DLType)> = string_to_symbol(&not_ignored);
 
                             match parsed {
                                 Ok((name, t)) => {
@@ -157,16 +157,20 @@ pub fn parse_symbols_native(
                 }
                 Result::Ok(symbols)
             }
-        },
+        }
     }
 }
 
-pub fn parse_abox_native(filename: &str, symbols: &mut HashMap<String, (usize, DLType)>, verbose: bool) -> io::Result<AB> {
+pub fn parse_abox_native(
+    filename: &str,
+    symbols: &mut HashMap<String, (usize, DLType)>,
+    verbose: bool,
+) -> io::Result<AB> {
     /*
     this function might add nominal symbols dynamically, so we need to actuallize symbols :/
     dangerous manipulation here...
      */
-    let file_result  = File::open(filename);
+    let file_result = File::open(filename);
 
     match file_result {
         Err(e) => {
@@ -174,9 +178,11 @@ pub fn parse_abox_native(filename: &str, symbols: &mut HashMap<String, (usize, D
                 println!("couldn't read the file: {}", e);
             }
             Result::Err(e)
-        },
+        }
         Ok(file) => {
             let reader = BufReader::new(file);
+
+            let ab_name = parse_name_from_filename(filename);
 
             let mut begin_abox_encountered = false;
             let mut end_abox_encountered = false;
@@ -184,7 +190,7 @@ pub fn parse_abox_native(filename: &str, symbols: &mut HashMap<String, (usize, D
             let (_, id_bound) = find_bound_of_symbols(symbols);
             let mut current_id = id_bound + 1;
 
-            let mut ab = AB::new();
+            let mut ab = AB::new(ab_name);
 
             for line_result in reader.lines() {
                 if verbose {
@@ -196,7 +202,7 @@ pub fn parse_abox_native(filename: &str, symbols: &mut HashMap<String, (usize, D
                         if verbose {
                             println!("passing this line because of: {}", &e);
                         }
-                    },
+                    }
                     Ok(line) => {
                         let line_trimmed = line.trim();
 
@@ -232,7 +238,8 @@ pub fn parse_abox_native(filename: &str, symbols: &mut HashMap<String, (usize, D
                                 }
                             }
 
-                            let (parsed_result, current_id_result) = string_to_abi(&not_ignored, symbols, current_id);
+                            let (parsed_result, current_id_result) =
+                                string_to_abi(&not_ignored, symbols, current_id);
                             current_id = current_id_result;
 
                             match parsed_result {
@@ -246,19 +253,19 @@ pub fn parse_abox_native(filename: &str, symbols: &mut HashMap<String, (usize, D
                                             symbols.insert(s, (id, dltype));
                                         }
                                     }
-                                },
+                                }
                                 Err(e) => {
                                     if verbose {
                                         println!("couldn't parse: {}", &e);
                                     }
-                                },
+                                }
                             }
                         } else {
                             if verbose {
                                 println!("line won't be parsed, not in between 'BEGINTBOX' and 'ENDTBOX' bounds");
                             }
                         }
-                    },
+                    }
                 }
             }
 
@@ -276,18 +283,22 @@ pub fn parse_abox_native(filename: &str, symbols: &mut HashMap<String, (usize, D
             } else {
                 Result::Ok(ab)
             }
-        },
+        }
     }
 }
 
-pub fn parse_tbox_native(filename: &str, symbols: &HashMap<String, (usize, DLType)>, verbose: bool) -> io::Result<TB> {
+pub fn parse_tbox_native(
+    filename: &str,
+    symbols: &HashMap<String, (usize, DLType)>,
+    verbose: bool,
+) -> io::Result<TB> {
     let file_result = File::open(filename);
 
     match file_result {
         Err(e) => {
             println!("couldn't read the file: {}", e);
             Result::Err(e)
-        },
+        }
         Ok(file) => {
             let reader = BufReader::new(file);
 
@@ -353,7 +364,6 @@ pub fn parse_tbox_native(filename: &str, symbols: &HashMap<String, (usize, DLTyp
                                 continue;
                             }
 
-
                             if verbose {
                                 let ignored: String = String::from(vec[1..].join("//").trim());
 
@@ -372,12 +382,12 @@ pub fn parse_tbox_native(filename: &str, symbols: &HashMap<String, (usize, DLTyp
                                             tb.add(tbi);
                                         }
                                     }
-                                },
+                                }
                                 Err(e) => {
                                     if verbose {
                                         println!("couldn't parse: {}", &e);
                                     }
-                                },
+                                }
                             }
                         } else {
                             if verbose {
@@ -402,11 +412,15 @@ pub fn parse_tbox_native(filename: &str, symbols: &HashMap<String, (usize, DLTyp
             } else {
                 Result::Ok(tb)
             }
-        },
+        }
     }
 }
 
-pub fn tbox_to_native_string(tbox: &TB, symbols: &HashMap<String, (usize, DLType)>, dont_write_trivial: bool) -> Option<String> {
+pub fn tbox_to_native_string(
+    tbox: &TB,
+    symbols: &HashMap<String, (usize, DLType)>,
+    dont_write_trivial: bool,
+) -> Option<String> {
     let mut res = String::new();
 
     // I should define a header for this files
@@ -423,7 +437,7 @@ pub fn tbox_to_native_string(tbox: &TB, symbols: &HashMap<String, (usize, DLType
                 Some(tbi_str) => {
                     res.push_str(tbi_str.as_str());
                     res.push_str("\n");
-                },
+                }
                 _ => (),
             }
         }
@@ -433,7 +447,11 @@ pub fn tbox_to_native_string(tbox: &TB, symbols: &HashMap<String, (usize, DLType
     Some(res)
 }
 
-pub fn abox_to_native_string(abox: &AB, symbols: &HashMap<String, (usize, DLType)>, dont_write_trivial: bool) -> Option<String> {
+pub fn abox_to_native_string(
+    abox: &AB,
+    symbols: &HashMap<String, (usize, DLType)>,
+    dont_write_trivial: bool,
+) -> Option<String> {
     let mut res = String::new();
 
     // I should define a header for this files
@@ -450,7 +468,7 @@ pub fn abox_to_native_string(abox: &AB, symbols: &HashMap<String, (usize, DLType
                 Some(abi_str) => {
                     res.push_str(abi_str.as_str());
                     res.push_str("\n");
-                },
+                }
                 _ => (),
             }
         }
@@ -474,7 +492,7 @@ pub fn find_bound_of_symbols(symbols: &HashMap<String, (usize, DLType)>) -> (usi
                     if old_id > *id {
                         Some(*id)
                     } else {
-                       Some(old_id)
+                        Some(old_id)
                     }
                 }
             };

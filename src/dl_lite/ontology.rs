@@ -1,22 +1,30 @@
-use crate::dl_lite::tbox::TB;
-use crate::dl_lite::types::DLType;
-use std::collections::HashMap;
 use crate::dl_lite::abox_item::ABI;
 use crate::dl_lite::json_filetype_utilities::{parse_symbols_json, parse_tbox_json, tbox_to_value};
 use crate::dl_lite::node::{Mod, Node};
+use crate::dl_lite::tbox::TB;
 use crate::dl_lite::tbox_item::TBI;
+use crate::dl_lite::types::DLType;
 use crate::kb::types::FileType;
 use serde_json::json;
+use std::collections::HashMap;
 // use serde_json::Value;
-use std::{fmt, io, path};
 use std::fs::File;
 use std::io::Write;
+use std::{fmt, io, path};
 // use std::iter::Map;
-use crate::dl_lite::native_filetype_utilities::{parse_symbols_native, parse_tbox_native, parse_abox_native, abox_to_native_string, tbox_to_native_string};
 use crate::dl_lite::abox::AB;
+use crate::dl_lite::native_filetype_utilities::{
+    abox_to_native_string, parse_abox_native, parse_symbols_native, parse_tbox_native,
+    tbox_to_native_string,
+};
 
-use rusqlite::{params, Connection, Result, NO_PARAMS};
+use rusqlite::{params, Connection, Error, MappedRows, Result, Row, Statement, NO_PARAMS};
 
+use crate::dl_lite::sqlite_structs::{NodeDb, SymbolDb, TboxItemDb};
+use crate::dl_lite::string_formatter::{node_to_string, string_to_node, string_to_tbi};
+use crate::interface::utilities::parse_name_from_filename;
+use std::any::Any;
+use crate::dl_lite::sqlite_interface::{add_basic_tables_to_db, add_symbols_to_db, add_symbol_to_db, add_node_to_db, add_nodes_to_db, get_node_from_db, add_tbi_to_db, add_tbis_to_db, add_abi_to_db, add_symbols_from_db, add_tbis_from_db};
 /*
 an ontology model
     - name is the name of the ontology
@@ -31,7 +39,7 @@ pub struct Ontology {
     name: String,
     symbols: HashMap<String, (usize, DLType)>,
     tbox: TB,
-    current_abox: AB,
+    current_abox: Option<AB>,
 }
 
 impl fmt::Display for Ontology {
@@ -55,8 +63,13 @@ impl fmt::Display for Ontology {
         s.push_str(formatted.as_str());
 
         // add the tbox
-        formatted = format!("----<ABox>\n{}\n", &self.abox_to_string(&self.current_abox));
-        s.push_str(formatted.as_str());
+        if self.current_abox.is_some() {
+            formatted = format!(
+                "----<ABox>\n{}\n",
+                &self.abox_to_string(&self.current_abox.as_ref().unwrap())
+            );
+            s.push_str(formatted.as_str());
+        }
 
         // last bracket
         s.push_str("}");
@@ -82,12 +95,22 @@ impl Ontology {
             name: s,
             symbols,
             tbox: TB::new(),
-            current_abox: AB::new(),
+            current_abox: Option::None,
         }
     }
 
-    pub fn abox(&self) -> &AB {
-        &self.current_abox
+    pub fn abox(&self) -> Option<&AB> {
+        match &self.current_abox {
+            Option::None => Option::None,
+            Some(ab) => Some(ab),
+        }
+    }
+
+    pub fn abox_name(&self) -> String {
+        match &self.current_abox {
+            Option::None => String::from("NONE"),
+            Some(ab) => String::from(ab.name()),
+        }
     }
 
     pub fn symbols_as_mut(&mut self) -> &mut HashMap<String, (usize, DLType)> {
@@ -102,22 +125,23 @@ impl Ontology {
 
     pub fn add_symbols(&mut self, filename: &str, filetype: FileType, verbose: bool) {
         let new_symbols_result = match filetype {
-            FileType::JSON => {
-                parse_symbols_json(filename)
-            },
+            FileType::JSON => parse_symbols_json(filename),
             FileType::NATIVE => {
                 parse_symbols_native(filename, verbose) // don't like this :/ (this is a smiley face)
-            },
+            }
         };
         match new_symbols_result {
             Err(error) => {
-                println!("couldn't parse symbols from json file: {}", &error.to_string());
-            },
+                println!(
+                    "couldn't parse symbols from json file: {}",
+                    &error.to_string()
+                );
+            }
             Ok(new_symbols) => {
                 for (key, _) in &new_symbols {
                     self.add_symbol(&new_symbols, key);
                 }
-            },
+            }
         }
     }
 
@@ -130,12 +154,12 @@ impl Ontology {
             match tb_result {
                 Err(error) => {
                     println!("couldn't parse tbox from file: {}", &error);
-                },
+                }
                 Ok(tb) => {
                     for tbi in tb.items() {
                         self.add_tbi(tbi);
                     }
-                },
+                }
             }
         } else {
             println!("warning: no symbols detected, no tbox item will be added");
@@ -144,28 +168,29 @@ impl Ontology {
 
     pub fn new_abox(&mut self, filename: &str, filetype: FileType, verbose: bool) {
         if self.symbols.len() != 0 {
-           match filetype {
-               FileType::JSON => {
-                   if verbose {
-                       println!("the json parser is not yet implemented");
-                   }
+            match filetype {
+                FileType::JSON => {
+                    if verbose {
+                        println!("the json parser is not yet implemented");
+                    }
 
-                   panic!("not implemented yet!")},
-               FileType::NATIVE => {
-                   let ab_result = parse_abox_native(filename, &mut self.symbols, verbose);
+                    panic!("not implemented yet!")
+                }
+                FileType::NATIVE => {
+                    let ab_result = parse_abox_native(filename, &mut self.symbols, verbose);
 
-                   match ab_result {
-                       Err(error) => {
+                    match ab_result {
+                        Err(error) => {
                             if verbose {
                                 println!("couldn't parse abox from file: {}", filename);
                             }
-                       },
-                       Ok(ab) => {
-                          self.current_abox = ab;
-                       }
-                   }
-               },
-           }
+                        }
+                        Ok(ab) => {
+                            self.current_abox = Some(ab);
+                        }
+                    }
+                }
+            }
         } else {
             println!("warning: no symbols detected, no abox item will be added");
         }
@@ -179,7 +204,8 @@ impl Ontology {
                         println!("the json parser is not yet implemented");
                     }
 
-                    panic!("not implemented yet!")},
+                    panic!("not implemented yet!")
+                }
                 FileType::NATIVE => {
                     let ab_result = parse_abox_native(filename, &mut self.symbols, verbose);
 
@@ -188,15 +214,18 @@ impl Ontology {
                             if verbose {
                                 println!("couldn't parse abox from file: {}", filename);
                             }
-                        },
+                        }
                         Ok(ab) => {
+                            let c_ab = self.current_abox.as_mut().unwrap();
+
                             for item in ab.items() {
-                                self.current_abox.add(item.clone());
+                                c_ab.add(item.clone());
                             }
-                            // self.current_abox = ab; // stupid line :(
+                            // TODO: come to this line if the abox is not updated
+                            //self.current_abox = Some(c_ab);
                         }
                     }
-                },
+                }
             }
         } else {
             println!("warning: no symbols detected, no abox item will be added");
@@ -237,11 +266,16 @@ impl Ontology {
     }
 
     pub fn find_consequences(&self, abox: &AB) -> AB {
-        AB::new()
+        AB::new(abox.name())
     }
 
-    pub fn find_consequences_from_file(&self, filename: &str, filetype: FileType) -> io::Result<AB> {
-        Ok(AB::new())
+    pub fn find_consequences_from_file(
+        &self,
+        filename: &str,
+        filetype: FileType,
+    ) -> io::Result<AB> {
+        let ab_name = parse_name_from_filename(filename);
+        Ok(AB::new(ab_name))
     }
 
     pub fn symbols(&self) -> &HashMap<String, (usize, DLType)> {
@@ -467,14 +501,14 @@ impl Ontology {
 
                 let s = format!("{},{} : {}", a, b, r);
                 s
-            },
+            }
             ABI::CA(c, a) => {
                 let c = self.node_to_string(c);
                 let a = self.node_to_string(a);
 
                 let s = format!("{} : {}", a, c);
                 s
-            },
+            }
         };
 
         s
@@ -519,9 +553,10 @@ impl Ontology {
                     }
                     _ => false,
                 }
-            },
+            }
             FileType::NATIVE => {
-                let tbox_as_string_op = tbox_to_native_string(&self.tbox, &self.symbols, dont_write_trivial);
+                let tbox_as_string_op =
+                    tbox_to_native_string(&self.tbox, &self.symbols, dont_write_trivial);
 
                 match tbox_as_string_op {
                     Some(tbox_as_string) => {
@@ -550,7 +585,7 @@ impl Ontology {
                     }
                     _ => false,
                 }
-            },
+            }
         }
     }
 
@@ -562,7 +597,11 @@ impl Ontology {
     ) -> bool {
         match filetype {
             FileType::NATIVE => {
-                let abox_as_string_op = abox_to_native_string(&self.current_abox, &self.symbols, dont_write_trivial);
+                let abox_as_string_op = abox_to_native_string(
+                    &self.current_abox.as_ref().unwrap(),
+                    &self.symbols,
+                    dont_write_trivial,
+                );
 
                 match abox_as_string_op {
                     Some(abox_as_string) => {
@@ -591,7 +630,7 @@ impl Ontology {
                     }
                     _ => false,
                 }
-            },
+            }
             _ => {
                 println!("not implemented!");
                 false
@@ -599,96 +638,42 @@ impl Ontology {
         }
     }
 
-
-    pub fn to_db(&self, mut path_to_db: path::PathBuf) -> bool {
-        let mut db_name = self.name.clone();
-        db_name.push_str(".db");
-        path_to_db.push(db_name);
-
-        if path_to_db.exists() {
-            println!("database exists!");
-        }
-
-        let conn = Connection::open(path_to_db);
-
-        match conn {
-            Result::Err(e) => {
-                println!("something went wrong: {}", &e);
-                false
-            },
-            Result::Ok(c) => {
-                let conn = c;
-
-                Ontology::add_basic_tables_db(&conn);
-                Ontology::add_symbols_db(&self, &conn);
-                true
-            },
-        }
+    // ------------------------------------------------------------------------------------------
+    // this part is the sqlite interface
+    // ------------------------------------------------------------------------------------------
+    pub fn populate_db(&self, conn: &Connection, verbose: bool) -> bool {
+        add_basic_tables_to_db(&conn, verbose);
+        add_symbols_to_db(&self.symbols, &conn, verbose);
+        add_tbis_to_db(self.symbols(), self.tbox.items(), &conn, verbose);
+        true
     }
 
-    pub fn add_symbols_db(&self, conn: &Connection) {
-        conn.execute("\
-        CREATE TABLE IF NOT EXISTS symbols(
-            id INTEGER PRIMARY KEY,
-            name TEXT NON NULL,
-            type TEXT NON NULL,
-            UNIQUE(id, name, type)
-        )
-        ", NO_PARAMS);
 
-       for symbol in &self.symbols {
-           let name = symbol.0;
-           let id = symbol.1.0;
-           let t = symbol.1.1.for_db();
+    pub fn initiate_from_db(filename: &str, verbose: bool) -> Result<Ontology> {
+        let conn_res = Connection::open(filename);
 
-           let command = format!("INSERT OR IGNORE INTO symbols VALUES({}, '{}', '{}')",id, name, t);
+        match conn_res {
+            Err(e) => {
+                if verbose {
+                    println!("an error ocurred: {}", &e);
+                }
+                Err(e)
+            }
+            Ok(conn) => {
+                let tb_name = parse_name_from_filename(filename);
 
-           println!("command: {}", &command);
+                let mut onto = Ontology::new(String::from(tb_name));
 
-           conn.execute(command.as_str(), NO_PARAMS);
-       }
-    }
+                let symbol_res = add_symbols_from_db(&mut onto.symbols, &conn, verbose);
+                let tbis_res = add_tbis_from_db(&onto.symbols,&mut onto.tbox, &conn, verbose);
 
-    pub fn add_basic_tables_db(conn: &Connection) {
-        // create relation types
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS relation(\
-                type TEXT NON NULL PRIMARY KEY
-            )", NO_PARAMS
-        );
-
-        conn.execute(
-            "INSERT OR IGNORE INTO relation(type) VALUES ('role')",
-            NO_PARAMS
-        );
-
-        conn.execute(
-            "INSERT OR IGNORE INTO relation(type) VALUES ('concept')",
-            NO_PARAMS
-        );
-
-        // create dl type
-        // create relation types
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS dltype(
-                id INTEGER PRIMARY KEY,
-                type TEXT NON NULL,
-                UNIQUE(id, type)
-            )", NO_PARAMS
-        );
-
-        let ids_dltype = [0, 1, 2, 3, 4, 5, 6, 7, 8];
-        let dltypes = ["bottom", "top", "baseconcept", "baserole", "inverserole", "negatedrole", "existsconcept", "negatedconcept", "nominal"];
-
-        for i in 0..9 {
-            let id = ids_dltype[i];
-            let dltype = dltypes[i];
-
-            let command = format!("INSERT OR IGNORE INTO dltype(id, type) VALUES ({}, '{}')", id, dltype);
-
-            println!("command: {}", &command);
-
-            conn.execute(command.as_str(), NO_PARAMS);
+                Ok(onto)
+            }
         }
     }
+
+
+
+
+
 }

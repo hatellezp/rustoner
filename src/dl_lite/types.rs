@@ -31,6 +31,13 @@ impl fmt::Display for DLType {
 }
 
 impl DLType {
+    pub fn is_base_type(&self) -> bool {
+        match self {
+            DLType::Nominal | DLType::BaseRole | DLType::BaseConcept => true,
+            _ => false,
+        }
+    }
+
     pub fn is_nominal_type(&self) -> bool {
         match self {
             DLType::Nominal => true,
@@ -95,7 +102,35 @@ impl DLType {
         DLType::all_roles(t1, t2) || DLType::all_concepts(t1, t2) || DLType::all_nominals(t1, t2)
     }
 
-    pub fn for_db(&self) -> String {
+    pub fn types() -> [DLType; 9] {
+        [
+            DLType::Bottom,
+            DLType::Top,
+            DLType::BaseConcept,
+            DLType::BaseRole,
+            DLType::InverseRole,
+            DLType::NegatedRole,
+            DLType::ExistsConcept,
+            DLType::NegatedConcept,
+            DLType::Nominal,
+        ]
+    }
+
+    pub fn to_usize_for_db(&self) -> usize {
+        match self {
+            DLType::Bottom => 0,
+            DLType::Top => 1,
+            DLType::BaseConcept => 2,
+            DLType::BaseRole => 3,
+            DLType::InverseRole => 4,
+            DLType::NegatedRole => 5,
+            DLType::ExistsConcept => 6,
+            DLType::NegatedConcept => 7,
+            DLType::Nominal => 8,
+        }
+    }
+
+    pub fn to_string_for_db(&self) -> String {
         let res = match self {
             DLType::Bottom => "bottom",
             DLType::Top => "top",
@@ -108,8 +143,38 @@ impl DLType {
             DLType::Nominal => "nominal",
         };
 
-        let res =String::from(res);
+        let res = String::from(res);
         res
+    }
+
+    pub fn to_type_from_string_for_db(t: &str) -> Option<DLType> {
+        match t {
+            "bottom" => Some(DLType::Bottom),
+            "top" => Some(DLType::Top),
+            "baseconcept" => Some(DLType::BaseConcept),
+            "baserole" => Some(DLType::BaseRole),
+            "inverserole" => Some(DLType::InverseRole),
+            "negatedrole" => Some(DLType::NegatedRole),
+            "existsconcept" => Some(DLType::ExistsConcept),
+            "negatedconcept" => Some(DLType::NegatedConcept),
+            "nominal" => Some(DLType::Nominal),
+            _ => Option::None,
+        }
+    }
+
+    pub fn to_type_from_usize_for_db(id: usize) -> Option<DLType> {
+        match id {
+            0 => Some(DLType::Bottom),
+            1 => Some(DLType::Top),
+            2 => Some(DLType::BaseConcept),
+            3 => Some(DLType::BaseRole),
+            4 => Some(DLType::InverseRole),
+            5 => Some(DLType::NegatedRole),
+            6 => Some(DLType::ExistsConcept),
+            7 => Some(DLType::NegatedConcept),
+            8 => Some(DLType::Nominal),
+            _ => Option::None,
+        }
     }
 }
 
