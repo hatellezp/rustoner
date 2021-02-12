@@ -1,1 +1,0 @@
-{"tbox":[["A","EXISTS r"],["A","EXISTS s"],["EXISTS r","EXISTS s"],["r","s"],["INV r","INV s"]]}

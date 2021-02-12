@@ -1,5 +1,5 @@
-BEGINTBOX
-Man < Mortal
-Human < Mortal
-Man < Human
-ENDTBOX
+BEGINABOX
+Socrates : Man
+Socrates : Human
+Socrates : Mortal
+ENDABOX
