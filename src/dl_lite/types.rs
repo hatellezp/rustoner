@@ -147,6 +147,7 @@ impl DLType {
         res
     }
 
+    /*
     pub fn to_type_from_string_for_db(t: &str) -> Option<DLType> {
         match t {
             "bottom" => Some(DLType::Bottom),
@@ -161,6 +162,8 @@ impl DLType {
             _ => Option::None,
         }
     }
+
+     */
 
     pub fn to_type_from_usize_for_db(id: usize) -> Option<DLType> {
         match id {

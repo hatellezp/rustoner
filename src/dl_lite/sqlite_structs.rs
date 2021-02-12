@@ -52,7 +52,6 @@ pub struct AboxItemRDb {
     pub(crate) role_db: i64,
 }
 
-
 #[derive(Debug, Clone, PartialEq)]
 pub struct TableDb {
     pub(crate) name_db: String,

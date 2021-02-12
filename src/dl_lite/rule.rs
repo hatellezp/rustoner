@@ -296,3 +296,81 @@ pub fn dl_lite_rule_eight(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
 
 //-----------------------------------------------------------------------------------------------
 // here I will put the rules for aboxes
+
+// if (a,b):r then a:Er and b:Er^⁻
+pub fn dl_lite_abox_rule_one(abis: Vec<&ABI>, tbis: Vec<&TBI>) -> Option<Vec<ABI>> {
+    if abis.len() < 1 {
+        Option::None
+    } else {
+        let abi = abis[0];
+
+        match abi {
+            ABI::CA(_, _) => Option::None,
+            ABI::RA(r, a, b) => {
+                // first create a: Er
+                let er = r.clone().exists().unwrap(); // this should work, r is a base role
+                let a_er = ABI::new_ca(er, a.clone(), true).unwrap(); // rules are always applied for completion
+
+                // secondly create b:Er^-
+                let erinv = r.clone().inverse().unwrap().exists().unwrap();
+                let b_erinv = ABI::new_ca(erinv, b.clone(), true).unwrap();
+
+                let v = vec![a_er, b_erinv];
+
+                // println!("returning: {:?}", &v);
+
+                Some(v)
+            }
+        }
+    }
+}
+
+// if (a,b):r and r < s then (a,b):s
+pub fn dl_lite_abox_rule_two(abis: Vec<&ABI>, tbis: Vec<&TBI>) -> Option<Vec<ABI>> {
+    if abis.len() < 1 || tbis.len() < 1 {
+        Option::None
+    } else {
+        let abi = abis[0];
+        let tbi = tbis[0];
+
+        match abi {
+            ABI::CA(_, _) => Option::None,
+            ABI::RA(r, a, b) => {
+                if r == tbi.lside() {
+                    let new_ra = ABI::new_ra(tbi.rside().clone(), a.clone(), b.clone(), true);
+
+                    let v = vec![new_ra.unwrap()];
+
+                    Some(v)
+                } else {
+                    Option::None
+                }
+            }
+        }
+    }
+}
+
+// if a:c and c < d then a:d
+pub fn dl_lite_abox_rule_three(abis: Vec<&ABI>, tbis: Vec<&TBI>) -> Option<Vec<ABI>> {
+    if abis.len() < 1 || tbis.len() < 1 {
+        Option::None
+    } else {
+        let abi = abis[0];
+        let tbi = tbis[0];
+
+        match abi {
+            ABI::RA(_, _, _) => Option::None,
+            ABI::CA(c, a) => {
+                if c == tbi.lside() {
+                    let new_ca = ABI::new_ca(tbi.rside().clone(), a.clone(), true);
+
+                    let v = vec![new_ca.unwrap()];
+
+                    Some(v)
+                } else {
+                    Option::None
+                }
+            }
+        }
+    }
+}

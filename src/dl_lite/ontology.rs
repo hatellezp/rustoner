@@ -10,7 +10,7 @@ use std::collections::HashMap;
 // use serde_json::Value;
 use std::fs::File;
 use std::io::Write;
-use std::{fmt, io, path};
+use std::{fmt, io};
 // use std::iter::Map;
 use crate::dl_lite::abox::AB;
 use crate::dl_lite::native_filetype_utilities::{
@@ -18,13 +18,14 @@ use crate::dl_lite::native_filetype_utilities::{
     tbox_to_native_string,
 };
 
-use rusqlite::{params, Connection, Error, MappedRows, Result, Row, Statement, NO_PARAMS};
+use rusqlite::{Connection, Result};
 
-use crate::dl_lite::sqlite_structs::{NodeDb, SymbolDb, TboxItemDb};
-use crate::dl_lite::string_formatter::{node_to_string, string_to_node, string_to_tbi};
+use crate::dl_lite::sqlite_interface::{
+    add_basic_tables_to_db,
+    add_symbols_from_db, add_symbols_to_db, add_tbis_from_db, add_tbis_to_db,
+};
 use crate::interface::utilities::parse_name_from_filename;
-use std::any::Any;
-use crate::dl_lite::sqlite_interface::{add_basic_tables_to_db, add_symbols_to_db, add_symbol_to_db, add_node_to_db, add_nodes_to_db, get_node_from_db, add_tbi_to_db, add_tbis_to_db, add_abi_to_db, add_symbols_from_db, add_tbis_from_db};
+
 /*
 an ontology model
     - name is the name of the ontology
@@ -65,7 +66,8 @@ impl fmt::Display for Ontology {
         // add the tbox
         if self.current_abox.is_some() {
             formatted = format!(
-                "----<ABox>\n{}\n",
+                "----<ABox({})>\n{}\n",
+                self.current_abox.as_ref().unwrap().name(),
                 &self.abox_to_string(&self.current_abox.as_ref().unwrap())
             );
             s.push_str(formatted.as_str());
@@ -123,7 +125,7 @@ impl Ontology {
         self.tbox.sort();
     }
 
-    pub fn add_symbols(&mut self, filename: &str, filetype: FileType, verbose: bool) {
+    pub fn add_symbols_from_file(&mut self, filename: &str, filetype: FileType, verbose: bool) {
         let new_symbols_result = match filetype {
             FileType::JSON => parse_symbols_json(filename),
             FileType::NATIVE => {
@@ -145,7 +147,7 @@ impl Ontology {
         }
     }
 
-    pub fn add_tbis(&mut self, filename: &str, filetype: FileType, verbose: bool) {
+    pub fn add_tbis_from_file(&mut self, filename: &str, filetype: FileType, verbose: bool) {
         if self.symbols.len() != 0 {
             let tb_result = match filetype {
                 FileType::JSON => parse_tbox_json(filename, &self.symbols, verbose),
@@ -166,7 +168,11 @@ impl Ontology {
         }
     }
 
-    pub fn new_abox(&mut self, filename: &str, filetype: FileType, verbose: bool) {
+    pub fn new_abox_from_abox(&mut self, ab: AB) {
+        self.current_abox = Some(ab);
+    }
+
+    pub fn new_abox_from_file(&mut self, filename: &str, filetype: FileType, verbose: bool) {
         if self.symbols.len() != 0 {
             match filetype {
                 FileType::JSON => {
@@ -196,7 +202,7 @@ impl Ontology {
         }
     }
 
-    pub fn add_abis(&mut self, filename: &str, filetype: FileType, verbose: bool) {
+    pub fn add_abis_from_file(&mut self, filename: &str, filetype: FileType, verbose: bool) {
         if self.symbols.len() != 0 {
             match filetype {
                 FileType::JSON => {
@@ -232,7 +238,21 @@ impl Ontology {
         }
     }
 
-    pub fn add_tbox(&mut self, tb: &TB) {
+    pub fn add_abi(&mut self, abi: &ABI) {
+        // you must have created a new abox
+        if self.current_abox.is_some() {
+            let abox = self.current_abox.as_mut().unwrap();
+            abox.add(abi.clone());
+        }
+    }
+
+    pub fn add_abis_from_abox(&mut self, ab: &AB) {
+        for abi in ab.items() {
+            self.add_abi(abi)
+        }
+    }
+
+    pub fn add_tbis_from_tbox(&mut self, tb: &TB) {
         for tbi in tb.items() {
             self.add_tbi(tbi);
         }
@@ -242,17 +262,29 @@ impl Ontology {
     // reasoner tasks
 
     pub fn complete_tbox(&self, verbose: bool) -> TB {
-        let tb = self.tbox.complete2(verbose);
+        let tb = self.tbox.complete(verbose);
 
         tb
     }
 
     pub fn auto_complete(&mut self, verbose: bool) {
+        // the tbox
         let tb = self.complete_tbox(verbose);
 
-        self.add_tbox(&tb);
+        self.add_tbis_from_tbox(&tb);
 
         self.tbox.remove_trivial();
+
+        // the name of the abox changes
+        let ab_op = self.complete_abox(verbose);
+        self.current_abox = ab_op;
+    }
+
+    pub fn complete_abox(&self, verbose: bool) -> Option<AB> {
+        match &self.current_abox {
+            Some(ab) => Some(ab.complete(self.tbox(), verbose)),
+            _ => Option::None,
+        }
     }
 
     pub fn contains_contradiction(&self) -> bool {
@@ -641,13 +673,15 @@ impl Ontology {
     // ------------------------------------------------------------------------------------------
     // this part is the sqlite interface
     // ------------------------------------------------------------------------------------------
-    pub fn populate_db(&self, conn: &Connection, verbose: bool) -> bool {
+    pub fn populate_db(&mut self, conn: &Connection, verbose: bool) -> bool {
+        // sort your tbis before
+        self.sort();
+
         add_basic_tables_to_db(&conn, verbose);
         add_symbols_to_db(&self.symbols, &conn, verbose);
         add_tbis_to_db(self.symbols(), self.tbox.items(), &conn, verbose);
         true
     }
-
 
     pub fn initiate_from_db(filename: &str, verbose: bool) -> Result<Ontology> {
         let conn_res = Connection::open(filename);
@@ -665,15 +699,10 @@ impl Ontology {
                 let mut onto = Ontology::new(String::from(tb_name));
 
                 let symbol_res = add_symbols_from_db(&mut onto.symbols, &conn, verbose);
-                let tbis_res = add_tbis_from_db(&onto.symbols,&mut onto.tbox, &conn, verbose);
+                let tbis_res = add_tbis_from_db(&onto.symbols, &mut onto.tbox, &conn, verbose);
 
                 Ok(onto)
             }
         }
     }
-
-
-
-
-
 }

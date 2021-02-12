@@ -1,16 +1,17 @@
-use rusqlite::{Result, Connection, NO_PARAMS};
-use crate::dl_lite::sqlite_structs::{RelationDb, DltypeDb, SymbolDb, NodeDb, TboxItemDb, AboxItemCDb, AboxItemRDb, TableDb};
-use crate::interface::cli::Task;
-use crate::dl_lite::types::DLType;
-use std::collections::HashMap;
-use crate::dl_lite::string_formatter::{node_to_string, string_to_tbi, string_to_abi};
-use crate::dl_lite::node::Node;
-use crate::dl_lite::abox_item::ABI;
-use crate::dl_lite::tbox_item::TBI;
-use crate::dl_lite::tbox::TB;
 use crate::dl_lite::abox::AB;
+use crate::dl_lite::abox_item::ABI;
 use crate::dl_lite::native_filetype_utilities::find_bound_of_symbols;
-
+use crate::dl_lite::node::Node;
+use crate::dl_lite::sqlite_structs::{
+    AboxItemCDb, AboxItemRDb, NodeDb, SymbolDb, TableDb, TboxItemDb,
+};
+use crate::dl_lite::string_formatter::{node_to_string, string_to_abi, string_to_tbi};
+use crate::dl_lite::tbox::TB;
+use crate::dl_lite::tbox_item::TBI;
+use crate::dl_lite::types::DLType;
+use crate::interface::cli::Task;
+use rusqlite::{Connection, Result, NO_PARAMS};
+use std::collections::HashMap;
 
 pub fn connect_to_db(filename: &str, verbose: bool) -> Connection {
     if verbose {
@@ -169,19 +170,33 @@ pub fn add_symbol_to_db(symbol: (&String, &(usize, DLType)), conn: &Connection, 
     }
 }
 
-pub fn add_symbols_to_db(symbols: &HashMap<String, (usize, DLType)>, conn: &Connection, verbose: bool) {
+pub fn add_symbols_to_db(
+    symbols: &HashMap<String, (usize, DLType)>,
+    conn: &Connection,
+    verbose: bool,
+) {
     for symbol in symbols {
         add_symbol_to_db(symbol, conn, verbose);
     }
 }
 
-pub fn add_nodes_to_db(symbols: &HashMap<String, (usize, DLType)>, nodes: Vec<&Node>, conn: &Connection, verbose: bool) {
+pub fn add_nodes_to_db(
+    symbols: &HashMap<String, (usize, DLType)>,
+    nodes: Vec<&Node>,
+    conn: &Connection,
+    verbose: bool,
+) {
     for node in nodes {
         add_node_to_db(symbols, node, conn, verbose);
     }
 }
 
-pub fn add_node_to_db(symbols: &HashMap<String, (usize, DLType)>, node: &Node, conn: &Connection, verbose: bool) {
+pub fn add_node_to_db(
+    symbols: &HashMap<String, (usize, DLType)>,
+    node: &Node,
+    conn: &Connection,
+    verbose: bool,
+) {
     let node_string_op = node_to_string(node, symbols, String::from(""));
 
     match node_string_op {
@@ -261,7 +276,12 @@ pub fn get_node_from_db(
         }
     }
 }
-pub fn add_tbi_to_db(symbols: &HashMap<String, (usize, DLType)>, tbi: &TBI, conn: &Connection, verbose: bool) {
+pub fn add_tbi_to_db(
+    symbols: &HashMap<String, (usize, DLType)>,
+    tbi: &TBI,
+    conn: &Connection,
+    verbose: bool,
+) {
     add_node_to_db(symbols, tbi.lside(), conn, verbose);
     add_node_to_db(symbols, tbi.rside(), conn, verbose);
 
@@ -288,13 +308,24 @@ pub fn add_tbi_to_db(symbols: &HashMap<String, (usize, DLType)>, tbi: &TBI, conn
     }
 }
 
-pub fn add_tbis_to_db(symbols: &HashMap<String, (usize, DLType)>, tbis: &Vec<TBI>, conn: &Connection, verbose: bool) {
+pub fn add_tbis_to_db(
+    symbols: &HashMap<String, (usize, DLType)>,
+    tbis: &Vec<TBI>,
+    conn: &Connection,
+    verbose: bool,
+) {
     for tbi in tbis {
         add_tbi_to_db(symbols, tbi, conn, verbose);
     }
 }
 
-pub fn add_abi_to_db(symbols: &HashMap<String, (usize, DLType)>, ab_name: &str, abi: &ABI, conn: &Connection, verbose: bool) {
+pub fn add_abi_to_db(
+    symbols: &HashMap<String, (usize, DLType)>,
+    ab_name: &str,
+    abi: &ABI,
+    conn: &Connection,
+    verbose: bool,
+) {
     // define the stuff
     let mut command: String;
     let mut query: &str;
@@ -353,9 +384,13 @@ pub fn add_abi_to_db(symbols: &HashMap<String, (usize, DLType)>, ab_name: &str, 
     }
 }
 
-
-pub fn add_abis_to_db(symbols: &HashMap<String, (usize, DLType)>, abis: &Vec<ABI>, ab_name: &str, conn: &Connection, verbose: bool) {
-
+pub fn add_abis_to_db(
+    symbols: &HashMap<String, (usize, DLType)>,
+    abis: &Vec<ABI>,
+    ab_name: &str,
+    conn: &Connection,
+    verbose: bool,
+) {
     // first create table it they don't exist
 
     // first concept table
@@ -416,7 +451,11 @@ pub fn add_abis_to_db(symbols: &HashMap<String, (usize, DLType)>, abis: &Vec<ABI
     }
 }
 
-pub fn add_symbols_from_db(symbols: &mut HashMap<String, (usize, DLType)>,conn: &Connection, verbose: bool) -> Result<usize> {
+pub fn add_symbols_from_db(
+    symbols: &mut HashMap<String, (usize, DLType)>,
+    conn: &Connection,
+    verbose: bool,
+) -> Result<usize> {
     let query = "SELECT * FROM symbols";
 
     let mut smt_res = conn.prepare(query);
@@ -472,7 +511,12 @@ pub fn add_symbols_from_db(symbols: &mut HashMap<String, (usize, DLType)>,conn: 
     }
 }
 
-pub fn add_tbis_from_db(symbols: &HashMap<String, (usize, DLType)>, tbox: &mut TB, conn: &Connection, verbose: bool) -> Result<usize> {
+pub fn add_tbis_from_db(
+    symbols: &HashMap<String, (usize, DLType)>,
+    tbox: &mut TB,
+    conn: &Connection,
+    verbose: bool,
+) -> Result<usize> {
     let query = "SELECT * FROM tbox_items";
     let mut smt_res = conn.prepare(query);
 
@@ -499,7 +543,6 @@ pub fn add_tbis_from_db(symbols: &HashMap<String, (usize, DLType)>, tbox: &mut T
             })?;
 
             for tbi in tbis_row {
-
                 let tbi = tbi.unwrap();
 
                 let mut tbi_string = String::new();
@@ -539,9 +582,13 @@ pub fn add_tbis_from_db(symbols: &HashMap<String, (usize, DLType)>, tbox: &mut T
     }
 }
 
-
-pub fn add_abis_from_db(symbols: &mut HashMap<String, (usize, DLType)>, abox: &mut AB, conn: &Connection, ab_name: &str, verbose: bool) -> Result<usize> {
-
+pub fn add_abis_from_db(
+    symbols: &mut HashMap<String, (usize, DLType)>,
+    abox: &mut AB,
+    conn: &Connection,
+    ab_name: &str,
+    verbose: bool,
+) -> Result<usize> {
     let command_c = format!("SELECT * FROM {}_abox_concept", ab_name);
     let query_c = &command_c;
 
@@ -589,7 +636,7 @@ pub fn add_abis_from_db(symbols: &mut HashMap<String, (usize, DLType)>, abox: &m
                 abi_string.push_str(":");
                 abi_string.push_str(&c_str);
 
-                let (abi_res, current_id) = string_to_abi(&abi_string, symbols, current_id);
+                let (abi_res, current_id) = string_to_abi(&abi_string, symbols, current_id, true); // TODO: come back here for 'for_completion' argument
 
                 if verbose {
                     println!("attempting to insert abi {:?}", &abi_res);
@@ -605,7 +652,7 @@ pub fn add_abis_from_db(symbols: &mut HashMap<String, (usize, DLType)>, abox: &m
 
                         // add symbols
                         for (s, it) in ss {
-                           symbols.insert(s, it);
+                            symbols.insert(s, it);
                         }
 
                         if verbose {
@@ -670,7 +717,7 @@ pub fn add_abis_from_db(symbols: &mut HashMap<String, (usize, DLType)>, abox: &m
                 abi_string.push_str(":");
                 abi_string.push_str(&r_str);
 
-                let (abi_res, current_id) = string_to_abi(&abi_string, symbols, current_id);
+                let (abi_res, current_id) = string_to_abi(&abi_string, symbols, current_id, true); // TODO: same here, for_completion argument
 
                 if verbose {
                     println!("attempting to insert abi {:?}", &abi_res);
@@ -710,22 +757,86 @@ pub fn add_abis_from_db(symbols: &mut HashMap<String, (usize, DLType)>, abox: &m
                 println!("an error ocurred: {}", &e);
             }
             Err(e)
-        },
+        }
         (_, Err(e)) => {
             if verbose {
                 println!("an error ocurred: {}", &e);
             }
             Err(e)
-        },
+        }
         (Ok(i1), _) => Ok(i1),
     }
 }
 
-
 // TODO: maybe more information in these functions that work with the database
-pub fn update_symbols_to_db(symbols: &HashMap<String, (usize, DLType)>, conn: &Connection, verbose: bool) {
+pub fn update_symbols_to_db(
+    symbols: &HashMap<String, (usize, DLType)>,
+    conn: &Connection,
+    verbose: bool,
+) {
     for symbol in symbols {
         add_symbol_to_db(symbol, conn, verbose);
     }
 }
 
+pub fn get_table_names(conn: &Connection, verbose: bool) -> Result<Vec<String>> {
+    let query = "\
+    SELECT
+        name
+    FROM
+        sqlite_master
+    WHERE
+        type='table' AND
+        name NOT LIKE 'sqlite_%'
+    ";
+
+    let smt_res = conn.prepare(query);
+
+    match smt_res {
+        Err(e) => {
+            if verbose {
+                println!("an error ocurred: {}", &e);
+            }
+            Err(e)
+        }
+        Ok(mut smt) => {
+            let tables = smt
+                .query_map(NO_PARAMS, |row| {
+                    Ok(TableDb {
+                        name_db: row.get(0)?,
+                    })
+                })
+                .ok()
+                .unwrap();
+
+            let mut v: Vec<String> = Vec::new();
+
+            for table in tables {
+                v.push(table.unwrap().name_db);
+            }
+
+            Ok(v)
+        }
+    }
+}
+
+pub fn drop_tables_from_database(conn: &Connection, tables_to_drop: Vec<&str>, verbose: bool) {
+    let mut command: String;
+    let mut query: &str;
+    let mut res: Result<usize>;
+
+    for table in tables_to_drop {
+        // okay, otherwise, you can't be dropping table however you want (this also protect from some attacks...)
+        if table.contains("_abox_concept") || table.contains("_abox_role") {
+            command = format!("DROP TABLE {}", table);
+
+            query = &command;
+
+            res = conn.execute(query, NO_PARAMS);
+
+            if verbose {
+                println!("query: {}\nreturned: {:?}", query, &res);
+            }
+        }
+    }
+}

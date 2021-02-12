@@ -78,6 +78,7 @@ impl TBI {
         !self.is_negative_inclusion()
     }
 
+    /*
     // this functions consumes self
     pub fn decompact(self) -> (Node, Node) {
         (self.lside, self.rside)
@@ -87,6 +88,8 @@ impl TBI {
     pub fn decompact_with_clone(&self) -> (Node, Node) {
         (self.clone()).decompact()
     }
+
+     */
 
     pub fn reverse_negation(&self) -> Option<TBI> {
         /*

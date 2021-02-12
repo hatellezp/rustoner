@@ -129,7 +129,7 @@ impl TB {
         }
     }
 
-    pub fn complete2(&self, verbose: bool) -> TB {
+    pub fn complete(&self, verbose: bool) -> TB {
         if self.items.len() == 0 {
             if verbose {
                 println!("the tbox is empty, nothing to complete");
@@ -535,7 +535,7 @@ impl TB {
     }
 
     pub fn is_satisfiable(&self, verbose: bool) -> bool {
-        let new_tb = self.complete2(verbose);
+        let new_tb = self.complete(verbose);
 
         for tbi in new_tb.items {
             if tbi.is_contradiction() {

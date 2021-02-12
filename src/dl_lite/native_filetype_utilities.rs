@@ -239,7 +239,7 @@ pub fn parse_abox_native(
                             }
 
                             let (parsed_result, current_id_result) =
-                                string_to_abi(&not_ignored, symbols, current_id);
+                                string_to_abi(&not_ignored, symbols, current_id, false); // parsing from file should be a new abox
                             current_id = current_id_result;
 
                             match parsed_result {

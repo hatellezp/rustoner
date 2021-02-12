@@ -2,7 +2,6 @@ use std::fmt;
 
 use crate::dl_lite::node::Node;
 use crate::dl_lite::rule::AbRule;
-use crate::dl_lite::tbox::TB;
 use crate::dl_lite::tbox_item::TBI;
 use crate::dl_lite::types::DLType;
 
@@ -39,8 +38,8 @@ this will allow for finding that 'a doesn't belong to A'
  */
 
 impl ABI {
-    pub fn new_ra(r: Node, a: Node, b: Node) -> Option<ABI> {
-        let is_base_role = r.t() == DLType::BaseRole;
+    pub fn new_ra(r: Node, a: Node, b: Node, for_completion: bool) -> Option<ABI> {
+        let is_base_role = r.t() == DLType::BaseRole || for_completion;
         let all_nominals = DLType::all_nominals(a.t(), b.t());
 
         if !is_base_role || !all_nominals {
@@ -50,8 +49,8 @@ impl ABI {
         }
     }
 
-    pub fn new_ca(c: Node, a: Node) -> Option<ABI> {
-        let is_base_concept = c.t() == DLType::BaseConcept;
+    pub fn new_ca(c: Node, a: Node, for_completion: bool) -> Option<ABI> {
+        let is_base_concept = c.t() == DLType::BaseConcept || for_completion;
         let is_nominal = a.t() == DLType::Nominal;
         if !is_base_concept || !is_nominal {
             Option::None
@@ -146,6 +145,7 @@ impl ABI {
         }
     }
 
+    /*
     // this is more complex than what I think
     pub fn apply_one(one: &ABI, tbox: &TB) -> Option<Vec<ABI>> {
         let mut abox_items: Vec<ABI> = Vec::new();
@@ -185,6 +185,8 @@ impl ABI {
             Some(abox_items)
         }
     }
+
+     */
 
     // pub fn apply_two(one: &ABI, two: &ABI, tbox: &TB) -> Option<Vec<ABI>> {}
     pub fn apply_rule(abis: Vec<&ABI>, tbis: Vec<&TBI>, rule: &AbRule) -> Option<Vec<ABI>> {

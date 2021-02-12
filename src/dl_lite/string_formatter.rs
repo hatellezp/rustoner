@@ -254,6 +254,7 @@ pub fn string_to_abi(
     s: &str,
     symbols: &mut HashMap<String, (usize, DLType)>,
     mut current_id: usize,
+    for_completion: bool,
 ) -> (io::Result<(ABI, Vec<(String, (usize, DLType))>)>, usize) {
     let mut splitted = s.trim();
     let mut splitted: Vec<&str> = splitted.split(":").collect();
@@ -311,7 +312,8 @@ pub fn string_to_abi(
                                 node2 = Node::new(Some(id2), DLType::Nominal).unwrap();
                             }
 
-                            let abi = ABI::new_ra(abi_symbol.clone(), node1, node2).unwrap();
+                            let abi = ABI::new_ra(abi_symbol.clone(), node1, node2, for_completion)
+                                .unwrap();
 
                             (Ok((abi, to_be_added)), current_id)
                         }
@@ -333,7 +335,8 @@ pub fn string_to_abi(
                                 node1 = Node::new(Some(id1), DLType::Nominal).unwrap();
                             }
 
-                            let abi = ABI::new_ca(abi_symbol.clone(), node1).unwrap();
+                            let abi =
+                                ABI::new_ca(abi_symbol.clone(), node1, for_completion).unwrap();
 
                             (Ok((abi, to_be_added)), current_id)
                         }

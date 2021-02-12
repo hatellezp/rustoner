@@ -189,7 +189,7 @@ pub fn complete_helper_add_if_necessary_general<T: Display + PartialEq + Eq + Cl
     rn: CR,
 ) -> usize {
     for new_item in created_items {
-        if mu_all.contains(&new_item) {
+        if mu_all.contains(&new_item) || mu.contains(&new_item) {
             if verbose {
                 println!("---- {} rule applied here for {}, giving {}, but the item won't be added, it already exists", rn, print_vector_of_tbi_references(&applied_items), &new_item);
             }

@@ -7,3 +7,4 @@
     * I'm adding sqlite support, but the problems the error gestion
 * that's all for the moment
 * make query to get table names
+* look up Cleora written in rust for graphs

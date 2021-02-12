@@ -11,12 +11,12 @@ use crate::dl_lite::ontology::Ontology;
 use crate::interface::cli::{Cli, Task};
 use crate::interface::utilities::{get_filetype, parse_name_from_filename};
 
+use crate::dl_lite::sqlite_interface::{
+    add_abis_to_db, connect_to_db, drop_tables_from_database, get_table_names, update_symbols_to_db,
+};
+use question::{Answer, Question};
 use rusqlite::NO_PARAMS;
 use rusqlite::{Connection, Result};
-use std::path::PathBuf;
-use std::process::exit;
-use std::str::FromStr;
-use crate::dl_lite::sqlite_interface::{connect_to_db, update_symbols_to_db, add_abis_to_db};
 
 fn main() {
     let args = Cli::from_args();
@@ -50,7 +50,7 @@ fn main() {
                         let path_symbols = path_symbols.to_str().unwrap();
                         let symbols_ft = get_filetype(path_symbols);
 
-                        onto.add_symbols(path_symbols, symbols_ft, verbose);
+                        onto.add_symbols_from_file(path_symbols, symbols_ft, verbose);
                     }
                     Option::None => {
                         if verbose {
@@ -58,12 +58,12 @@ fn main() {
                             println!("here: {:?} and {:?}", &path_tbox, &tb_ft);
                         }
 
-                        onto.add_symbols(&path_tbox, tb_ft, verbose);
+                        onto.add_symbols_from_file(&path_tbox, tb_ft, verbose);
                     }
                 }
 
                 // add tbis and complete the tbox
-                onto.add_tbis(&path_tbox, tb_ft, verbose);
+                onto.add_tbis_from_file(&path_tbox, tb_ft, verbose);
                 onto.auto_complete(verbose);
 
                 // create db name
@@ -100,11 +100,11 @@ fn main() {
                         let path_symbols = path_symbols.to_str().unwrap();
                         let symbols_ft = get_filetype(path_symbols);
 
-                        onto.add_symbols(path_symbols, symbols_ft, args.verbose);
+                        onto.add_symbols_from_file(path_symbols, symbols_ft, args.verbose);
                     }
                     Option::None => {
                         println!("here: {:?} and {:?}", &path_tbox, &tb_ft);
-                        onto.add_symbols(&path_tbox, tb_ft, args.verbose);
+                        onto.add_symbols_from_file(&path_tbox, tb_ft, args.verbose);
                     }
                 }
 
@@ -112,7 +112,7 @@ fn main() {
                     println!("attempting to add tbox items and complete");
                 }
 
-                onto.add_tbis(&path_tbox, tb_ft, verbose);
+                onto.add_tbis_from_file(&path_tbox, tb_ft, verbose);
                 onto.auto_complete(verbose);
 
                 match path_output_op {
@@ -131,14 +131,14 @@ fn main() {
             }
         }
         Task::CAB => {
-            println!("test!!!");
-
             if path_db_op.is_none() || path_abox_op.is_none() {
                 println!("you must provide a database containing an ontology, if you don't have one maybe create one with the 'init' task");
                 std::process::exit(exitcode::USAGE);
             } else {
                 // read the database into an ontology
                 let path_db = path_db_op.unwrap().to_str().unwrap().to_string();
+
+                // initiate won't add existent aboxes, only symbols and the tbox
                 let onto_res = Ontology::initiate_from_db(&path_db, verbose);
 
                 // path and name of the abox
@@ -165,13 +165,102 @@ fn main() {
                         let conn = connect_to_db(&path_db, verbose);
 
                         // add abox
-                        onto.new_abox(&path_abox, ab_ft, verbose);
+                        onto.new_abox_from_file(&path_abox, ab_ft, verbose);
 
                         // udpate the new symbols
                         update_symbols_to_db(onto.symbols(), &conn, verbose);
 
-                        // add abis and nodes that come with
-                        add_abis_to_db(onto.symbols(), onto.abox().unwrap().items(), &onto.abox_name(),  &conn, verbose);
+                        // add this abox to the database if it don't exists
+                        let table_names_res = get_table_names(&conn, verbose);
+                        let ab_table_name_c = format!("{}_abox_concept", &ab_name);
+                        let ab_table_name_r = format!("{}_abox_role", &ab_name);
+
+                        let mut table_exists = false;
+                        match table_names_res {
+                            Ok(v) => {
+                                for s in &v {
+                                    table_exists = table_exists
+                                        || s.contains(&ab_table_name_c)
+                                        || s.contains(&ab_table_name_r);
+                                }
+                            }
+                            _ => (),
+                        };
+
+                        // if table exists ask if you want to drop it
+                        if table_exists {
+                            let question_drop_table = format!("ABox {} already exists in database, drop it ? if this is a new abox better change the name and restart", &ab_name);
+                            let drop_table = Question::new(&question_drop_table)
+                                .default(Answer::NO)
+                                .show_defaults()
+                                .confirm();
+
+                            if drop_table == Answer::YES {
+                                println!("dropping abox...");
+
+                                let tb_c = format!("{}_abox_concept", &ab_name);
+                                let tb_r = format!("{}_abox_role", &ab_name);
+                                let tables_to_drop = vec![tb_c.as_str(), tb_r.as_str()];
+
+                                // drop the tables
+                                drop_tables_from_database(&conn, tables_to_drop, verbose);
+                            } else {
+                                println!("aborting");
+                                std::process::exit(exitcode::OK)
+                            }
+                        }
+
+                        // we continue here after
+                        let abox_completed_op = onto.complete_abox(verbose);
+
+                        match abox_completed_op {
+                            Some(abox_completed) => {
+                                //change current abox
+                                onto.new_abox_from_abox(abox_completed);
+
+                                add_abis_to_db(
+                                    onto.symbols(),
+                                    onto.abox().unwrap().items(),
+                                    &onto.abox_name(),
+                                    &conn,
+                                    verbose,
+                                );
+
+                                match path_output_op {
+                                    Some(path_output) => {
+                                        let path_as_string =
+                                            path_output.to_str().unwrap().to_string();
+                                        let abox_completed_name =
+                                            parse_name_from_filename(&path_as_string);
+                                        let abox_completed_filetype = get_filetype(&path_as_string);
+
+                                        onto.abox_to_file(
+                                            &path_as_string,
+                                            abox_completed_filetype,
+                                            true,
+                                        );
+                                    }
+                                    _ => {
+                                        let question_print =
+                                            "Do you want to see the output".to_string();
+                                        let print_output = Question::new(&question_print)
+                                            .default(Answer::YES)
+                                            .show_defaults()
+                                            .confirm();
+
+                                        if print_output == Answer::YES {
+                                            let abox_as_string =
+                                                onto.abox_to_string(onto.abox().unwrap());
+
+                                            println!("{}", &abox_as_string);
+                                        }
+                                    }
+                                }
+                            }
+                            _ => {
+                                println!("the completion output nothing, maybe try to run with '--verbose' to see the errors");
+                            }
+                        }
                     }
                 }
             }
