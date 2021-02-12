@@ -1,6 +1,5 @@
 # rustoner: a Description Logic reasoner written in rust
-**(under heavy (not that heavy now...) developpement)**
-
+**it works now**
 
 ## Description 
 
@@ -33,6 +32,7 @@ Man < Human
 Human < Mortal
 ENDTBOX
 ```
+where **<** indicates that __Human__ is a _subclass_ of __Mortal__
 and if you want your answer in a file called *__answer__* then call 
 rustoner as follows:
 ```shell script
@@ -42,7 +42,9 @@ rustoner as follows:
 You should get something like this in *__answer__*:
 ```
 BEGINTBOX
-Man : Mortal
+Man < Mortal
+Human < Mortal
+Man < Human
 ENDTBOX
 ```
 
@@ -63,7 +65,7 @@ on _stdout_:
     }
 ```
 
-**Note**: if you want a lot of explanations you can specify a 
+**Note**: if you want __(a lot of!)__ explanations you can specify a 
 verbose option:
 ```
 --verbose
@@ -95,18 +97,40 @@ ENDABOX
 
 Call **rustoner** with the complete abox task:
 ```shell script
-./rustoner --task cab --tbox --abox a_man --output answer
+./rustoner --task cab --tbox are_men_mortals --abox a_man --output answer
 ```
 
 You should get the following in the **answer** file:
 ```
-BEGINABOX:
+BEGINABOX
+Socrates: Man
 Socrates: Human
 Socreates: Mortal
 ENDABOX
 ```
 
-### Queriyng
+### SQLite
+
+You can also put your ontology on a [sqlite](https://www.sqlite.org/index.html) database.
+
+####Why sqlite ? 
+Because it's portable, supported everywhere and you can't use it without any
+knoweledge of client server protocol of larger database systems.
+
+Comming back, you can create a copy of your ontology on a sqlite database with the
+command 
+```
+./rustoner --task init --tbox are_men_mortals 
+```
+it will create a file __are_men_mortals.db__ with your facts and other several tables.
+Then you can add and complete several abox with the command 
+```
+ ./rustoner --task cab --db are_men_mortals.db --abox a_man 
+```
+each abox will benefit of its own tables (one for roles and one for concepts) and all
+can live in the same database.
+
+### Querying
 
 ### Ranking Assertions
 
