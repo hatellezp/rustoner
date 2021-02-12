@@ -33,12 +33,18 @@ pub struct Cli {
     #[structopt(
         short = "t",
         long = "task",
-        help = "describes the wanted task, (ctb|cab|rank), 'ctb' for complete tbox, 'cab' for complete abox and 'rank' for ranking of abox assertions"
+        help = "describes the wanted task, (init|ctb|cab|rank), 'init' to initialize your ontology on a sqlite database, 'ctb' for complete tbox, 'cab' for complete abox and 'rank' for ranking of abox assertions"
     )]
     pub task: Task,
 
     #[structopt(long = "verbose")]
     pub verbose: bool,
+
+    #[structopt(
+        long = "ephemere",
+        help = "if specified will work everything in memory and no database trace will be kept"
+    )]
+    pub ephemere: bool,
 
     #[structopt(parse(from_os_str), long = "db", help = "path to the database file")]
     pub path_db: Option<std::path::PathBuf>,
@@ -58,7 +64,7 @@ pub struct Cli {
 
     #[structopt(
         parse(from_os_str),
-        long = "symbol",
+        long = "symbols",
         help = "optional, if present will parse symbols from this file instead od symbols in the tbox file"
     )]
     pub path_symbols: Option<std::path::PathBuf>,

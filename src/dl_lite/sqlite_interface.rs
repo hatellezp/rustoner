@@ -486,7 +486,7 @@ pub fn add_symbols_from_db(
                 let t_op = DLType::to_type_from_usize_for_db(t_id);
 
                 if verbose {
-                    println!("attempting to insert symbol {:?}", &symbol);
+                    println!("attempting to insert symbol onto ontology {:?}", &symbol);
                 }
 
                 match t_op {
@@ -556,7 +556,7 @@ pub fn add_tbis_from_db(
                 let tbi_res = string_to_tbi(&tbi_string, symbols);
 
                 if verbose {
-                    println!("attempting to insert tbi {:?}", &tbi_res);
+                    println!("attempting to insert tbi onto ontology {:?}", &tbi_res);
                 }
 
                 match tbi_res {
