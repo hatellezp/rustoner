@@ -21,8 +21,8 @@ use crate::dl_lite::native_filetype_utilities::{
 use rusqlite::{Connection, Result};
 
 use crate::dl_lite::sqlite_interface::{
-    add_basic_tables_to_db,
-    add_symbols_from_db, add_symbols_to_db, add_tbis_from_db, add_tbis_to_db,
+    add_basic_tables_to_db, add_symbols_from_db, add_symbols_to_db, add_tbis_from_db,
+    add_tbis_to_db,
 };
 use crate::interface::utilities::parse_name_from_filename;
 
