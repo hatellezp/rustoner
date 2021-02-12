@@ -115,9 +115,9 @@ You can also put your ontology on a [sqlite](https://www.sqlite.org/index.html) 
 
 __Why sqlite ?__
 Because it's portable, supported everywhere and you can't use it without any
-knoweledge of client server protocol of larger database systems.
+knowledge of client server protocol of larger database systems.
 
-Comming back, you can create a copy of your ontology on a sqlite database with the
+Coming back, you can create a copy of your ontology on a sqlite database with the
 command 
 ```
 ./rustoner --task init --tbox are_men_mortals 
