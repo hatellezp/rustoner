@@ -128,7 +128,7 @@ pub fn string_to_tbi(s: &str, symbols: &HashMap<String, (usize, DLType)>) -> io:
             let mut rside_result1 = invalid_data_result("not done yet");
             let mut lside_result2 = invalid_data_result("not done yet");
             let mut rside_result2 = invalid_data_result("not done yet");
-            let mut splitted: Vec<&str>;
+            let splitted: Vec<&str>;
             let mut tuples: Vec<(io::Result<Node>, io::Result<Node>)>;
             let mut tbis: Vec<TBI> = Vec::new();
 
@@ -256,8 +256,8 @@ pub fn string_to_abi(
     mut current_id: usize,
     for_completion: bool,
 ) -> (io::Result<(ABI, Vec<(String, (usize, DLType))>)>, usize) {
-    let mut splitted = s.trim();
-    let mut splitted: Vec<&str> = splitted.split(":").collect();
+    let splitted = s.trim();
+    let splitted: Vec<&str> = splitted.split(":").collect();
 
     if splitted.len() != 2 {
         (

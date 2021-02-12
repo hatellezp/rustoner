@@ -1,4 +1,3 @@
-use crate::dl_lite::types::CR::Fifth;
 use crate::kb::types::FileType;
 
 pub fn is_json_file(filename: &str) -> bool {

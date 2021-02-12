@@ -9,7 +9,7 @@ use crate::dl_lite::string_formatter::{node_to_string, string_to_abi, string_to_
 use crate::dl_lite::tbox::TB;
 use crate::dl_lite::tbox_item::TBI;
 use crate::dl_lite::types::DLType;
-use crate::interface::cli::Task;
+
 use rusqlite::{Connection, Result, NO_PARAMS};
 use std::collections::HashMap;
 
@@ -203,7 +203,7 @@ pub fn add_node_to_db(
         Option::None => (),
         Some(node_string) => {
             let is_base = node.t().is_base_type();
-            let is_nominal = node.t().is_nominal_type();
+            let _is_nominal = node.t().is_nominal_type();
 
             let command = format!(
                 "INSERT OR IGNORE INTO nodes(name, type) VALUES ('{}', {})",
@@ -245,7 +245,7 @@ pub fn get_node_from_db(
         node_to_string(node, symbols, String::from("")).unwrap()
     );
 
-    let mut smt_res = conn.prepare(query.as_str());
+    let smt_res = conn.prepare(query.as_str());
 
     match smt_res {
         Err(e) => {
@@ -327,9 +327,9 @@ pub fn add_abi_to_db(
     verbose: bool,
 ) {
     // define the stuff
-    let mut command: String;
-    let mut query: &str;
-    let mut res: Result<usize>;
+    let command: String;
+    let query: &str;
+    let res: Result<usize>;
 
     // match abi type
     match abi {
@@ -394,7 +394,7 @@ pub fn add_abis_to_db(
     // first create table it they don't exist
 
     // first concept table
-    let mut command = format!(
+    let command = format!(
         "\
         CREATE TABLE IF NOT EXISTS {}_abox_concept(
             id INTEGER PRIMARY KEY,
@@ -410,16 +410,16 @@ pub fn add_abis_to_db(
         ab_name
     );
 
-    let mut query = &command;
+    let query = &command;
 
-    let mut res = conn.execute(query, NO_PARAMS);
+    let res = conn.execute(query, NO_PARAMS);
 
     if verbose {
         println!("query: {} \nreturned: {:?}", query, &res);
     }
 
     // second role table
-    let mut command = format!(
+    let command = format!(
         "\
         CREATE TABLE IF NOT EXISTS {}_abox_role(
             id INTEGER PRIMARY KEY,
@@ -438,9 +438,9 @@ pub fn add_abis_to_db(
         ab_name
     );
 
-    let mut query = &command;
+    let query = &command;
 
-    let mut res = conn.execute(query, NO_PARAMS);
+    let res = conn.execute(query, NO_PARAMS);
 
     if verbose {
         println!("query: {} \nreturned: {:?}", query, &res);
@@ -458,7 +458,7 @@ pub fn add_symbols_from_db(
 ) -> Result<usize> {
     let query = "SELECT * FROM symbols";
 
-    let mut smt_res = conn.prepare(query);
+    let smt_res = conn.prepare(query);
 
     match smt_res {
         Err(e) => {
@@ -518,7 +518,7 @@ pub fn add_tbis_from_db(
     verbose: bool,
 ) -> Result<usize> {
     let query = "SELECT * FROM tbox_items";
-    let mut smt_res = conn.prepare(query);
+    let smt_res = conn.prepare(query);
 
     match smt_res {
         Err(e) => {
@@ -621,7 +621,7 @@ pub fn add_abis_from_db(
 
             // needed to update the symbols
             let (_, id_bound) = find_bound_of_symbols(symbols);
-            let mut current_id = id_bound + 1;
+            let current_id = id_bound + 1;
 
             for abi in abis_row {
                 //println!("---- tbi: {:?}", &tbi);
@@ -636,7 +636,7 @@ pub fn add_abis_from_db(
                 abi_string.push_str(":");
                 abi_string.push_str(&c_str);
 
-                let (abi_res, current_id) = string_to_abi(&abi_string, symbols, current_id, true); // TODO: come back here for 'for_completion' argument
+                let (abi_res, _current_id) = string_to_abi(&abi_string, symbols, current_id, true); // TODO: come back here for 'for_completion' argument
 
                 if verbose {
                     println!("attempting to insert abi {:?}", &abi_res);
@@ -699,7 +699,7 @@ pub fn add_abis_from_db(
 
             // needed to update the symbols
             let (_, id_bound) = find_bound_of_symbols(symbols);
-            let mut current_id = id_bound + 1;
+            let current_id = id_bound + 1;
 
             for abi in abis_row {
                 //println!("---- tbi: {:?}", &tbi);
@@ -717,7 +717,7 @@ pub fn add_abis_from_db(
                 abi_string.push_str(":");
                 abi_string.push_str(&r_str);
 
-                let (abi_res, current_id) = string_to_abi(&abi_string, symbols, current_id, true); // TODO: same here, for_completion argument
+                let (abi_res, _current_id) = string_to_abi(&abi_string, symbols, current_id, true); // TODO: same here, for_completion argument
 
                 if verbose {
                     println!("attempting to insert abi {:?}", &abi_res);

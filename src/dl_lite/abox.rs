@@ -266,7 +266,7 @@ impl AB {
                                     println!("---- comparing with tbi: {}", tbi);
                                 }
 
-                                let mut new_item_vec3 =
+                                let new_item_vec3 =
                                     ABI::apply_rule(vec![&current_item, &item], vec![tbi], rule);
 
                                 for optional_vec in vec![&new_item_vec3] {
@@ -278,7 +278,7 @@ impl AB {
                                         let mut abis_to_add: Vec<ABI> = Vec::new();
                                         let iterator = optional_vec.as_ref().unwrap();
 
-                                        let mut abi_already_exits = false;
+                                        let _abi_already_exits = false;
 
                                         for abi_to_be_added in iterator {
                                             abis_to_add.push(abi_to_be_added.clone());

@@ -3,20 +3,10 @@ mod interface;
 mod kb;
 
 // for cli interface
-use structopt::StructOpt;
 
 use crate::kb::types::FileType;
 
 use crate::dl_lite::ontology::Ontology;
-use crate::interface::cli::{Cli, Task};
-use crate::interface::utilities::{get_filetype, parse_name_from_filename};
-
-use crate::dl_lite::sqlite_interface::{add_abis_to_db, connect_to_db, update_symbols_to_db};
-use rusqlite::NO_PARAMS;
-use rusqlite::{Connection, Result};
-use std::path::PathBuf;
-use std::process::exit;
-use std::str::FromStr;
 
 fn main() {
     println!("hello there");

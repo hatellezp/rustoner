@@ -230,7 +230,7 @@ pub fn dl_lite_rule_five(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
 
 // TODO: verify that fifth and sixth rules are really different, for the moment I'm not implementing the sixth rule
 // sixth rule: Exists_r_inv=>notExists_r_inv then r=>not_r and Exists_r=>notExists_r
-pub fn dl_lite_rule_six(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
+pub fn dl_lite_rule_six(_vec: Vec<&TBI>) -> Option<Vec<TBI>> {
     Option::None
 }
 
@@ -298,7 +298,7 @@ pub fn dl_lite_rule_eight(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
 // here I will put the rules for aboxes
 
 // if (a,b):r then a:Er and b:Er^⁻
-pub fn dl_lite_abox_rule_one(abis: Vec<&ABI>, tbis: Vec<&TBI>) -> Option<Vec<ABI>> {
+pub fn dl_lite_abox_rule_one(abis: Vec<&ABI>, _tbis: Vec<&TBI>) -> Option<Vec<ABI>> {
     if abis.len() < 1 {
         Option::None
     } else {

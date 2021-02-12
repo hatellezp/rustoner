@@ -186,7 +186,7 @@ impl Ontology {
                     let ab_result = parse_abox_native(filename, &mut self.symbols, verbose);
 
                     match ab_result {
-                        Err(error) => {
+                        Err(_error) => {
                             if verbose {
                                 println!("couldn't parse abox from file: {}", filename);
                             }
@@ -216,7 +216,7 @@ impl Ontology {
                     let ab_result = parse_abox_native(filename, &mut self.symbols, verbose);
 
                     match ab_result {
-                        Err(error) => {
+                        Err(_error) => {
                             if verbose {
                                 println!("couldn't parse abox from file: {}", filename);
                             }
@@ -304,7 +304,7 @@ impl Ontology {
     pub fn find_consequences_from_file(
         &self,
         filename: &str,
-        filetype: FileType,
+        _filetype: FileType,
     ) -> io::Result<AB> {
         let ab_name = parse_name_from_filename(filename);
         Ok(AB::new(ab_name))
@@ -336,7 +336,7 @@ impl Ontology {
                 let (_, t) = new_symbols[new_name];
 
                 // we need to update the id to avoid conflict with the current numbers
-                let (low, high) =
+                let (_low, high) =
                     Ontology::find_lower_and_highest_value_from_symbols(self.symbols());
 
                 self.symbols.insert(new_name.clone(), (high + 1, t));
@@ -406,8 +406,8 @@ impl Ontology {
     // ------------------------------------------------------------------------
     // pretty print functions
     fn node_to_string(&self, node: &Node) -> String {
-        let mut left_current = String::new();
-        let mut right_current = String::new();
+        let left_current = String::new();
+        let right_current = String::new();
 
         self.node_to_string_helper(node, left_current, right_current)
     }
@@ -427,7 +427,7 @@ impl Ontology {
                 let mut name: String = String::new();
 
                 for symbol in &self.symbols {
-                    let (a, (b, c)) = symbol;
+                    let (a, (b, _c)) = symbol;
 
                     if b == n {
                         name_found = true;
@@ -560,7 +560,7 @@ impl Ontology {
                     Some(tbox) => {
                         let json_parsed = json!({ "tbox": tbox });
 
-                        let mut file_res = File::create(filename);
+                        let file_res = File::create(filename);
 
                         match file_res {
                             Result::Err(e) => {
@@ -592,7 +592,7 @@ impl Ontology {
 
                 match tbox_as_string_op {
                     Some(tbox_as_string) => {
-                        let mut file_res = File::create(filename);
+                        let file_res = File::create(filename);
 
                         match file_res {
                             Result::Err(e) => {
@@ -637,7 +637,7 @@ impl Ontology {
 
                 match abox_as_string_op {
                     Some(abox_as_string) => {
-                        let mut file_res = File::create(filename);
+                        let file_res = File::create(filename);
 
                         match file_res {
                             Result::Err(e) => {
@@ -698,8 +698,8 @@ impl Ontology {
 
                 let mut onto = Ontology::new(String::from(tb_name));
 
-                let symbol_res = add_symbols_from_db(&mut onto.symbols, &conn, verbose);
-                let tbis_res = add_tbis_from_db(&onto.symbols, &mut onto.tbox, &conn, verbose);
+                let _symbol_res = add_symbols_from_db(&mut onto.symbols, &conn, verbose);
+                let _tbis_res = add_tbis_from_db(&onto.symbols, &mut onto.tbox, &conn, verbose);
 
                 Ok(onto)
             }

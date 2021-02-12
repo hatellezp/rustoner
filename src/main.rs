@@ -12,11 +12,10 @@ use crate::interface::cli::{Cli, Task};
 use crate::interface::utilities::{get_filetype, parse_name_from_filename};
 
 use crate::dl_lite::sqlite_interface::{
-    add_abis_to_db, connect_to_db, drop_tables_from_database, get_table_names, update_symbols_to_db,
+    add_abi_to_db, add_abis_to_db, connect_to_db, drop_tables_from_database, get_table_names,
+    update_symbols_to_db,
 };
 use question::{Answer, Question};
-use rusqlite::NO_PARAMS;
-use rusqlite::{Connection, Result};
 
 fn main() {
     let args = Cli::from_args();
@@ -159,7 +158,7 @@ fn main() {
                         std::process::exit(exitcode::IOERR);
                     }
                     Ok(mut onto) => {
-                        println!("{}", &onto);
+                        // println!("{}", &onto);
 
                         // establish connection it should be fine
                         let conn = connect_to_db(&path_db, verbose);
@@ -210,6 +209,16 @@ fn main() {
                             }
                         }
 
+                        // first put the original abox in the database
+                        add_abis_to_db(
+                            onto.symbols(),
+                            onto.abox().unwrap().items(),
+                            &onto.abox_name(),
+                            &conn,
+                            verbose,
+                        );
+
+                        // we continue with the completion
                         // we continue here after
                         let abox_completed_op = onto.complete_abox(verbose);
 
@@ -230,7 +239,7 @@ fn main() {
                                     Some(path_output) => {
                                         let path_as_string =
                                             path_output.to_str().unwrap().to_string();
-                                        let abox_completed_name =
+                                        let _abox_completed_name =
                                             parse_name_from_filename(&path_as_string);
                                         let abox_completed_filetype = get_filetype(&path_as_string);
 

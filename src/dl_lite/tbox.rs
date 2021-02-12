@@ -421,8 +421,7 @@ impl TB {
                             let rule_ord = rule_ordinal[rule_index];
 
                             // three different vectors
-                            let mut new_item_vec3 =
-                                TBI::apply_rule(vec![&current_item, &item], rule);
+                            let new_item_vec3 = TBI::apply_rule(vec![&current_item, &item], rule);
 
                             for optional_vec in vec![&new_item_vec3] {
                                 // if the rule succeeded

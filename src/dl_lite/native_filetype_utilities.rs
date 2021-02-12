@@ -66,7 +66,7 @@ pub fn parse_symbols_native(
                         }
 
                         if begin_symbol_encountered && !end_symbol_encountered {
-                            let mut vec: Vec<&str> = line_trimmed.split("//").collect();
+                            let vec: Vec<&str> = line_trimmed.split("//").collect();
 
                             let not_ignored = vec[0].clone().trim();
 
@@ -226,7 +226,7 @@ pub fn parse_abox_native(
                         }
 
                         if begin_abox_encountered && !end_abox_encountered {
-                            let mut vec: Vec<&str> = line_trimmed.split("//").collect();
+                            let vec: Vec<&str> = line_trimmed.split("//").collect();
 
                             let not_ignored = vec[0].clone();
 
@@ -341,7 +341,7 @@ pub fn parse_tbox_native(
                         }
 
                         if begin_tbox_encountered && !end_tbox_encountered {
-                            let mut vec: Vec<&str> = line_trimmed.split("//").collect();
+                            let vec: Vec<&str> = line_trimmed.split("//").collect();
 
                             let not_ignored = vec[0].clone().trim();
 

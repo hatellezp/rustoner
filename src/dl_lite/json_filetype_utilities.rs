@@ -128,7 +128,7 @@ pub fn parse_symbol(
 pub fn parse_value_to_tbi(
     value: &Value,
     symbols: &HashMap<String, (usize, DLType)>,
-    verbose: bool,
+    _verbose: bool,
 ) -> io::Result<TBI> {
     match value {
         Value::Array(vec_of_values) => {
@@ -206,7 +206,7 @@ pub fn parse_value_to_tbi(
     }
 }
 
-pub fn parse_value_abi(value: &Value, symbols: Vec<&Node>) -> Option<ABI> {
+pub fn parse_value_abi(_value: &Value, _symbols: Vec<&Node>) -> Option<ABI> {
     Option::None
 }
 
@@ -243,7 +243,7 @@ pub fn parse_symbols_json(filename: &str) -> io::Result<HashMap<String, (usize, 
                                     let mut latest: usize = 2;
                                     let mut result: (io::Result<(&str, usize, DLType)>, usize);
                                     let mut parsed_result: io::Result<(&str, usize, DLType)>;
-                                    let mut unwrapped_parsed: (&str, usize, DLType);
+                                    let _unwrapped_parsed: (&str, usize, DLType);
 
                                     let mut symbols: HashMap<String, (usize, DLType)> =
                                         HashMap::new();
