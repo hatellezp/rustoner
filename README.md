@@ -113,7 +113,7 @@ ENDABOX
 
 You can also put your ontology on a [sqlite](https://www.sqlite.org/index.html) database.
 
-####Why sqlite ? 
+__Why sqlite ?__
 Because it's portable, supported everywhere and you can't use it without any
 knoweledge of client server protocol of larger database systems.
 
