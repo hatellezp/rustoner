@@ -136,8 +136,8 @@ can live in the same database.
 
 ## Where are we
 
-For the moment:
-* I'm translating part of my work already done in __Python__;
-* adding support for text files;
+*[x] I'm translating part of my work already done in __Python__;
+*[x] adding support for text files;
+*[x] adding support for sql based databases;
 * implementing the [assertion ranking](http://ceur-ws.org/Vol-2663/paper-20.pdf);
-* adding support for sql based databases
+* adding [explanation](https://link.springer.com/chapter/10.1007/978-3-540-88873-4_35);
