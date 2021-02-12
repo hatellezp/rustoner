@@ -122,7 +122,18 @@ command
 ```
 ./rustoner --task init --tbox are_men_mortals 
 ```
-it will create a file __are_men_mortals.db__ with your facts and other several tables.
+it will create a file __are_men_mortals.db__ with your facts 
+
+| id | lside_name | rside_name | lside | rside |
+|----|------------|------------|-------|-------|
+| 1  | Man        | Mortal     | 1     | 2     |
+| 2  | Man        | Human      | 1     | 3     |
+| 3  | Human      | Mortal     | 3     | 2     |
+
+and other several tables.
+
+
+
 Then you can add and complete several abox with the command 
 ```
  ./rustoner --task cab --db are_men_mortals.db --abox a_man 
