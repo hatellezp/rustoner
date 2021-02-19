@@ -1,0 +1,13 @@
+// comment
+BEGINABOX
+Lily : Student, 1
+John : Professor
+Calculus: Bac_Course, 44
+Bob : Student,
+Mary : Professor, -4.3
+// another comment
+AI : Ms_Course, 0.44
+Bob, AI : attends, 1
+John, DB2 : teaches, -0.3 // comment at the end of the line
+// comment comment
+ENDABOX
