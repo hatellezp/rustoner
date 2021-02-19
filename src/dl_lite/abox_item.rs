@@ -4,6 +4,7 @@ use crate::dl_lite::node::Node;
 use crate::dl_lite::rule::AbRule;
 use crate::dl_lite::tbox_item::TBI;
 use crate::dl_lite::types::DLType;
+use std::cmp::Ordering;
 
 // help enum for the match function in the ABI implementation
 #[derive(Eq, PartialEq, Debug, Copy, Clone, Hash)]
@@ -28,6 +29,52 @@ impl fmt::Display for ABI {
             ABI::RA(r, a, b) => write!(f, "<{}: {}, {}>", r, a, b),
             ABI::CA(c, a) => write!(f, "<{}: {}>", c, a),
         }
+    }
+}
+
+impl PartialOrd for ABI {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        if self == other {
+            Some(Ordering::Equal)
+        } else {
+            match self {
+                ABI::CA(c1, a1) => {
+                    match other {
+                        ABI::RA(_, _, _) => Some(Ordering::Less),
+                        ABI::CA(c2, a2) => {
+                            match c1.cmp(c2) {
+                                Ordering::Equal => {
+                                    Some(a1.cmp(a2))
+                                },
+                                _ => Some(c1.cmp(c2))
+                            }
+                        },
+                    }
+                },
+                ABI::RA(r1, a1, b1) => {
+                    match other {
+                        ABI::CA(_, _) => Some(Ordering::Greater),
+                        ABI::RA(r2, a2, b2) => {
+                            match r1.cmp(r2) {
+                                Ordering::Equal => {
+                                    match a1.cmp(a2) {
+                                        Ordering::Equal => Some(b1.cmp(b2)),
+                                        _ => Some(a1.cmp((a2)))
+                                    }
+                                },
+                                _ => Some(r1.cmp(r2))
+                            }
+                        },
+                    }
+                },
+            }
+        }
+    }
+}
+
+impl Ord for ABI {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.partial_cmp(other).unwrap()
     }
 }
 
@@ -144,49 +191,6 @@ impl ABI {
             }
         }
     }
-
-    /*
-    // this is more complex than what I think
-    pub fn apply_one(one: &ABI, tbox: &TB) -> Option<Vec<ABI>> {
-        let mut abox_items: Vec<ABI> = Vec::new();
-        for tbi in tbox.items() {
-            if one.is_match(tbi) == Side::Left {
-                // create new abi
-                match one.symbol().t() {
-                    DLType::BaseRole => {
-                        let r = one.symbol().clone();
-                        let a = one.nominal(0).unwrap().clone();
-                        let b = one.nominal(0).unwrap().clone();
-
-                        let new_abi = ABI::new_ra(r, a, b).unwrap();
-
-                        if !abox_items.contains(&new_abi) {
-                            abox_items.push(new_abi);
-                        }
-                    }
-                    DLType::BaseConcept => {
-                        let c = one.symbol().clone();
-                        let a = one.nominal(0).unwrap().clone();
-
-                        let new_abi = ABI::new_ca(c, a).unwrap();
-
-                        if !abox_items.contains(&new_abi) {
-                            abox_items.push(new_abi);
-                        }
-                    }
-                    _ => (),
-                }
-            }
-        }
-
-        if abox_items.len() == 0 {
-            Option::None
-        } else {
-            Some(abox_items)
-        }
-    }
-
-     */
 
     // pub fn apply_two(one: &ABI, two: &ABI, tbox: &TB) -> Option<Vec<ABI>> {}
     pub fn apply_rule(abis: Vec<&ABI>, tbis: Vec<&TBI>, rule: &AbRule) -> Option<Vec<ABI>> {

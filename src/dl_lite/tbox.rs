@@ -129,6 +129,19 @@ impl TB {
         }
     }
 
+    // get a list to negative inclusions
+    pub fn negative_inclusions(&self) -> Vec<&TBI> {
+        let mut neg_tbi: Vec<&TBI> = Vec::new();
+
+        for tbi in &self.items {
+            if tbi.is_negative_inclusion() {
+                neg_tbi.push(tbi)
+            }
+        }
+
+        neg_tbi
+    }
+
     pub fn complete(&self, verbose: bool) -> TB {
         if self.items.len() == 0 {
             if verbose {

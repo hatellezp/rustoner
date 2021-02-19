@@ -82,6 +82,32 @@ impl AB {
         &self.items
     }
 
+    pub fn sort(&mut self) {
+        self.items.sort()
+    }
+
+    // create an abox from a vec of index, will help when finding conflicts in a database
+    pub fn sub_abox(&self, index: Vec<usize>, name: Option<&str>) -> Option<AB> {
+        let name = match name {
+            Option::None => "tmp",
+            Some(s) => s,
+        };
+
+        let mut sub_abox = AB::new(name);
+
+        for i in index {
+            if i < self.length {
+                let abi = (&self.items[i]).clone();
+               sub_abox.add(abi);
+            }
+        }
+
+        match sub_abox.len() {
+            0 => Option::None,
+            _ => Some(sub_abox)
+        }
+    }
+
     pub fn complete(&self, tbox: &TB, verbose: bool) -> AB {
         if self.items.len() == 0 {
             if verbose {

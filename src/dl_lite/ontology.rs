@@ -125,6 +125,9 @@ impl Ontology {
         self.tbox.sort();
     }
 
+    // ----------------------------------------------------------------------------------------
+    // for parsing
+
     pub fn add_symbols_from_file(&mut self, filename: &str, filetype: FileType, verbose: bool) {
         let new_symbols_result = match filetype {
             FileType::JSON => parse_symbols_json(filename),
@@ -261,6 +264,10 @@ impl Ontology {
     // ------------------------------------------------------------------------
     // reasoner tasks
 
+    // here I define a very important method, it will find conflicts in a abox with
+    // respect to a tbox and store them in a matrix
+
+
     pub fn complete_tbox(&self, verbose: bool) -> TB {
         let tb = self.tbox.complete(verbose);
 
@@ -309,6 +316,9 @@ impl Ontology {
         let ab_name = parse_name_from_filename(filename);
         Ok(AB::new(ab_name))
     }
+
+    // -------------------------------------------------------------------------------------------
+    // get methods
 
     pub fn symbols(&self) -> &HashMap<String, (usize, DLType)> {
         &self.symbols
@@ -405,6 +415,7 @@ impl Ontology {
 
     // ------------------------------------------------------------------------
     // pretty print functions
+
     fn node_to_string(&self, node: &Node) -> String {
         let left_current = String::new();
         let right_current = String::new();
