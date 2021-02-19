@@ -15,3 +15,6 @@ pub mod tbox_item;
 pub mod types;
 pub mod abox_item_quantum;
 pub mod abox_quantum;
+pub mod string_formatter_quantum;
+pub mod ontology_quantum;
+pub mod native_filetype_utilities_quatum;

@@ -145,6 +145,14 @@ impl ABIQ {
         &self.abi
     }
 
+    pub fn prevalue(&self) -> f64 {
+        self.prevalue
+    }
+
+    pub fn value(&self) -> Option<f64> {
+        self.value
+    }
+
     pub fn is_trivial(&self) -> bool {
         self.abi.is_trivial()
     }

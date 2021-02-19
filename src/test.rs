@@ -6,21 +6,21 @@ mod kb;
 
 use crate::kb::types::FileType;
 
-use crate::dl_lite::ontology::Ontology;
+use crate::dl_lite::ontology_quantum::Ontology;
 
 fn main() {
     println!("hello there");
 
-    let verbose = false;
+    let verbose = true;
     let native = FileType::NATIVE;
     let ontology_file = String::from("ontology1");
-    let abox_file = String::from("abox1");
+    let abox_file = String::from("abox1_quantum");
 
     let mut onto = Ontology::new(ontology_file.clone());
 
     onto.add_symbols_from_file(&ontology_file, native, verbose);
     onto.add_tbis_from_file(&ontology_file, native, verbose);
-    onto.new_abox_from_file(&abox_file, native, verbose);
+    onto.new_abox_from_file_quantum(&abox_file, native, verbose);
 
     println!("{}", &onto);
 
