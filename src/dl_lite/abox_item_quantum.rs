@@ -41,52 +41,13 @@ impl Hash for ABIQ {
 
 impl fmt::Display for ABIQ {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.abi)
+        write!(f, "{} ({}, {:?})", self.abi, self.prevalue, self.value)
     }
 }
 
 impl PartialOrd for ABIQ {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         self.abi.partial_cmp(&other.abi)
-
-         /*
-        if self == other {
-            Some(Ordering::Equal)
-        } else {
-            match self {
-                ABIQ::CA(c1, a1, _, _) => {
-                    match other {
-                        ABIQ::RA(_, _, _, _, _) => Some(Ordering::Less),
-                        ABIQ::CA(c2, a2, _, _) => {
-                            match c1.cmp(c2) {
-                                Ordering::Equal => {
-                                    Some(a1.cmp(a2))
-                                },
-                                _ => Some(c1.cmp(c2))
-                            }
-                        },
-                    }
-                },
-                ABIQ::RA(r1, a1, b1, _, _) => {
-                    match other {
-                        ABIQ::CA(_, _, _, _) => Some(Ordering::Greater),
-                        ABIQ::RA(r2, a2, b2, _, _) => {
-                            match r1.cmp(r2) {
-                                Ordering::Equal => {
-                                    match a1.cmp(a2) {
-                                        Ordering::Equal => Some(b1.cmp(b2)),
-                                        _ => Some(a1.cmp((a2)))
-                                    }
-                                },
-                                _ => Some(r1.cmp(r2))
-                            }
-                        },
-                    }
-                },
-            }
-        }
-
-          */
     }
 }
 
@@ -112,34 +73,11 @@ impl ABIQ {
         ABIQ { abi, prevalue, value }
     }
 
-    /*
-    pub fn new_ra(r: Node, a: Node, b: Node, for_completion: bool, prevalue: Option<f64>, value: Option<f64>) -> Option<ABIQ> {
-        let is_base_role = r.t() == DLType::BaseRole || for_completion;
-        let all_nominals = DLType::all_nominals(a.t(), b.t());
+    pub fn negate(&self) -> ABIQ  {
+        let abi_neg = self.abi.negate();
 
-        if !is_base_role || !all_nominals {
-            Option::None
-        } else {
-            let prevalue = match prevalue {
-                Some(pv) => pv,
-                _ => 1.0
-            };
-
-            Some(ABIQ::RA(r, a, b, prevalue))
-        }
+        ABIQ::new(abi_neg, Some(self.prevalue), self.value)
     }
-
-    pub fn new_ca(c: Node, a: Node, for_completion: bool) -> Option<ABIQ> {
-        let is_base_concept = c.t() == DLType::BaseConcept || for_completion;
-        let is_nominal = a.t() == DLType::Nominal;
-        if !is_base_concept || !is_nominal {
-            Option::None
-        } else {
-            Some(ABIQ::CA(c, a))
-        }
-    }
-
-     */
 
     pub fn abi(&self) -> &ABI {
         &self.abi
@@ -201,30 +139,8 @@ impl ABIQ {
 
      */
 
-    pub fn is_match(&self, tbi: &TBI) -> Side {
+    pub fn is_match(&self, tbi: &TBI) -> Vec<Side> {
         self.abi.is_match(tbi)
-        /*
-        // because tbox_item(s) are well formed, you only need to test against one
-        let all_roles = DLType::all_roles(tbi.lside().t(), self.t());
-        let all_concepts = DLType::all_concepts(tbi.lside().t(), self.t());
-
-        if !all_roles && !all_concepts {
-            Side::None
-        } else {
-            let sym = self.symbol();
-            let left = sym == tbi.lside();
-            let right = sym == tbi.rside();
-
-            if left {
-                Side::Left
-            } else if right {
-                Side::Right
-            } else {
-                Side::None
-            }
-
-        }
-    */
     }
 
     pub fn get_abis(abiqs: Vec<&ABIQ>) -> Vec<&ABI> {
@@ -248,12 +164,8 @@ impl ABIQ {
             let mut final_vec: Vec<ABIQ> = Vec::new();
 
             for item in &prov_vec {
-                // println!("trying to add: {}", item);
-
                 if !item.is_trivial() {
-                    // println!("    success");
                     let abiq = ABIQ::new(item.clone(), Option::None, Option::None);
-
                     final_vec.push(abiq);
                 }
             }

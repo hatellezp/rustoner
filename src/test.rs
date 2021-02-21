@@ -6,15 +6,16 @@ mod kb;
 
 use crate::kb::types::FileType;
 
+use crate::dl_lite::helpers_and_utilities::print_matrix;
 use crate::dl_lite::ontology_quantum::Ontology;
 
 fn main() {
     println!("hello there");
 
-    let verbose = true;
+    let verbose = false;
     let native = FileType::NATIVE;
-    let ontology_file = String::from("ontology1");
-    let abox_file = String::from("abox1_quantum");
+    let ontology_file = String::from("ontology2");
+    let abox_file = String::from("abox2_quantum");
 
     let mut onto = Ontology::new(ontology_file.clone());
 
@@ -26,12 +27,20 @@ fn main() {
 
     let abox = onto.abox().unwrap();
     let tbox = onto.tbox();
+    let abq = abox.clone();
 
-    let abox_completed = abox.complete(tbox, false);
+    let abox_completed = (&abox).complete(tbox, false);
 
-    println!("{}", &abox_completed);
+    // println!("{}", &abox_completed);
 
     onto.add_abis_from_abox(&abox_completed);
 
+
+    let (ma, rtv, vtr) = onto.conflict_matrix(&abq, true);
+
+
+    print_matrix(ma);
     // println!("{}", &onto);
+
+    println!("rtv: {:?}\nvtr: {:?}", &rtv, &vtr);
 }

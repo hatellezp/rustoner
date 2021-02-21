@@ -17,4 +17,6 @@ pub mod abox_item_quantum;
 pub mod abox_quantum;
 pub mod string_formatter_quantum;
 pub mod ontology_quantum;
-pub mod native_filetype_utilities_quatum;
+pub mod native_filetype_utilities_quantum;
+pub mod sqlite_structs_quantum;
+pub mod sqlite_interface_quantum;

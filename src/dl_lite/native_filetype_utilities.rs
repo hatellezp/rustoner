@@ -20,7 +20,10 @@ pub fn parse_symbols_native(
 
     match file_result {
         Err(e) => {
-            println!("couldn't read the file: {}", e);
+            if verbose {
+                println!(" -- native_utilities::parse_symbols_native: couldn't read the file: {}", e);
+            }
+
             Result::Err(e)
         }
         Ok(file) => {
@@ -36,12 +39,12 @@ pub fn parse_symbols_native(
                 match line_result {
                     Err(e) => {
                         if verbose {
-                            println!("passing this line: {}", e);
+                            println!(" -- native_utilities::parse_symbols_native: passing this line: {}", e);
                         }
                     }
                     Ok(line) => {
                         if verbose {
-                            println!("trying to parse: {}", &line);
+                            println!(" -- native_utilities::parse_symbols_native: trying to parse: {}", &line);
                         }
 
                         let line_trimmed = line.trim();
@@ -50,7 +53,7 @@ pub fn parse_symbols_native(
                             begin_symbol_encountered = true;
 
                             if verbose {
-                                println!("'BEGINSYMBOL' found, begin parsing");
+                                println!(" -- native_utilities::parse_symbols_native: 'BEGINSYMBOL' found, begin parsing");
                             }
 
                             continue;
@@ -60,7 +63,7 @@ pub fn parse_symbols_native(
                             end_symbol_encountered = true;
 
                             if verbose {
-                                println!("'ENDSYMBOL' found, ending parsing");
+                                println!(" -- native_utilities::parse_symbols_native: 'ENDSYMBOL' found, ending parsing");
                             }
                             continue;
                         }
@@ -74,7 +77,7 @@ pub fn parse_symbols_native(
                                 begin_symbol_encountered = true;
 
                                 if verbose {
-                                    println!("'BEGINSYMBOL' found, begin parsing");
+                                    println!(" -- native_utilities::parse_symbols_native: 'BEGINSYMBOL' found, begin parsing");
                                 }
 
                                 continue;
@@ -84,7 +87,7 @@ pub fn parse_symbols_native(
                                 end_symbol_encountered = true;
 
                                 if verbose {
-                                    println!("'ENDSYMBOL' found, ending parsing");
+                                    println!(" -- native_utilities::parse_symbols_native: 'ENDSYMBOL' found, ending parsing");
                                 }
                                 continue;
                             }
@@ -93,7 +96,7 @@ pub fn parse_symbols_native(
                                 let ignored: String = String::from(vec[1..].join("//").trim());
 
                                 if &ignored != "" {
-                                    println!("this comment will be ignored: {}", &ignored);
+                                    println!(" -- native_utilities::parse_symbols_native: this comment will be ignored: {}", &ignored);
                                 }
                             }
 
@@ -106,20 +109,20 @@ pub fn parse_symbols_native(
 
                                     if verbose {
                                         println!(
-                                            "result of parsing:   name: {}, type: {}",
+                                            " -- native_utilities::parse_symbols_native: result of parsing:   name: {}, type: {}",
                                             name, t
                                         );
                                     }
                                 }
                                 Err(e) => {
                                     if verbose {
-                                        println!("couldn't parse: {}", e);
+                                        println!(" -- native_utilities::parse_symbols_native: couldn't parse: {}", e);
                                     }
                                 }
                             }
                         } else {
                             if verbose {
-                                println!("line won't be parsed, not in between 'BEGINSYMBOL' and 'ENDSYMBOL' bounds");
+                                println!(" -- native_utilities::parse_symbols_native: line won't be parsed, not in between 'BEGINSYMBOL' and 'ENDSYMBOL' bounds");
                             }
                         }
                     }
@@ -128,9 +131,9 @@ pub fn parse_symbols_native(
 
             if !end_symbol_encountered {
                 if verbose {
-                    println!("'ENDSYMBOL' not encountered, returning nothing");
+                    println!(" -- native_utilities::parse_symbols_native: 'ENDSYMBOL' not encountered, returning nothing");
                 }
-                println!("putaindljfldfldjf-----------------");
+
                 let new_error = Error::new(
                     ErrorKind::UnexpectedEof,
                     "'ENDSYMBOL' not found before file ended",
@@ -175,7 +178,7 @@ pub fn parse_abox_native(
     match file_result {
         Err(e) => {
             if verbose {
-                println!("couldn't read the file: {}", e);
+                println!(" -- native_utilities::parse_abox_native: couldn't read the file: {}", e);
             }
             Result::Err(e)
         }
@@ -194,13 +197,13 @@ pub fn parse_abox_native(
 
             for line_result in reader.lines() {
                 if verbose {
-                    println!("now parsing: {:?}", line_result);
+                    println!(" -- native_utilities::parse_abox_native: now parsing: {:?}", line_result);
                 }
 
                 match line_result {
                     Err(e) => {
                         if verbose {
-                            println!("passing this line because of: {}", &e);
+                            println!(" -- native_utilities::parse_abox_native: passing this line because of: {}", &e);
                         }
                     }
                     Ok(line) => {
@@ -210,7 +213,7 @@ pub fn parse_abox_native(
                             begin_abox_encountered = true;
 
                             if verbose {
-                                println!("'BEGINABOX' found, begin parsing");
+                                println!(" -- native_utilities::parse_abox_native: 'BEGINABOX' found, begin parsing");
                             }
 
                             continue;
@@ -220,7 +223,7 @@ pub fn parse_abox_native(
                             end_abox_encountered = true;
 
                             if verbose {
-                                println!("'ENDABOX' found, ending parsing");
+                                println!(" -- native_utilities::parse_abox_native: 'ENDABOX' found, ending parsing");
                             }
                             continue;
                         }
@@ -234,7 +237,7 @@ pub fn parse_abox_native(
                                 let ignored: String = String::from(vec[1..].join("//").trim());
 
                                 if &ignored != "" {
-                                    println!("this comment will be ignored: {}", &ignored);
+                                    println!(" -- native_utilities::parse_abox_native: this comment will be ignored: {}", &ignored);
                                 }
                             }
 
@@ -256,13 +259,13 @@ pub fn parse_abox_native(
                                 }
                                 Err(e) => {
                                     if verbose {
-                                        println!("couldn't parse: {}", &e);
+                                        println!(" -- native_utilities::parse_abox_native: couldn't parse: {}", &e);
                                     }
                                 }
                             }
                         } else {
                             if verbose {
-                                println!("line won't be parsed, not in between 'BEGINTBOX' and 'ENDTBOX' bounds");
+                                println!(" -- native_utilities::parse_abox_native: line won't be parsed, not in between 'BEGINTBOX' and 'ENDTBOX' bounds");
                             }
                         }
                     }
@@ -271,7 +274,7 @@ pub fn parse_abox_native(
 
             if !end_abox_encountered {
                 if verbose {
-                    println!("'ENDTBOX' not encountered, returning nothing");
+                    println!(" -- native_utilities::parse_abox_native: 'ENDTBOX' not encountered, returning nothing");
                 }
 
                 let new_error = Error::new(
@@ -296,7 +299,10 @@ pub fn parse_tbox_native(
 
     match file_result {
         Err(e) => {
-            println!("couldn't read the file: {}", e);
+            if verbose {
+                println!(" -- native_utilities::parse_tbox_native: couldn't read the file: {}", e);
+            }
+
             Result::Err(e)
         }
         Ok(file) => {
@@ -311,12 +317,12 @@ pub fn parse_tbox_native(
                 match line_result {
                     Err(e) => {
                         if verbose {
-                            println!("passing this line: {}", e);
+                            println!(" -- native_utilities::parse_tbox_native: passing this line: {}", e);
                         }
                     }
                     Ok(line) => {
                         if verbose {
-                            println!("trying to parse: {}", &line);
+                            println!(" -- native_utilities::parse_tbox_native: trying to parse: {}", &line);
                         }
 
                         let line_trimmed = line.trim();
@@ -325,7 +331,7 @@ pub fn parse_tbox_native(
                             begin_tbox_encountered = true;
 
                             if verbose {
-                                println!("'BEGINTBOX' found, begin parsing");
+                                println!(" -- native_utilities::parse_tbox_native: 'BEGINTBOX' found, begin parsing");
                             }
 
                             continue;
@@ -335,7 +341,7 @@ pub fn parse_tbox_native(
                             end_tbox_encountered = true;
 
                             if verbose {
-                                println!("'ENDTBOX' found, ending parsing");
+                                println!(" -- native_utilities::parse_tbox_native: 'ENDTBOX' found, ending parsing");
                             }
                             continue;
                         }
@@ -349,7 +355,7 @@ pub fn parse_tbox_native(
                                 begin_tbox_encountered = true;
 
                                 if verbose {
-                                    println!("'BEGINTBOX' found, begin parsing");
+                                    println!(" -- native_utilities::parse_tbox_native: 'BEGINTBOX' found, begin parsing");
                                 }
 
                                 continue;
@@ -359,7 +365,7 @@ pub fn parse_tbox_native(
                                 end_tbox_encountered = true;
 
                                 if verbose {
-                                    println!("'ENDTBOX' found, ending parsing");
+                                    println!(" -- native_utilities::parse_tbox_native: 'ENDTBOX' found, ending parsing");
                                 }
                                 continue;
                             }
@@ -368,7 +374,7 @@ pub fn parse_tbox_native(
                                 let ignored: String = String::from(vec[1..].join("//").trim());
 
                                 if &ignored != "" {
-                                    println!("this comment will be ignored: {}", &ignored);
+                                    println!(" -- native_utilities::parse_tbox_native: this comment will be ignored: {}", &ignored);
                                 }
                             }
 
@@ -385,13 +391,13 @@ pub fn parse_tbox_native(
                                 }
                                 Err(e) => {
                                     if verbose {
-                                        println!("couldn't parse: {}", &e);
+                                        println!(" -- native_utilities::parse_tbox_native: couldn't parse: {}", &e);
                                     }
                                 }
                             }
                         } else {
                             if verbose {
-                                println!("line won't be parsed, not in between 'BEGINTBOX' and 'ENDTBOX' bounds");
+                                println!(" -- native_utilities::parse_tbox_native: line won't be parsed, not in between 'BEGINTBOX' and 'ENDTBOX' bounds");
                             }
                         }
                     }
@@ -400,7 +406,7 @@ pub fn parse_tbox_native(
 
             if !end_tbox_encountered {
                 if verbose {
-                    println!("'ENDTBOX' not encountered, returning nothing");
+                    println!(" -- native_utilities::parse_tbox_native: 'ENDTBOX' not encountered, returning nothing");
                 }
 
                 let new_error = Error::new(

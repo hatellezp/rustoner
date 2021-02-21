@@ -307,19 +307,29 @@ pub fn dl_lite_abox_rule_one(abis: Vec<&ABI>, _tbis: Vec<&TBI>) -> Option<Vec<AB
         match abi {
             ABI::CA(_, _) => Option::None,
             ABI::RA(r, a, b) => {
-                // first create a: Er
-                let er = r.clone().exists().unwrap(); // this should work, r is a base role
-                let a_er = ABI::new_ca(er, a.clone(), true).unwrap(); // rules are always applied for completion
 
-                // secondly create b:Er^-
-                let erinv = r.clone().inverse().unwrap().exists().unwrap();
-                let b_erinv = ABI::new_ca(erinv, b.clone(), true).unwrap();
+                let r_is_neg = r.is_negated();
+                let mut v: Vec<ABI> = Vec::new();
 
-                let v = vec![a_er, b_erinv];
+                match r_is_neg {
+                    true => Some(v),
+                    false => {
+                        // first create a: Er
+                        let er = r.clone().exists().unwrap(); // this should work, r is a base role
+                        let a_er = ABI::new_ca(er, a.clone(), true).unwrap(); // rules are always applied for completion
 
-                // println!("returning: {:?}", &v);
+                        // secondly create b:Er^-
+                        let erinv = r.clone().inverse().unwrap().exists().unwrap();
+                        let b_erinv = ABI::new_ca(erinv, b.clone(), true).unwrap();
 
-                Some(v)
+                        v.push(a_er);
+                        v.push(b_erinv);
+
+                        Some(v)
+                    },
+                }
+
+
             }
         }
     }

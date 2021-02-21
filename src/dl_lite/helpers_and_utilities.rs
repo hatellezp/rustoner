@@ -24,10 +24,10 @@ pub fn complete_helper_dump_from_mutex_temporal_to_current2<T: Display + Partial
             // be careful here with the index
             if verbose {
                 println!(
-                    "---- adding {} to mutex with index {}",
+                    " -- helpers_and_utilities::complete_helper_dump_from_mutex_temporal_to_current2: adding {} to mutex with index {}",
                     &new_item, mu_length
                 );
-                println!("---- adding {} to 'to_treat' index", mu_length);
+                println!(" -- helpers_and_utilities::complete_helper_dump_from_mutex_temporal_to_current2: adding {} to 'to_treat' index", mu_length);
             }
 
             (*mu).insert(mu_length, new_item);
@@ -46,10 +46,10 @@ pub fn complete_helper_dump_from_mutex_temporal_to_current2<T: Display + Partial
             // be careful here with the index
             if verbose {
                 println!(
-                    "---- adding {} to mutex with index {}",
+                    "  -- helpers_and_utilities::complete_helper_dump_from_mutex_temporal_to_current2: adding {} to mutex with index {}",
                     &new_item, mu_length
                 );
-                println!("---- adding {} to 'to_treat' index", mu_length);
+                println!(" -- helpers_and_utilities::complete_helper_dump_from_mutex_temporal_to_current2: adding {} to 'to_treat' index", mu_length);
             }
 
             (*mu).insert(mu_length, new_item);
@@ -80,10 +80,10 @@ pub fn tbox_complete_helper_dump_from_mutex_temporal_to_current2(
             // be careful here with the index
             if verbose {
                 println!(
-                    "---- adding {} to mutex with index {}",
+                    " -- helpers_and_utilities::tbox_complete_helper_dump_from_mutex_temporal_to_current2: adding {} to mutex with index {}",
                     &new_item, mu_length
                 );
-                println!("---- adding {} to 'to_treat' index", mu_length);
+                println!(" -- helpers_and_utilities::tbox_complete_helper_dump_from_mutex_temporal_to_current2: adding {} to 'to_treat' index", mu_length);
             }
 
             (*mu).insert(mu_length, new_item);
@@ -102,10 +102,10 @@ pub fn tbox_complete_helper_dump_from_mutex_temporal_to_current2(
             // be careful here with the index
             if verbose {
                 println!(
-                    "---- adding {} to mutex with index {}",
+                    " -- helpers_and_utilities::tbox_complete_helper_dump_from_mutex_temporal_to_current2: adding {} to mutex with index {}",
                     &new_item, mu_length
                 );
-                println!("---- adding {} to 'to_treat' index", mu_length);
+                println!(" -- helpers_and_utilities::tbox_complete_helper_dump_from_mutex_temporal_to_current2: adding {} to 'to_treat' index", mu_length);
             }
 
             (*mu).insert(mu_length, new_item);
@@ -191,12 +191,12 @@ pub fn complete_helper_add_if_necessary_general<T: Display + PartialEq + Eq + Cl
     for new_item in created_items {
         if mu_all.contains(&new_item) || mu.contains(&new_item) {
             if verbose {
-                println!("---- {} rule applied here for {}, giving {}, but the item won't be added, it already exists", rn, print_vector_of_tbi_references(&applied_items), &new_item);
+                println!(" -- helpers_and_utilities::complete_helper_add_if_necessary_general: {} rule applied here for {}, giving {}, but the item won't be added, it already exists", rn, print_vector_of_tbi_references(&applied_items), &new_item);
             }
         } else {
             if verbose {
                 println!(
-                    "---- {} rule applied here for {}, giving {}",
+                    " -- helpers_and_utilities::complete_helper_add_if_necessary_general: {} rule applied here for {}, giving {}",
                     rn,
                     print_vector_of_tbi_references(&applied_items),
                     &new_item
@@ -236,4 +236,31 @@ fn print_vector_of_tbi_references<T: Display + PartialEq + Eq>(vec: &Vec<&T>) ->
     s.push_str("]");
 
     s
+}
+
+pub fn print_matrix<T: Display>(v: Vec<T>) {
+    let mlength = v.len();
+    let msize = (mlength as f64).sqrt() as usize;
+
+    let mut s = String::from("[");
+
+    for i in 0..msize {
+        for j in 0..msize {
+            let to_add = format!("{}", v.get(i*msize + j).unwrap());
+
+            s.push_str(to_add.as_str());
+
+            if j != msize - 1 {
+                s.push_str(", ");
+            }
+
+        }
+
+        if i != msize - 1 {
+            s.push_str("\n");
+        }
+    }
+    s.push_str("]");
+
+    println!("{}", s);
 }

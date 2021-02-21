@@ -106,6 +106,21 @@ impl ABI {
         }
     }
 
+    pub fn negate(&self) -> ABI {
+        match self {
+            ABI::CA(c, a) => {
+                let c_neg = c.clone().negate();
+
+                ABI::new_ca(c_neg, a.clone(), true).unwrap()
+            },
+            ABI::RA(r, a, b) => {
+                let r_neg = r.clone().negate();
+
+                ABI::new_ra(r_neg, a.clone(), b.clone(), true).unwrap()
+            },
+        }
+    }
+
     pub fn is_trivial(&self) -> bool {
         match self {
             ABI::CA(c, _) => c.t() == DLType::Top,
@@ -170,25 +185,29 @@ impl ABI {
         new_self.decompact()
     }
 
-    pub fn is_match(&self, tbi: &TBI) -> Side {
+    pub fn is_match(&self, tbi: &TBI) -> Vec<Side> {
         // because tbox_item(s) are well formed, you only need to test against one
         let all_roles = DLType::all_roles(tbi.lside().t(), self.t());
         let all_concepts = DLType::all_concepts(tbi.lside().t(), self.t());
 
         if !all_roles && !all_concepts {
-            Side::None
+            vec![Side::None]
         } else {
             let sym = self.symbol();
             let left = sym == tbi.lside();
             let right = sym == tbi.rside();
 
+            let mut v: Vec<Side> = Vec::new();
+
             if left {
-                Side::Left
-            } else if right {
-                Side::Right
-            } else {
-                Side::None
+                v.push(Side::Left);
             }
+
+            if right {
+                v.push(Side::Right)
+            }
+
+            v
         }
     }
 
@@ -207,11 +226,7 @@ impl ABI {
             let mut final_vec: Vec<ABI> = Vec::new();
 
             for item in &prov_vec {
-                // println!("trying to add: {}", item);
-
                 if !item.is_trivial() {
-                    // println!("    success");
-
                     final_vec.push(item.clone());
                 }
             }

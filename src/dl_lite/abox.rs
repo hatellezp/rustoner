@@ -111,7 +111,7 @@ impl AB {
     pub fn complete(&self, tbox: &TB, verbose: bool) -> AB {
         if self.items.len() == 0 {
             if verbose {
-                println!("the abox is empty, nothing to complete");
+                println!(" -- AB::complete: the abox is empty, nothing to complete");
             }
 
             let new_name = format!("{}_completion_not", &self.name);
@@ -260,7 +260,7 @@ impl AB {
                     // now current_item has the necessary item inside
                     if verbose {
                         println!(
-                            "---- treating now {} (index {})",
+                            " -- AB::complete: treating now {} (index {})",
                             &current_item, current_index
                         );
                     }
@@ -289,7 +289,7 @@ impl AB {
                                 // three different vectors
 
                                 if verbose {
-                                    println!("---- comparing with tbi: {}", tbi);
+                                    println!(" -- AB::complete: comparing with tbi: {}", tbi);
                                 }
 
                                 let new_item_vec3 =

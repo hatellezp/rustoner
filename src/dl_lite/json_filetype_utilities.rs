@@ -318,7 +318,10 @@ pub fn parse_tbox_json(
 
             match result_value {
                 Result::Err(error) => {
-                    println!("something went wrong: {}", &error);
+                    if verbose {
+                        println!(" -- json_utilities::parse_tbox_json: something went wrong: {}", &error);
+                    }
+
                     let new_error = Error::new(
                         ErrorKind::InvalidData,
                         format!("couldn't parse the file: {}", &error.to_string()),
@@ -340,10 +343,12 @@ pub fn parse_tbox_json(
 
                                         match tbi_result {
                                             Err(error) => {
-                                                println!(
-                                                    "couldn't parse value: {}, error: {}",
-                                                    value, &error
-                                                );
+                                                if verbose {
+                                                    println!(
+                                                        " -- json_utilities::parse_tbox_jons: couldn't parse value: {}, error: {}",
+                                                        value, &error
+                                                    );
+                                                }
                                             }
                                             Ok(tbi) => {
                                                 tb.add(tbi);
@@ -358,7 +363,10 @@ pub fn parse_tbox_json(
                                 ),
                             }
                         } else {
-                            println!("no tbox in this file: {}", &value);
+                            if verbose {
+                                println!(" -- json_utilities::parse_tbox_json: no tbox in this file: {}", &value);
+                            }
+
                             invalid_data_result(
                                 format!("the file doesn't containt a 'tbox' item: {}", &value)
                                     .as_str(),

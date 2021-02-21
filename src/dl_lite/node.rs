@@ -177,7 +177,7 @@ impl Node {
             Node::N(_) => DLType::Nominal,
             Node::X(t, bn) => match (t, bn.deref()) {
                 (Mod::N, Node::R(_)) | (Mod::N, Node::X(Mod::I, _)) => DLType::NegatedRole,
-                (Mod::N, Node::C(_)) => DLType::NegatedConcept,
+                (Mod::N, Node::C(_)) | (Mod::N, Node::X(Mod::E, _)) => DLType::NegatedConcept,
                 (Mod::I, Node::R(_)) => DLType::InverseRole,
                 (Mod::E, Node::R(_)) | (Mod::E, Node::X(Mod::I, _)) => DLType::ExistsConcept,
                 (_, _) => panic!("incorrect format for node"),

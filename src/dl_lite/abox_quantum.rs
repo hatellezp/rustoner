@@ -14,6 +14,7 @@ use crate::dl_lite::types::CR;
 use crate::kb::knowledge_base::Data;
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
+use crate::dl_lite::node::Node;
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct ABQ {
@@ -54,6 +55,18 @@ impl ABQ {
         }
     }
 
+    pub fn from_vec(name: &str, mut v: Vec<ABIQ>) -> ABQ {
+        let mut abq = ABQ::new(name);
+
+        while !v.is_empty() {
+            let abiq = v.pop().unwrap();
+
+            abq.add(abiq);
+        }
+
+        abq
+    }
+
     pub fn name(&self) -> &str {
         &self.name
     }
@@ -78,6 +91,10 @@ impl ABQ {
         } else {
             false
         }
+    }
+
+    pub fn get(&self, index: usize) -> Option<&ABIQ> {
+        self.items.get(index)
     }
 
     pub fn items(&self) -> &Vec<ABIQ> {
@@ -110,10 +127,96 @@ impl ABQ {
         }
     }
 
+    pub fn is_inconsistent(&self, tb: &TB, verbose: bool) -> bool {
+        /*
+        this is an error we need to compare against every tbi
+        let negatives = tb.negative_inclusions();
+         */
+        let tbis = tb.items();
+        let tb_length = tbis.len();
+
+        // we can have a:A and A < (-A)
+        // also a:A a:B and A < (-B) the first case is an special case, so we test for the second
+        // only
+
+        let self_length = self.length;
+
+        for tbi in tbis {
+
+            if verbose {
+                println!(" -- ABQ::is_inconsistent: comparing against {}", &tbi);
+            }
+
+            let left = tbi.lside();
+            let right = tbi.rside();
+
+            let right_keeper: Node;
+            let right_mod: &Node;
+
+            if tbi.is_negative_inclusion() {
+
+                if verbose {
+                    println!(" -- ABQ::is_inconsistent: negative tbi, taking its child");
+                }
+
+                right_mod = Node::child(Some(right)).unwrap();
+            } else {
+
+                if verbose {
+                    println!(" -- ABQ::is_inconsistent: positive tbi, negating");
+                }
+
+                right_keeper = right.clone().negate();
+                right_mod = &right_keeper;
+            }
+
+            for i in 0..self_length {
+                let abq_i =  self.items.get(i).unwrap();
+                let node_i = abq_i.abi().symbol();
+
+                if verbose {
+                    println!(" -- ABQ::is_inconsistent: analysing {} with index {}", abq_i, i);
+                }
+
+                if node_i == left {
+
+                    if verbose {
+                        println!(" -- ABQ::is_inconsistent: found match for left side, continuing analysis");
+                    }
+
+                    for j in 0..self_length {
+                        if j != i {
+                            let abq_j =  self.items.get(j).unwrap();
+                            let node_j = abq_j.abi().symbol();
+
+                            if verbose {
+                                println!(" -- ABQ::is_inconsistent: analysing against {} with index {}", abq_j, j);
+                            }
+
+                            if node_j == right_mod {
+                                if verbose {
+                                    println!(" -- ABQ::is_inconsistent: found conflict, returning true");
+                                }
+
+                                return true
+                            }
+                        }
+                    }
+                }
+            }
+
+        }
+
+        if verbose {
+            println!(" -- ABQ::is_inconsistent: no conflict found, returning false");
+        }
+        false
+    }
+
     pub fn complete(&self, tbox: &TB, verbose: bool) -> ABQ {
         if self.items.len() == 0 {
             if verbose {
-                println!("the abox is empty, nothing to complete");
+                println!(" -- ABQ::complete: the abox is empty, nothing to complete");
             }
 
             let new_name = format!("{}_completion_not", &self.name);
@@ -200,17 +303,17 @@ impl ABQ {
                         let already_treated = already_treated.lock().unwrap();
 
                         println!(
-                            "==================================================================="
+                            "    ==================================================================="
                         );
                         println!(
-                            "--------this is the status at beginning of iteration {}------------",
+                            "    --------this is the status at beginning of iteration {}------------",
                             iterations
                         );
-                        println!("-- items: {:?}", &items);
-                        println!("-- to_treat: {:?}", &to_treat);
-                        println!("-- already_treated: {:?}", &already_treated);
+                        println!("    -- items: {:?}", &items);
+                        println!("    -- to_treat: {:?}", &to_treat);
+                        println!("    -- already_treated: {:?}", &already_treated);
                         println!(
-                            "-------------------------------------------------------------------"
+                            "    -------------------------------------------------------------------"
                         );
                     }
                 }
@@ -262,7 +365,7 @@ impl ABQ {
                     // now current_item has the necessary item inside
                     if verbose {
                         println!(
-                            "---- treating now {} (index {})",
+                            " -- ABQ::complete: treating now {} (index {})",
                             &current_item, current_index
                         );
                     }
@@ -291,7 +394,7 @@ impl ABQ {
                                 // three different vectors
 
                                 if verbose {
-                                    println!("---- comparing with tbi: {}", tbi);
+                                    println!(" -- ABQ::complete: comparing with tbi: {}", tbi);
                                 }
 
                                 let new_item_vec3 =
@@ -374,15 +477,15 @@ impl ABQ {
                     let to_treat = to_treat.lock().unwrap();
                     let already_treated = already_treated.lock().unwrap();
 
-                    println!("-------------------------------------------------------------------");
+                    println!("    -------------------------------------------------------------------");
                     println!(
-                        "-----------this is the status at end of iteration {}----------------",
+                        "    -----------this is the status at end of iteration {}----------------",
                         iterations
                     );
-                    println!("-- items: {:?}", &items);
-                    println!("-- to_treat: {:?}", &to_treat);
-                    println!("-- already_treated: {:?}", &already_treated);
-                    println!("===================================================================");
+                    println!("    -- items: {:?}", &items);
+                    println!("    -- to_treat: {:?}", &to_treat);
+                    println!("    -- already_treated: {:?}", &already_treated);
+                    println!("    ===================================================================");
                 }
 
                 // update the iteration counter

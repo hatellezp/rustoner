@@ -7,7 +7,9 @@ use structopt::StructOpt;
 
 use crate::kb::types::FileType;
 
-use crate::dl_lite::ontology::Ontology;
+// use crate::dl_lite::ontology::Ontology;
+use crate::dl_lite::ontology_quantum::Ontology;
+
 use crate::interface::cli::{Cli, Task};
 use crate::interface::utilities::{get_filetype, parse_name_from_filename};
 
@@ -16,6 +18,7 @@ use crate::dl_lite::sqlite_interface::{
 };
 use question::{Answer, Question};
 use rusqlite::{Connection};
+use crate::dl_lite::sqlite_interface_quantum::add_abis_to_db_quantum;
 
 fn main() {
     let args = Cli::from_args();
@@ -204,14 +207,14 @@ fn main() {
 
                 // reserved name
                 if ab_name == "temp_abox" {
-                    println!("the name 'temp_abox' is reserved, please another one");
+                    println!("the name 'temp_abox' is reserved, please use another one");
                     std::process::exit(exitcode::USAGE);
                 }
 
                 // real work
 
                 // add abox
-                onto.new_abox_from_file(&path_abox, ab_ft, verbose);
+                onto.new_abox_from_file_quantum(&path_abox, ab_ft, verbose);
 
                 if isdb {
                     let path_db = path_db_op.unwrap().to_str().unwrap().to_string();
@@ -261,7 +264,7 @@ fn main() {
                     }
 
                     // first put the original abox in the database
-                    add_abis_to_db(
+                    add_abis_to_db_quantum(
                         onto.symbols(),
                         onto.abox().unwrap().items(),
                         &onto.abox_name(),
@@ -277,10 +280,10 @@ fn main() {
                 match abox_completed_op {
                     Some(abox_completed) => {
                         //change current abox
-                        onto.new_abox_from_abox(abox_completed);
+                        onto.new_abox_from_aboxq(abox_completed);
 
                         if isdb {
-                            add_abis_to_db(
+                            add_abis_to_db_quantum(
                                 onto.symbols(),
                                 onto.abox().unwrap().items(),
                                 &onto.abox_name(),
@@ -306,7 +309,7 @@ fn main() {
                                     .confirm();
 
                                 if print_output == Answer::YES {
-                                    let abox_as_string = onto.abox_to_string(onto.abox().unwrap());
+                                    let abox_as_string = onto.abox_to_string_quantum(onto.abox().unwrap());
 
                                     println!("{}", &abox_as_string);
                                 }

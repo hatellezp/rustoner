@@ -301,8 +301,14 @@ pub fn string_to_abi(
                                 node1 = Node::new(Some(id1), DLType::Nominal).unwrap();
                             }
 
+                            // adding symbols whenever you can
+                            while !to_be_added.is_empty() {
+                                let (k, v) = to_be_added.pop().unwrap();
+                                symbols.insert(k, v);
+                            }
+
                             // then a2
-                            if !symbols.contains_key(a2) {
+                            if !symbols.contains_key(a2){
                                 node2 = Node::new(Some(current_id), DLType::Nominal).unwrap();
 
                                 to_be_added.push((a2.to_string(), (current_id, DLType::Nominal)));

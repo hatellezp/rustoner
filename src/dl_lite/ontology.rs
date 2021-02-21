@@ -137,10 +137,13 @@ impl Ontology {
         };
         match new_symbols_result {
             Err(error) => {
-                println!(
-                    "couldn't parse symbols from json file: {}",
-                    &error.to_string()
-                );
+                if verbose {
+                    println!(
+                        " -- ontology::add_symbols_from_file: couldn't parse symbols from json file: {}",
+                        &error.to_string()
+                    );
+                }
+
             }
             Ok(new_symbols) => {
                 for (key, _) in &new_symbols {
@@ -158,7 +161,10 @@ impl Ontology {
             };
             match tb_result {
                 Err(error) => {
-                    println!("couldn't parse tbox from file: {}", &error);
+                    if verbose {
+                        println!(" -- ontology::add_tbis_from_file: couldn't parse tbox from file: {}", &error);
+                    }
+
                 }
                 Ok(tb) => {
                     for tbi in tb.items() {
@@ -180,7 +186,7 @@ impl Ontology {
             match filetype {
                 FileType::JSON => {
                     if verbose {
-                        println!("the json parser is not yet implemented");
+                        println!(" -- ontology::new_abox_from_file: the json parser is not yet implemented");
                     }
 
                     panic!("not implemented yet!")
@@ -191,7 +197,7 @@ impl Ontology {
                     match ab_result {
                         Err(_error) => {
                             if verbose {
-                                println!("couldn't parse abox from file: {}", filename);
+                                println!(" -- ontology::new_abox_from_file: couldn't parse abox from file: {}", filename);
                             }
                         }
                         Ok(ab) => {
