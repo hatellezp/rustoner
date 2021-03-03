@@ -10,17 +10,6 @@ use crate::dl_lite::abox_item::{ABI, Side};
 use std::hash::{Hash, Hasher};
 
 /*
-// help enum for the match function in the ABIQ implementation
-#[derive(Eq, PartialEq, Debug, Copy, Clone, Hash)]
-pub enum Side {
-    None,
-    Left,
-    Right,
-}
-
- */
-
-/*
    remember that only base roles and base concepts are allowed here !!
 */
 #[derive(PartialEq, Debug, Clone)]

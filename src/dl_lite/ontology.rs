@@ -12,11 +12,8 @@ use std::fs::File;
 use std::io::Write;
 use std::{fmt, io};
 // use std::iter::Map;
-use crate::dl_lite::abox::AB;
-use crate::dl_lite::native_filetype_utilities::{
-    abox_to_native_string, parse_abox_native, parse_symbols_native, parse_tbox_native,
-    tbox_to_native_string,
-};
+// use crate::dl_lite::abox::AB;
+use crate::dl_lite::native_filetype_utilities::{parse_symbols_native, parse_tbox_native, tbox_to_native_string, parse_abox_native_quantum, abox_to_native_string_quantum};
 
 use rusqlite::{Connection, Result};
 
@@ -25,6 +22,9 @@ use crate::dl_lite::sqlite_interface::{
     add_tbis_to_db,
 };
 use crate::interface::utilities::parse_name_from_filename;
+use crate::dl_lite::abox::ABQ;
+use crate::dl_lite::abox_item_quantum::ABIQ;
+use crate::dl_lite::string_formatter::abi_to_string;
 
 /*
 an ontology model
@@ -40,7 +40,7 @@ pub struct Ontology {
     name: String,
     symbols: HashMap<String, (usize, DLType)>,
     tbox: TB,
-    current_abox: Option<AB>,
+    current_abox: Option<ABQ>,
 }
 
 impl fmt::Display for Ontology {
@@ -68,7 +68,7 @@ impl fmt::Display for Ontology {
             formatted = format!(
                 "----<ABox({})>\n{}\n",
                 self.current_abox.as_ref().unwrap().name(),
-                &self.abox_to_string(&self.current_abox.as_ref().unwrap())
+                &self.abox_to_string_quantum(&self.current_abox.as_ref().unwrap())
             );
             s.push_str(formatted.as_str());
         }
@@ -101,7 +101,7 @@ impl Ontology {
         }
     }
 
-    pub fn abox(&self) -> Option<&AB> {
+    pub fn abox(&self) -> Option<&ABQ> {
         match &self.current_abox {
             Option::None => Option::None,
             Some(ab) => Some(ab),
@@ -137,13 +137,10 @@ impl Ontology {
         };
         match new_symbols_result {
             Err(error) => {
-                if verbose {
-                    println!(
-                        " -- ontology::add_symbols_from_file: couldn't parse symbols from json file: {}",
-                        &error.to_string()
-                    );
-                }
-
+                println!(
+                    "couldn't parse symbols from json file: {}",
+                    &error.to_string()
+                );
             }
             Ok(new_symbols) => {
                 for (key, _) in &new_symbols {
@@ -161,10 +158,7 @@ impl Ontology {
             };
             match tb_result {
                 Err(error) => {
-                    if verbose {
-                        println!(" -- ontology::add_tbis_from_file: couldn't parse tbox from file: {}", &error);
-                    }
-
+                    println!("couldn't parse tbox from file: {}", &error);
                 }
                 Ok(tb) => {
                     for tbi in tb.items() {
@@ -177,27 +171,27 @@ impl Ontology {
         }
     }
 
-    pub fn new_abox_from_abox(&mut self, ab: AB) {
+    pub fn new_abox_from_aboxq(&mut self, ab: ABQ) {
         self.current_abox = Some(ab);
     }
 
-    pub fn new_abox_from_file(&mut self, filename: &str, filetype: FileType, verbose: bool) {
+    pub fn new_abox_from_file_quantum(&mut self, filename: &str, filetype: FileType, verbose: bool) {
         if self.symbols.len() != 0 {
             match filetype {
                 FileType::JSON => {
                     if verbose {
-                        println!(" -- ontology::new_abox_from_file: the json parser is not yet implemented");
+                        println!("the json parser is not yet implemented");
                     }
 
                     panic!("not implemented yet!")
                 }
                 FileType::NATIVE => {
-                    let ab_result = parse_abox_native(filename, &mut self.symbols, verbose);
+                    let ab_result = parse_abox_native_quantum(filename, &mut self.symbols, verbose);
 
                     match ab_result {
                         Err(_error) => {
                             if verbose {
-                                println!(" -- ontology::new_abox_from_file: couldn't parse abox from file: {}", filename);
+                                println!("couldn't parse abox from file: {}", filename);
                             }
                         }
                         Ok(ab) => {
@@ -211,7 +205,7 @@ impl Ontology {
         }
     }
 
-    pub fn add_abis_from_file(&mut self, filename: &str, filetype: FileType, verbose: bool) {
+    pub fn add_abis_from_file_quantum(&mut self, filename: &str, filetype: FileType, verbose: bool) {
         if self.symbols.len() != 0 {
             match filetype {
                 FileType::JSON => {
@@ -222,7 +216,7 @@ impl Ontology {
                     panic!("not implemented yet!")
                 }
                 FileType::NATIVE => {
-                    let ab_result = parse_abox_native(filename, &mut self.symbols, verbose);
+                    let ab_result = parse_abox_native_quantum(filename, &mut self.symbols, verbose);
 
                     match ab_result {
                         Err(_error) => {
@@ -247,7 +241,7 @@ impl Ontology {
         }
     }
 
-    pub fn add_abi(&mut self, abi: &ABI) {
+    pub fn add_abi(&mut self, abi: &ABIQ) {
         // you must have created a new abox
         if self.current_abox.is_some() {
             let abox = self.current_abox.as_mut().unwrap();
@@ -255,7 +249,7 @@ impl Ontology {
         }
     }
 
-    pub fn add_abis_from_abox(&mut self, ab: &AB) {
+    pub fn add_abis_from_abox(&mut self, ab: &ABQ) {
         for abi in ab.items() {
             self.add_abi(abi)
         }
@@ -293,10 +287,145 @@ impl Ontology {
         self.current_abox = ab_op;
     }
 
-    pub fn complete_abox(&self, verbose: bool) -> Option<AB> {
+    pub fn complete_abox(&self, verbose: bool) -> Option<ABQ> {
         match &self.current_abox {
             Some(ab) => Some(ab.complete(self.tbox(), verbose)),
             _ => Option::None,
+        }
+    }
+
+    // please note that this matrix detect also implications
+    pub fn conflict_matrix(&self, abq: &ABQ, verbose: bool) -> (Vec<i8>, Vec<(usize, Option<usize>)>, Vec<(usize, usize)>) {
+        /*
+        so the idea here is to first detect self conflicting nodes and not include them in
+        the afore computation, the second vector helps to keep track of wich abi is mapped to
+        which abi
+
+        WARNING: if the order of elements is changed the matrix is worthless
+         */
+        let abq_length = abq.len();
+        let mut matrix: Vec<i8> = Vec::new();
+        let mut real_to_virtual: Vec<(usize, Option<usize>)> = Vec::new();
+        let mut virtual_to_real: Vec<(usize, usize)> = Vec::new();
+
+        if abq_length == 0 {
+            if verbose {
+                println!(" -- Ontology::conflict_matrix: abox is empty, nothing to analyse");
+            }
+
+            (matrix, real_to_virtual, virtual_to_real)
+        } else {
+            // first find every self conflicting node
+            let mut self_conflicting: Vec<usize> = Vec::new();
+
+            for index in 0..abq_length {
+                let tmp_abq = abq.sub_abox(vec![index], Option::None).unwrap();
+
+                if verbose {
+                    println!(" -- Ontology::conflict_matrix: analysing if {:?} is self conflicting", abq.get(index));
+                }
+
+                let tmp_abq = tmp_abq.complete(self.tbox(), verbose);
+
+                if tmp_abq.is_inconsistent(self.tbox(), verbose) {
+                    if verbose {
+                        println!(" -- Ontology::conflict_matrix: {:?} found to be self conflicting", abq.get(index));
+                    }
+
+                    self_conflicting.push(index);
+                } else {
+                    if verbose {
+                        println!(" -- Ontology::conflict_matrix: {:?} found to be NOT self conflicting", abq.get(index));
+                    }
+                }
+            }
+            // now we know which are the self conflicting elements
+
+            // before the matrix create a vector pointing to the good values
+            let mut current_length: usize = 0;
+            for index in 0..abq_length {
+                if !self_conflicting.contains(&index) {
+                    real_to_virtual.push((index, Some(current_length)));
+                    virtual_to_real.push((current_length, index));
+                    current_length += 1;
+                } else {
+                    real_to_virtual.push((index, Option::None));
+                }
+            }
+            // now we have two mappers:
+            // real_to_virtual: given a real index of abq it will output the index of the item in the virtual list
+            // virtual_to_real: given a virtual index it outputs the real index
+
+            // now the matrix
+            let virtual_length = virtual_to_real.len();
+            let mut matrix: Vec<i8> = vec![0; virtual_length * virtual_length];
+
+            // conflicts are always binary at this point
+            /*
+            we capture two different things:
+            a => b with [a, -b] is inconsistent
+            a => -b with [a,b] is inconsistent
+
+            normally we can't have both, we weed out the self conflicting nodes...
+             */
+            for i in 0..virtual_length {
+                let (virtual_index_i, real_index_i) = virtual_to_real.get(i).unwrap();
+
+                let abiq_i = abq.get(*real_index_i).unwrap();
+
+                if verbose {
+                    println!(" -- Ontology::conflict_matrix: filling column {} for item {}", i, abiq_i);
+                }
+
+                for j in 0..virtual_length {
+                    if i != j {
+                        let (virtual_index_j, real_index_j) = virtual_to_real.get(j).unwrap();
+
+                        let abiq_j = abq.get(*real_index_j).unwrap();
+                        let abiq_j_neg = abiq_j.negate();
+
+                        if verbose {
+                            println!(" -- Ontology::conflict_matrix: comparing against {} and its negation {}", abiq_j, &abiq_j_neg);
+                        }
+
+                        let abq_tmp = ABQ::from_vec("tmp", vec![abiq_i.clone(), abiq_j.clone()]);
+                        let abq_tmp_neg = ABQ::from_vec("tmp_neg", vec![abiq_i.clone(), abiq_j_neg]);
+
+                        println!("    --  abq_tmp: {}\n    --  abq_tmp_neg: {}", self.abox_to_string_quantum(&abq_tmp), self.abox_to_string_quantum(&abq_tmp_neg));
+
+                        let abq_tmp = abq_tmp.complete(self.tbox(), verbose);
+                        let abq_tmp_neg = abq_tmp_neg.complete(self.tbox(), verbose);
+
+                        println!("    -- abq_tmp: {}\n    --  abq_tmp_neg: {}", self.abox_to_string_quantum(&abq_tmp), self.abox_to_string_quantum(&abq_tmp_neg));
+
+                        let i_implies_not_j = abq_tmp.is_inconsistent(self.tbox(), verbose);
+                        let i_implies_j = abq_tmp_neg.is_inconsistent(self.tbox(), verbose);
+
+                        if verbose {
+                            println!(" -- Ontology::conflict_matrix: found that {} with index {} implies {} with index {} to be {}", abiq_i, i, abiq_j, j, i_implies_j);
+                            println!(" -- Ontology::conflict_matrix: found that {} with index {} implies the negation of {} with index {} to be {}", abiq_i, i, abiq_j, j, i_implies_not_j);
+                        }
+
+                        if i_implies_not_j {
+                            if verbose {
+                                println!(" -- Ontology::conflict_matrix: setting position ({}, {}) to -1", j, i);
+                            }
+
+                            matrix[virtual_length*j + i] = -1;
+                        }
+
+                        if i_implies_j {
+                            if verbose {
+                                println!(" -- Ontology::conflict_matrix: setting position ({}, {}) to 1", j, i);
+                            }
+
+                            matrix[virtual_length*j + 1] = 1;
+                        }
+                    }
+                }
+            }
+
+            (matrix, real_to_virtual, virtual_to_real)
         }
     }
 
@@ -310,17 +439,20 @@ impl Ontology {
         contains_contradiction
     }
 
+    /*
     pub fn find_consequences(&self, abox: &AB) -> AB {
         AB::new(abox.name())
     }
+
+     */
 
     pub fn find_consequences_from_file(
         &self,
         filename: &str,
         _filetype: FileType,
-    ) -> io::Result<AB> {
+    ) -> io::Result<ABQ> {
         let ab_name = parse_name_from_filename(filename);
-        Ok(AB::new(ab_name))
+        Ok(ABQ::new(ab_name))
     }
 
     // -------------------------------------------------------------------------------------------
@@ -514,11 +646,11 @@ impl Ontology {
         s
     }
 
-    pub fn abox_to_string(&self, ab: &AB) -> String {
+    pub fn abox_to_string_quantum(&self, ab: &ABQ) -> String {
         let mut s = String::from("    {\n");
 
         for abi in ab.items() {
-            let abi_string = self.abi_to_string(abi);
+            let abi_string = self.abiq_to_string(abi);
 
             // println!("{} gave {}", abi, &abi_string);
 
@@ -539,6 +671,18 @@ impl Ontology {
         let s = format!("{} (<) {}", lside, rside);
 
         s
+    }
+
+    fn abiq_to_string(&self, abiq: &ABIQ) -> String {
+        let abi_to_string = self.abi_to_string(abiq.abi());
+
+        let v = match abiq.value() {
+            Option::None => "NC".to_string(),
+            Some(n) => format!("{}", n),
+        };
+
+        let res = format!("{} (pv: {}, v: {})", abi_to_string, abiq.prevalue(), v);
+        res
     }
 
     fn abi_to_string(&self, abi: &ABI) -> String {
@@ -646,7 +790,7 @@ impl Ontology {
     ) -> bool {
         match filetype {
             FileType::NATIVE => {
-                let abox_as_string_op = abox_to_native_string(
+                let abox_as_string_op = abox_to_native_string_quantum(
                     &self.current_abox.as_ref().unwrap(),
                     &self.symbols,
                     dont_write_trivial,
@@ -667,7 +811,7 @@ impl Ontology {
                                 match result {
                                     Result::Err(e) => {
                                         println!(
-                                            "something went wrong while writting to the file: {}",
+                                            "something went wrong while writing to the file: {}",
                                             e
                                         );
                                         false
@@ -706,7 +850,7 @@ impl Ontology {
         match conn_res {
             Err(e) => {
                 if verbose {
-                    println!("an error ocurred: {}", &e);
+                    println!("an error occurred: {}", &e);
                 }
                 Err(e)
             }

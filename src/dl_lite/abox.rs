@@ -1,6 +1,8 @@
 use std::fmt;
 
 use crate::dl_lite::abox_item::ABI;
+use crate::dl_lite::abox_item_quantum::ABIQ;
+
 use crate::dl_lite::helpers_and_utilities::{
     complete_helper_add_if_necessary_general, complete_helper_dump_from_mutex_temporal_to_current2,
 };
@@ -12,23 +14,24 @@ use crate::dl_lite::types::CR;
 use crate::kb::knowledge_base::Data;
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
+use crate::dl_lite::node::Node;
 
 #[derive(PartialEq, Debug, Clone)]
-pub struct AB {
+pub struct ABQ {
     name: String,
-    items: Vec<ABI>,
+    items: Vec<ABIQ>,
     completed: bool,
     length: usize,
 }
 
-impl Data for AB {}
+impl Data for ABQ {}
 
-impl fmt::Display for AB {
+impl fmt::Display for ABQ {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.length == 0 {
-            write!(f, "<AB>[]")
+            write!(f, "<ABQ>[]")
         } else {
-            let mut s: String = format!("<AB({})>[", self.name);
+            let mut s: String = format!("<ABQ({})>[", self.name);
 
             for item in &self.items {
                 s.push_str(item.to_string().as_str());
@@ -42,14 +45,26 @@ impl fmt::Display for AB {
     }
 }
 
-impl AB {
-    pub fn new(name: &str) -> AB {
-        AB {
+impl ABQ {
+    pub fn new(name: &str) -> ABQ {
+        ABQ {
             name: name.to_string(),
             items: vec![],
             length: 0,
             completed: false,
         }
+    }
+
+    pub fn from_vec(name: &str, mut v: Vec<ABIQ>) -> ABQ {
+        let mut abq = ABQ::new(name);
+
+        while !v.is_empty() {
+            let abiq = v.pop().unwrap();
+
+            abq.add(abiq);
+        }
+
+        abq
     }
 
     pub fn name(&self) -> &str {
@@ -64,7 +79,7 @@ impl AB {
         self.completed
     }
 
-    pub fn add(&mut self, abi: ABI) -> bool {
+    pub fn add(&mut self, abi: ABIQ) -> bool {
         /*
         returns true if the item was successfully inserted, false otherwise
          */
@@ -78,7 +93,11 @@ impl AB {
         }
     }
 
-    pub fn items(&self) -> &Vec<ABI> {
+    pub fn get(&self, index: usize) -> Option<&ABIQ> {
+        self.items.get(index)
+    }
+
+    pub fn items(&self) -> &Vec<ABIQ> {
         &self.items
     }
 
@@ -87,13 +106,13 @@ impl AB {
     }
 
     // create an abox from a vec of index, will help when finding conflicts in a database
-    pub fn sub_abox(&self, index: Vec<usize>, name: Option<&str>) -> Option<AB> {
+    pub fn sub_abox(&self, index: Vec<usize>, name: Option<&str>) -> Option<ABQ> {
         let name = match name {
             Option::None => "tmp",
             Some(s) => s,
         };
 
-        let mut sub_abox = AB::new(name);
+        let mut sub_abox = ABQ::new(name);
 
         for i in index {
             if i < self.length {
@@ -108,14 +127,100 @@ impl AB {
         }
     }
 
-    pub fn complete(&self, tbox: &TB, verbose: bool) -> AB {
+    pub fn is_inconsistent(&self, tb: &TB, verbose: bool) -> bool {
+        /*
+        this is an error we need to compare against every tbi
+        let negatives = tb.negative_inclusions();
+         */
+        let tbis = tb.items();
+        let tb_length = tbis.len();
+
+        // we can have a:A and A < (-A)
+        // also a:A a:B and A < (-B) the first case is an special case, so we test for the second
+        // only
+
+        let self_length = self.length;
+
+        for tbi in tbis {
+
+            if verbose {
+                println!(" -- ABQ::is_inconsistent: comparing against {}", &tbi);
+            }
+
+            let left = tbi.lside();
+            let right = tbi.rside();
+
+            let right_keeper: Node;
+            let right_mod: &Node;
+
+            if tbi.is_negative_inclusion() {
+
+                if verbose {
+                    println!(" -- ABQ::is_inconsistent: negative tbi, taking its child");
+                }
+
+                right_mod = Node::child(Some(right)).unwrap();
+            } else {
+
+                if verbose {
+                    println!(" -- ABQ::is_inconsistent: positive tbi, negating");
+                }
+
+                right_keeper = right.clone().negate();
+                right_mod = &right_keeper;
+            }
+
+            for i in 0..self_length {
+                let abq_i =  self.items.get(i).unwrap();
+                let node_i = abq_i.abi().symbol();
+
+                if verbose {
+                    println!(" -- ABQ::is_inconsistent: analysing {} with index {}", abq_i, i);
+                }
+
+                if node_i == left {
+
+                    if verbose {
+                        println!(" -- ABQ::is_inconsistent: found match for left side, continuing analysis");
+                    }
+
+                    for j in 0..self_length {
+                        if j != i {
+                            let abq_j =  self.items.get(j).unwrap();
+                            let node_j = abq_j.abi().symbol();
+
+                            if verbose {
+                                println!(" -- ABQ::is_inconsistent: analysing against {} with index {}", abq_j, j);
+                            }
+
+                            if node_j == right_mod {
+                                if verbose {
+                                    println!(" -- ABQ::is_inconsistent: found conflict, returning true");
+                                }
+
+                                return true
+                            }
+                        }
+                    }
+                }
+            }
+
+        }
+
+        if verbose {
+            println!(" -- ABQ::is_inconsistent: no conflict found, returning false");
+        }
+        false
+    }
+
+    pub fn complete(&self, tbox: &TB, verbose: bool) -> ABQ {
         if self.items.len() == 0 {
             if verbose {
-                println!(" -- AB::complete: the abox is empty, nothing to complete");
+                println!(" -- ABQ::complete: the abox is empty, nothing to complete");
             }
 
             let new_name = format!("{}_completion_not", &self.name);
-            AB::new(&new_name)
+            ABQ::new(&new_name)
         } else {
             /*
             the strategy is as follows, for each Vec or VecDeque keeps two, one that change during the
@@ -123,8 +228,8 @@ impl AB {
              */
 
             // keep the items
-            let items: Arc<Mutex<VecDeque<ABI>>> = Arc::new(Mutex::new(VecDeque::new()));
-            let items_temporal: Arc<Mutex<VecDeque<ABI>>> = Arc::new(Mutex::new(VecDeque::new()));
+            let items: Arc<Mutex<VecDeque<ABIQ>>> = Arc::new(Mutex::new(VecDeque::new()));
+            let items_temporal: Arc<Mutex<VecDeque<ABIQ>>> = Arc::new(Mutex::new(VecDeque::new()));
 
             // keep the index to be treated
             let to_treat: Arc<Mutex<VecDeque<usize>>> = Arc::new(Mutex::new(VecDeque::new()));
@@ -138,7 +243,7 @@ impl AB {
             // indicators for the while main loop
             let mut stop_condition: bool; // stop condition for the loop, see if to_treat is 'empty' or not
             let mut current_index: usize; // at each iteration keeps the index to be treated
-            let mut current_item: ABI; // at each iteration keeps the item to be treated
+            let mut current_item: ABIQ; // at each iteration keeps the item to be treated
             let mut is_already_treated: bool;
             let mut iterations: usize;
 
@@ -198,17 +303,17 @@ impl AB {
                         let already_treated = already_treated.lock().unwrap();
 
                         println!(
-                            "==================================================================="
+                            "    ==================================================================="
                         );
                         println!(
-                            "--------this is the status at beginning of iteration {}------------",
+                            "    --------this is the status at beginning of iteration {}------------",
                             iterations
                         );
-                        println!("-- items: {:?}", &items);
-                        println!("-- to_treat: {:?}", &to_treat);
-                        println!("-- already_treated: {:?}", &already_treated);
+                        println!("    -- items: {:?}", &items);
+                        println!("    -- to_treat: {:?}", &to_treat);
+                        println!("    -- already_treated: {:?}", &already_treated);
                         println!(
-                            "-------------------------------------------------------------------"
+                            "    -------------------------------------------------------------------"
                         );
                     }
                 }
@@ -260,7 +365,7 @@ impl AB {
                     // now current_item has the necessary item inside
                     if verbose {
                         println!(
-                            " -- AB::complete: treating now {} (index {})",
+                            " -- ABQ::complete: treating now {} (index {})",
                             &current_item, current_index
                         );
                     }
@@ -289,11 +394,11 @@ impl AB {
                                 // three different vectors
 
                                 if verbose {
-                                    println!(" -- AB::complete: comparing with tbi: {}", tbi);
+                                    println!(" -- ABQ::complete: comparing with tbi: {}", tbi);
                                 }
 
                                 let new_item_vec3 =
-                                    ABI::apply_rule(vec![&current_item, &item], vec![tbi], rule);
+                                    ABIQ::apply_rule(vec![&current_item, &item], vec![tbi], rule);
 
                                 for optional_vec in vec![&new_item_vec3] {
                                     // if the rule succeeded
@@ -301,7 +406,7 @@ impl AB {
                                     // println!("--- in abox complete, optional vec is : {:?}", &optional_vec);
 
                                     if optional_vec.is_some() {
-                                        let mut abis_to_add: Vec<ABI> = Vec::new();
+                                        let mut abis_to_add: Vec<ABIQ> = Vec::new();
                                         let iterator = optional_vec.as_ref().unwrap();
 
                                         let _abi_already_exits = false;
@@ -372,15 +477,15 @@ impl AB {
                     let to_treat = to_treat.lock().unwrap();
                     let already_treated = already_treated.lock().unwrap();
 
-                    println!("-------------------------------------------------------------------");
+                    println!("    -------------------------------------------------------------------");
                     println!(
-                        "-----------this is the status at end of iteration {}----------------",
+                        "    -----------this is the status at end of iteration {}----------------",
                         iterations
                     );
-                    println!("-- items: {:?}", &items);
-                    println!("-- to_treat: {:?}", &to_treat);
-                    println!("-- already_treated: {:?}", &already_treated);
-                    println!("===================================================================");
+                    println!("    -- items: {:?}", &items);
+                    println!("    -- to_treat: {:?}", &to_treat);
+                    println!("    -- already_treated: {:?}", &already_treated);
+                    println!("    ===================================================================");
                 }
 
                 // update the iteration counter
@@ -388,17 +493,17 @@ impl AB {
             }
 
             let new_name = format!("{}_completed", self.name);
-            let mut new_tb = AB::new(&new_name);
+            let mut new_abq = ABQ::new(&new_name);
             {
                 let mut items = items.lock().unwrap();
                 while !items.is_empty() {
-                    new_tb.add(items.pop_front().unwrap());
+                    new_abq.add(items.pop_front().unwrap());
                 }
             }
 
             // of course, set completed to 'true' in the new tbox
-            new_tb.completed = true;
-            new_tb
+            new_abq.completed = true;
+            new_abq
         }
     }
 }

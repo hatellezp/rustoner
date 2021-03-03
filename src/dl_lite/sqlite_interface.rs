@@ -1,17 +1,19 @@
-use crate::dl_lite::abox::AB;
 use crate::dl_lite::abox_item::ABI;
 use crate::dl_lite::native_filetype_utilities::find_bound_of_symbols;
 use crate::dl_lite::node::Node;
 use crate::dl_lite::sqlite_structs::{
     AboxItemCDb, AboxItemRDb, NodeDb, SymbolDb, TableDb, TboxItemDb,
 };
-use crate::dl_lite::string_formatter::{node_to_string, string_to_abi, string_to_tbi};
+use crate::dl_lite::string_formatter::{node_to_string, string_to_abi, string_to_tbi, string_to_abiq};
 use crate::dl_lite::tbox::TB;
 use crate::dl_lite::tbox_item::TBI;
 use crate::dl_lite::types::DLType;
 
 use rusqlite::{Connection, Result, NO_PARAMS};
 use std::collections::HashMap;
+use crate::dl_lite::abox_item_quantum::ABIQ;
+use crate::dl_lite::abox::ABQ;
+use crate::dl_lite::sqlite_structs_quantum::{AboxQItemCDb, AboxQItemRDb};
 
 pub fn connect_to_db(filename: &str, verbose: bool) -> Connection {
     if verbose {
@@ -319,138 +321,6 @@ pub fn add_tbis_to_db(
     }
 }
 
-pub fn add_abi_to_db(
-    symbols: &HashMap<String, (usize, DLType)>,
-    ab_name: &str,
-    abi: &ABI,
-    conn: &Connection,
-    verbose: bool,
-) {
-    // define the stuff
-    let command: String;
-    let query: &str;
-    let res: Result<usize>;
-
-    // match abi type
-    match abi {
-        ABI::CA(c, a) => {
-            add_nodes_to_db(symbols, vec![c, a], conn, verbose);
-
-            let c_id = get_node_from_db(symbols, c, conn, verbose).unwrap()[0].id_db as usize;
-            let a_id = get_node_from_db(symbols, a, conn, verbose).unwrap()[0].id_db as usize;
-
-            command = format!("INSERT OR IGNORE INTO {}_abox_concept(constant_name, concept_name, constant, concept) VALUES ('{}', '{}', {}, {})",
-                              ab_name,
-                              node_to_string(a, symbols, String::from("")).unwrap(),
-                              node_to_string(c, symbols, String::from("")).unwrap(),
-                              a_id,
-                              c_id,
-            );
-
-            query = command.as_str();
-
-            res = conn.execute(query, NO_PARAMS);
-
-            if verbose {
-                println!("query: {}\nreturned: {:?}", query, &res);
-            }
-        }
-        ABI::RA(r, a, b) => {
-            add_nodes_to_db(symbols, vec![r, a, b], conn, verbose);
-
-            let r_id = get_node_from_db(symbols, r, conn, verbose).unwrap()[0].id_db as usize;
-            let a_id = get_node_from_db(symbols, a, conn, verbose).unwrap()[0].id_db as usize;
-            let b_id = get_node_from_db(symbols, b, conn, verbose).unwrap()[0].id_db as usize;
-
-            command = format!("INSERT OR IGNORE INTO \
-                    {}_abox_role(constant1_name, constant2_name, role_name, constant1, constant2, role) VALUES ('{}', '{}', '{}', {}, {}, {})",
-                              ab_name,
-                              node_to_string(a, symbols, String::from("")).unwrap(),
-                              node_to_string(b, symbols, String::from("")).unwrap(),
-                              node_to_string(r, symbols, String::from("")).unwrap(),
-                              a_id,
-                              b_id,
-                              r_id,
-            );
-
-            query = command.as_str();
-
-            res = conn.execute(query, NO_PARAMS);
-
-            if verbose {
-                println!("query: {}\nreturned: {:?}", query, &res);
-            }
-        }
-    }
-}
-
-pub fn add_abis_to_db(
-    symbols: &HashMap<String, (usize, DLType)>,
-    abis: &Vec<ABI>,
-    ab_name: &str,
-    conn: &Connection,
-    verbose: bool,
-) {
-    // first create table it they don't exist
-
-    // first concept table
-    let command = format!(
-        "\
-        CREATE TABLE IF NOT EXISTS {}_abox_concept(
-            id INTEGER PRIMARY KEY,
-            constant_name TEXT NON NULL,
-            concept_name TEXT NON NULL,
-            constant INTEGER NON NULL,
-            concept INTEGER NON NULL,
-            UNIQUE(constant, concept),
-            FOREIGN KEY(constant) REFERENCES nodes(id),
-            FOREIGN KEY(concept) REFERENCES nodes(id)
-        )
-    ",
-        ab_name
-    );
-
-    let query = &command;
-
-    let res = conn.execute(query, NO_PARAMS);
-
-    if verbose {
-        println!("query: {} \nreturned: {:?}", query, &res);
-    }
-
-    // second role table
-    let command = format!(
-        "\
-        CREATE TABLE IF NOT EXISTS {}_abox_role(
-            id INTEGER PRIMARY KEY,
-            constant1_name TEXT NON NULL,
-            constant2_name TEXT NON NULL,
-            role_name TEXT NON NULL,
-            constant1 INTEGER NON NULL,
-            constant2 INTEGER NON NULL,
-            role INTEGER NON NULL,
-            UNIQUE(constant1, constant2, role),
-            FOREIGN KEY(constant1) REFERENCES nodes(id),
-            FOREIGN KEY(constant2) REFERENCES nodes(id),
-            FOREIGN KEY(role) REFERENCES nodes(id)
-        )
-    ",
-        ab_name
-    );
-
-    let query = &command;
-
-    let res = conn.execute(query, NO_PARAMS);
-
-    if verbose {
-        println!("query: {} \nreturned: {:?}", query, &res);
-    }
-
-    for abi in abis {
-        add_abi_to_db(symbols, ab_name, abi, conn, verbose);
-    }
-}
-
 pub fn add_symbols_from_db(
     symbols: &mut HashMap<String, (usize, DLType)>,
     conn: &Connection,
@@ -582,192 +452,6 @@ pub fn add_tbis_from_db(
     }
 }
 
-pub fn add_abis_from_db(
-    symbols: &mut HashMap<String, (usize, DLType)>,
-    abox: &mut AB,
-    conn: &Connection,
-    ab_name: &str,
-    verbose: bool,
-) -> Result<usize> {
-    let command_c = format!("SELECT * FROM {}_abox_concept", ab_name);
-    let query_c = &command_c;
-
-    let command_r = format!("SELECT * FROM {}_abox_role", ab_name);
-    let query_r = &command_r;
-
-    let smt_res_c = conn.prepare(query_c);
-
-    let res_c = match smt_res_c {
-        Err(e) => {
-            if verbose {
-                println!("an error ocurred: {}", &e);
-            }
-            Err(e)
-        }
-        Ok(mut smt) => {
-            if verbose {
-                println!("query: {} succeed", query_c);
-            }
-
-            let abis_row = smt.query_map(NO_PARAMS, |row| {
-                Ok(AboxItemCDb {
-                    id_db: row.get(0)?,
-                    constant_name_db: row.get(1)?,
-                    concept_name_db: row.get(2)?,
-                    constant_db: row.get(3)?,
-                    concept_db: row.get(4)?,
-                })
-            })?;
-
-            // needed to update the symbols
-            let (_, id_bound) = find_bound_of_symbols(symbols);
-            let current_id = id_bound + 1;
-
-            for abi in abis_row {
-                //println!("---- tbi: {:?}", &tbi);
-
-                let abi = abi.unwrap();
-
-                let mut abi_string = String::new();
-                let a_str = abi.constant_name_db;
-                let c_str = abi.concept_name_db;
-
-                abi_string.push_str(&a_str);
-                abi_string.push_str(":");
-                abi_string.push_str(&c_str);
-
-                let (abi_res, _current_id) = string_to_abi(&abi_string, symbols, current_id, true); // TODO: come back here for 'for_completion' argument
-
-                if verbose {
-                    println!("attempting to insert abi {:?}", &abi_res);
-                }
-
-                match abi_res {
-                    Ok(v) => {
-                        // destructure
-                        let (abi, ss) = v;
-
-                        // add abi
-                        abox.add(abi);
-
-                        // add symbols
-                        for (s, it) in ss {
-                            symbols.insert(s, it);
-                        }
-
-                        if verbose {
-                            println!("insertion succeed");
-                        }
-                    }
-                    Err(e) => {
-                        if verbose {
-                            println!("insertion failed: {}", &e);
-                        }
-                    }
-                }
-            }
-            Ok(0)
-        }
-    };
-
-    // now for roles
-    let smt_res_r = conn.prepare(query_r);
-
-    let res_r = match smt_res_r {
-        Err(e) => {
-            if verbose {
-                println!("an error ocurred: {}", &e);
-            }
-            Err(e)
-        }
-        Ok(mut smt) => {
-            if verbose {
-                println!("query: {} succeed", query_r);
-            }
-
-            let abis_row = smt.query_map(NO_PARAMS, |row| {
-                Ok(AboxItemRDb {
-                    id_db: row.get(0)?,
-                    constant1_name_db: row.get(1)?,
-                    constant2_name_db: row.get(2)?,
-                    role_name_db: row.get(3)?,
-                    constant1_db: row.get(4)?,
-                    constant2_db: row.get(5)?,
-                    role_db: row.get(6)?,
-                })
-            })?;
-
-            // needed to update the symbols
-            let (_, id_bound) = find_bound_of_symbols(symbols);
-            let current_id = id_bound + 1;
-
-            for abi in abis_row {
-                //println!("---- tbi: {:?}", &tbi);
-
-                let abi = abi.unwrap();
-
-                let mut abi_string = String::new();
-                let a_str = abi.constant1_name_db;
-                let b_str = abi.constant2_name_db;
-                let r_str = abi.role_name_db;
-
-                abi_string.push_str(&a_str);
-                abi_string.push_str(", ");
-                abi_string.push_str(&b_str);
-                abi_string.push_str(":");
-                abi_string.push_str(&r_str);
-
-                let (abi_res, _current_id) = string_to_abi(&abi_string, symbols, current_id, true); // TODO: same here, for_completion argument
-
-                if verbose {
-                    println!("attempting to insert abi {:?}", &abi_res);
-                }
-
-                match abi_res {
-                    Ok(v) => {
-                        // destructure
-                        let (abi, ss) = v;
-
-                        // add abi
-                        abox.add(abi);
-
-                        // add symbols
-                        for (s, it) in ss {
-                            symbols.insert(s, it);
-                        }
-
-                        if verbose {
-                            println!("insertion succeed");
-                        }
-                    }
-                    Err(e) => {
-                        if verbose {
-                            println!("insertion failed: {}", &e);
-                        }
-                    }
-                }
-            }
-            Ok(0)
-        }
-    };
-
-    match (res_c, res_r) {
-        (Err(e), _) => {
-            if verbose {
-                println!("an error ocurred: {}", &e);
-            }
-            Err(e)
-        }
-        (_, Err(e)) => {
-            if verbose {
-                println!("an error ocurred: {}", &e);
-            }
-            Err(e)
-        }
-        (Ok(i1), _) => Ok(i1),
-    }
-}
-
 // TODO: maybe more information in these functions that work with the database
 pub fn update_symbols_to_db(
     symbols: &HashMap<String, (usize, DLType)>,
@@ -840,3 +524,370 @@ pub fn drop_tables_from_database(conn: &Connection, tables_to_drop: Vec<&str>, v
         }
     }
 }
+
+
+pub fn add_abi_to_db_quantum(
+    symbols: &HashMap<String, (usize, DLType)>,
+    ab_name: &str,
+    abiq: &ABIQ,
+    conn: &Connection,
+    verbose: bool,
+) {
+    // define the stuff
+    let command: String;
+    let query: &str;
+    let res: Result<usize>;
+    let abi = abiq.abi();
+    let pv = abiq.prevalue();
+    let v_op = abiq.value();
+
+    // match abi type
+    match abi {
+        ABI::CA(c, a) => {
+            add_nodes_to_db(symbols, vec![c, a], conn, verbose);
+
+            let c_id = get_node_from_db(symbols, c, conn, verbose).unwrap()[0].id_db as usize;
+            let a_id = get_node_from_db(symbols, a, conn, verbose).unwrap()[0].id_db as usize;
+
+            command = match v_op {
+                Option::None => {
+                    format!("INSERT OR IGNORE INTO {}_abox_concept(constant_name, concept_name, constant, concept, prevalue) VALUES ('{}', '{}', {}, {}, {})",
+                            ab_name,
+                            node_to_string(a, symbols, String::from("")).unwrap(),
+                            node_to_string(c, symbols, String::from("")).unwrap(),
+                            a_id,
+                            c_id,
+                            pv,
+                    )
+                },
+                Some(v) => {
+                    format!("INSERT OR IGNORE INTO {}_abox_concept(constant_name, concept_name, constant, concept, prevalue, value) VALUES ('{}', '{}', {}, {}, {}, {})",
+                            ab_name,
+                            node_to_string(a, symbols, String::from("")).unwrap(),
+                            node_to_string(c, symbols, String::from("")).unwrap(),
+                            a_id,
+                            c_id,
+                            pv,
+                            v,
+                    )
+                },
+            };
+
+            query = command.as_str();
+
+            res = conn.execute(query, NO_PARAMS);
+
+            if verbose {
+                println!("query: {}\nreturned: {:?}", query, &res);
+            }
+        }
+        ABI::RA(r, a, b) => {
+            add_nodes_to_db(symbols, vec![r, a, b], conn, verbose);
+
+            let r_id = get_node_from_db(symbols, r, conn, verbose).unwrap()[0].id_db as usize;
+            let a_id = get_node_from_db(symbols, a, conn, verbose).unwrap()[0].id_db as usize;
+            let b_id = get_node_from_db(symbols, b, conn, verbose).unwrap()[0].id_db as usize;
+
+            command = match v_op {
+                Option::None => {
+                    format!("INSERT OR IGNORE INTO \
+                    {}_abox_role(constant1_name, constant2_name, role_name, constant1, constant2, role, prevalue) VALUES ('{}', '{}', '{}', {}, {}, {}, {})",
+                            ab_name,
+                            node_to_string(a, symbols, String::from("")).unwrap(),
+                            node_to_string(b, symbols, String::from("")).unwrap(),
+                            node_to_string(r, symbols, String::from("")).unwrap(),
+                            a_id,
+                            b_id,
+                            r_id,
+                            pv,
+                    )
+                },
+                Some(v) => {
+                    format!("INSERT OR IGNORE INTO \
+                    {}_abox_role(constant1_name, constant2_name, role_name, constant1, constant2, role, prevalue, value) VALUES ('{}', '{}', '{}', {}, {}, {}, {}, {})",
+                            ab_name,
+                            node_to_string(a, symbols, String::from("")).unwrap(),
+                            node_to_string(b, symbols, String::from("")).unwrap(),
+                            node_to_string(r, symbols, String::from("")).unwrap(),
+                            a_id,
+                            b_id,
+                            r_id,
+                            pv,
+                            v,
+                    )
+                },
+            };
+
+            query = command.as_str();
+
+            res = conn.execute(query, NO_PARAMS);
+
+            if verbose {
+                println!("query: {}\nreturned: {:?}", query, &res);
+            }
+        }
+    }
+}
+
+pub fn add_abis_to_db_quantum(
+    symbols: &HashMap<String, (usize, DLType)>,
+    abiqs: &Vec<ABIQ>,
+    ab_name: &str,
+    conn: &Connection,
+    verbose: bool,
+) {
+    // first create table it they don't exist
+
+    // first concept table
+    let command = format!(
+        "\
+        CREATE TABLE IF NOT EXISTS {}_abox_concept(
+            id INTEGER PRIMARY KEY,
+            constant_name TEXT NON NULL,
+            concept_name TEXT NON NULL,
+            constant INTEGER NON NULL,
+            concept INTEGER NON NULL,
+            prevalue REAL NON NULL,
+            value REAL,
+            UNIQUE(constant, concept),
+            FOREIGN KEY(constant) REFERENCES nodes(id),
+            FOREIGN KEY(concept) REFERENCES nodes(id)
+        )
+    ",
+        ab_name
+    );
+
+    let query = &command;
+
+    let res = conn.execute(query, NO_PARAMS);
+
+    if verbose {
+        println!("query: {} \nreturned: {:?}", query, &res);
+    }
+
+    // second role table
+    let command = format!(
+        "\
+        CREATE TABLE IF NOT EXISTS {}_abox_role(
+            id INTEGER PRIMARY KEY,
+            constant1_name TEXT NON NULL,
+            constant2_name TEXT NON NULL,
+            role_name TEXT NON NULL,
+            constant1 INTEGER NON NULL,
+            constant2 INTEGER NON NULL,
+            role INTEGER NON NULL,
+            prevalue REAL NON NULL,
+            value REAL,
+            UNIQUE(constant1, constant2, role),
+            FOREIGN KEY(constant1) REFERENCES nodes(id),
+            FOREIGN KEY(constant2) REFERENCES nodes(id),
+            FOREIGN KEY(role) REFERENCES nodes(id)
+        )
+    ",
+        ab_name
+    );
+
+    let query = &command;
+
+    let res = conn.execute(query, NO_PARAMS);
+
+    if verbose {
+        println!("query: {} \nreturned: {:?}", query, &res);
+    }
+
+    for abiq in abiqs {
+        add_abi_to_db_quantum(symbols, ab_name, abiq, conn, verbose);
+    }
+}
+
+pub fn add_abis_from_db_quantum(
+    symbols: &mut HashMap<String, (usize, DLType)>,
+    abq: &mut ABQ,
+    conn: &Connection,
+    ab_name: &str,
+    verbose: bool,
+) -> Result<usize> {
+    let command_c = format!("SELECT * FROM {}_abox_concept", ab_name);
+    let query_c = &command_c;
+
+    let command_r = format!("SELECT * FROM {}_abox_role", ab_name);
+    let query_r = &command_r;
+
+    let smt_res_c = conn.prepare(query_c);
+
+    let res_c = match smt_res_c {
+        Err(e) => {
+            if verbose {
+                println!(" -- sqlite_interface_quantum::add_abis_from_db_quantum: an error occurred: {}", &e);
+            }
+            Err(e)
+        }
+        Ok(mut smt) => {
+            if verbose {
+                println!(" -- sqlite_interface_quantum::add_abis_from_db_quantum: query: {} succeed", query_c);
+            }
+
+            let abis_row = smt.query_map(NO_PARAMS, |row| {
+                Ok(AboxQItemCDb {
+                    id_db: row.get(0)?,
+                    constant_name_db: row.get(1)?,
+                    concept_name_db: row.get(2)?,
+                    constant_db: row.get(3)?,
+                    concept_db: row.get(4)?,
+                    prevalue: row.get(5)?,
+                    value: row.get(6)?,
+                })
+            })?;
+
+            // needed to update the symbols
+            let (_, id_bound) = find_bound_of_symbols(symbols);
+            let current_id = id_bound + 1;
+
+            for abiq in abis_row {
+                //println!("---- tbi: {:?}", &tbi);
+
+                let abiq = abiq.unwrap();
+
+                let mut abiq_string = String::new();
+                let a_str = abiq.constant_name_db;
+                let c_str = abiq.concept_name_db;
+
+                abiq_string.push_str(&a_str);
+                abiq_string.push_str(":");
+                abiq_string.push_str(&c_str);
+
+                let (abi_res, _current_id) = string_to_abiq(&abiq_string, symbols, current_id, true); // TODO: come back here for 'for_completion' argument
+
+                if verbose {
+                    println!(" -- sqlite_interface_quantum::add_abis_from_db_quantum: attempting to insert abiq {:?}", &abi_res);
+                }
+
+                match abi_res {
+                    Ok(v) => {
+                        // destructure
+                        let (abi, ss) = v;
+
+                        // add abi
+                        abq.add(abi);
+
+                        // add symbols
+                        for (s, it) in ss {
+                            symbols.insert(s, it);
+                        }
+
+                        if verbose {
+                            println!(" -- sqlite_interface_quantum::add_abis_from_db_quantum: insertion succeed");
+                        }
+                    }
+                    Err(e) => {
+                        if verbose {
+                            println!(" -- sqlite_interface_quantum::add_abis_from_db_quantum: insertion failed: {}", &e);
+                        }
+                    }
+                }
+            }
+            Ok(0)
+        }
+    };
+
+    // now for roles
+    let smt_res_r = conn.prepare(query_r);
+
+    let res_r = match smt_res_r {
+        Err(e) => {
+            if verbose {
+                println!(" -- sqlite_interface_quantum::add_abis_from_db_quantum: an error occurred: {}", &e);
+            }
+            Err(e)
+        }
+        Ok(mut smt) => {
+            if verbose {
+                println!(" -- sqlite_interface_quantum::add_abis_from_db_quantum: query: {} succeed", query_r);
+            }
+
+            let abis_row = smt.query_map(NO_PARAMS, |row| {
+                Ok(AboxQItemRDb {
+                    id_db: row.get(0)?,
+                    constant1_name_db: row.get(1)?,
+                    constant2_name_db: row.get(2)?,
+                    role_name_db: row.get(3)?,
+                    constant1_db: row.get(4)?,
+                    constant2_db: row.get(5)?,
+                    role_db: row.get(6)?,
+                    prevalue: row.get(7)?,
+                    value: row.get(8)?,
+                })
+            })?;
+
+            // needed to update the symbols
+            let (_, id_bound) = find_bound_of_symbols(symbols);
+            let current_id = id_bound + 1;
+
+            for abi in abis_row {
+                //println!("---- tbi: {:?}", &tbi);
+
+                let abi = abi.unwrap();
+
+                let mut abi_string = String::new();
+                let a_str = abi.constant1_name_db;
+                let b_str = abi.constant2_name_db;
+                let r_str = abi.role_name_db;
+
+                abi_string.push_str(&a_str);
+                abi_string.push_str(", ");
+                abi_string.push_str(&b_str);
+                abi_string.push_str(":");
+                abi_string.push_str(&r_str);
+
+                let (abi_res, _current_id) = string_to_abiq(&abi_string, symbols, current_id, true); // TODO: same here, for_completion argument
+
+                if verbose {
+                    println!(" -- sqlite_interface_quantum::add_abiqs_from_db_quantum: attempting to insert abi {:?}", &abi_res);
+                }
+
+                match abi_res {
+                    Ok(v) => {
+                        // destructure
+                        let (abi, ss) = v;
+
+                        // add abi
+                        abq.add(abi);
+
+                        // add symbols
+                        for (s, it) in ss {
+                            symbols.insert(s, it);
+                        }
+
+                        if verbose {
+                            println!(" -- sqlite_interface_quantum::add_abis_from_db_quantum: insertion succeed");
+                        }
+                    }
+                    Err(e) => {
+                        if verbose {
+                            println!(" -- sqlite_interface_quantum::add_abis_from_db_quantum: insertion failed: {}", &e);
+                        }
+                    }
+                }
+            }
+            Ok(0)
+        }
+    };
+
+    match (res_c, res_r) {
+        (Err(e), _) => {
+            if verbose {
+                println!(" -- sqlite_interface_quantum::add_abis_from_db_quantum: an error ocurred: {}", &e);
+            }
+            Err(e)
+        }
+        (_, Err(e)) => {
+            if verbose {
+                println!(" -- sqlite_interface_quantum::add_abis_from_db_quantum: an error ocurred: {}", &e);
+            }
+            Err(e)
+        }
+        (Ok(i1), _) => Ok(i1),
+    }
+}
+
+

@@ -7,18 +7,16 @@ use structopt::StructOpt;
 
 use crate::kb::types::FileType;
 
-// use crate::dl_lite::ontology::Ontology;
-use crate::dl_lite::ontology_quantum::Ontology;
+use crate::dl_lite::ontology::Ontology;
 
 use crate::interface::cli::{Cli, Task};
 use crate::interface::utilities::{get_filetype, parse_name_from_filename};
 
 use crate::dl_lite::sqlite_interface::{
-    add_abis_to_db, connect_to_db, drop_tables_from_database, get_table_names, update_symbols_to_db,
+    connect_to_db, drop_tables_from_database, get_table_names, update_symbols_to_db, add_abis_to_db_quantum
 };
 use question::{Answer, Question};
 use rusqlite::{Connection};
-use crate::dl_lite::sqlite_interface_quantum::add_abis_to_db_quantum;
 
 fn main() {
     let args = Cli::from_args();
