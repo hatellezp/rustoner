@@ -13,10 +13,11 @@ use crate::interface::cli::{Cli, Task};
 use crate::interface::utilities::{get_filetype, parse_name_from_filename};
 
 use crate::dl_lite::sqlite_interface::{
-    connect_to_db, drop_tables_from_database, get_table_names, update_symbols_to_db, add_abis_to_db_quantum
+    add_abis_to_db_quantum, connect_to_db, drop_tables_from_database, get_table_names,
+    update_symbols_to_db,
 };
 use question::{Answer, Question};
-use rusqlite::{Connection};
+use rusqlite::Connection;
 
 fn main() {
     let args = Cli::from_args();
@@ -138,7 +139,7 @@ fn main() {
             } else {
                 let _isfile = path_tbox_op.is_some();
                 let isdb = path_tbox_op.is_none(); // only use the database if no tbox file is specified
-                let mut conn = Connection::open_in_memory();
+                let conn = Connection::open_in_memory();
 
                 let mut conn = match conn {
                     Err(e) => {
@@ -147,7 +148,7 @@ fn main() {
                         }
                         std::process::exit(exitcode::TEMPFAIL);
                     }
-                    Ok(mut c) => c,
+                    Ok(c) => c,
                 };
 
                 //the files is always preferred
@@ -177,7 +178,7 @@ fn main() {
                     let path_db = path_db_op.clone().unwrap().to_str().unwrap().to_string();
 
                     // establish connection it should be fine
-                    let mut conn: Connection;
+                    let conn: Connection;
                     conn = connect_to_db(&path_db, verbose);
 
                     // initiate won't add existent aboxes, only symbols and the tbox
@@ -190,10 +191,13 @@ fn main() {
                         }
                         Ok(o) => {
                             if verbose {
-                                println!("succeed on connection to database: {} with connection: {:?}", &path_db, &conn);
+                                println!(
+                                    "succeed on connection to database: {} with connection: {:?}",
+                                    &path_db, &conn
+                                );
                             }
                             o
-                        },
+                        }
                     };
                 }
                 // up here we defined onto
@@ -307,7 +311,8 @@ fn main() {
                                     .confirm();
 
                                 if print_output == Answer::YES {
-                                    let abox_as_string = onto.abox_to_string_quantum(onto.abox().unwrap());
+                                    let abox_as_string =
+                                        onto.abox_to_string_quantum(onto.abox().unwrap());
 
                                     println!("{}", &abox_as_string);
                                 }
@@ -320,7 +325,8 @@ fn main() {
                 }
             }
         }
-        Task::RNK => println!("not implemented"),
+        Task::RNKAB => println!("not implemented"),
         Task::UNDEFINED => println!("unrecognized task!"),
+        _ => println!("not implemented!")
     }
 }

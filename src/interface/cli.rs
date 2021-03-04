@@ -5,11 +5,15 @@ use structopt::StructOpt;
 // more to be added after
 #[derive(Debug)]
 pub enum Task {
-    INIT, // initiate dattabase
-    CTB,  // complete tbox
-    CAB,  // complete abox
-    RNK,  // rank assertions
+    VERTB,    // verify tbox
+    GENCONTB, // generate consequence tree tbox
+    CTB,      // complete tbox
+    VERAB,    // verify abox
+    GENCONAB, // generate consequence tree abox
+    CAB,      // complete abox
+    RNKAB,    // rank assertions on abox
     UNDEFINED,
+    INIT, // initiate database
 }
 
 impl FromStr for Task {
@@ -19,10 +23,14 @@ impl FromStr for Task {
         let s2 = s.trim();
 
         match s2 {
-            "init" | "Init" | "INIT" => Ok(Task::INIT),
-            "ctb" | "CTB" => Ok(Task::CTB),
-            "cab" | "CAB" => Ok(Task::CAB),
-            "rank" | "RANK" | "Rank" => Ok(Task::RNK),
+            "vertb" => Ok(Task::VERTB),
+            "gencontb" => Ok(Task::GENCONTB),
+            "ctb" => Ok(Task::CTB),
+            "verab" => Ok(Task::VERAB),
+            "genconab" => Ok(Task::GENCONAB),
+            "cab" => Ok(Task::CAB),
+            "rankab" => Ok(Task::RNKAB),
+            "init" => Ok(Task::INIT),
             _ => Ok(Task::UNDEFINED),
         }
     }

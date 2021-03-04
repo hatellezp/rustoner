@@ -1,11 +1,11 @@
 use std::fmt;
 
-use crate::dl_lite::abox_item::ABI;
 use crate::dl_lite::abox_item_quantum::ABIQ;
 
 use crate::dl_lite::helpers_and_utilities::{
     complete_helper_add_if_necessary_general, complete_helper_dump_from_mutex_temporal_to_current2,
 };
+use crate::dl_lite::node::Node;
 use crate::dl_lite::rule::{
     dl_lite_abox_rule_one, dl_lite_abox_rule_three, dl_lite_abox_rule_two, AbRule,
 };
@@ -14,7 +14,6 @@ use crate::dl_lite::types::CR;
 use crate::kb::knowledge_base::Data;
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
-use crate::dl_lite::node::Node;
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct ABQ {
@@ -117,13 +116,13 @@ impl ABQ {
         for i in index {
             if i < self.length {
                 let abi = (&self.items[i]).clone();
-               sub_abox.add(abi);
+                sub_abox.add(abi);
             }
         }
 
         match sub_abox.len() {
             0 => Option::None,
-            _ => Some(sub_abox)
+            _ => Some(sub_abox),
         }
     }
 
@@ -133,7 +132,7 @@ impl ABQ {
         let negatives = tb.negative_inclusions();
          */
         let tbis = tb.items();
-        let tb_length = tbis.len();
+        let _tb_length = tbis.len();
 
         // we can have a:A and A < (-A)
         // also a:A a:B and A < (-B) the first case is an special case, so we test for the second
@@ -142,7 +141,6 @@ impl ABQ {
         let self_length = self.length;
 
         for tbi in tbis {
-
             if verbose {
                 println!(" -- ABQ::is_inconsistent: comparing against {}", &tbi);
             }
@@ -154,14 +152,12 @@ impl ABQ {
             let right_mod: &Node;
 
             if tbi.is_negative_inclusion() {
-
                 if verbose {
                     println!(" -- ABQ::is_inconsistent: negative tbi, taking its child");
                 }
 
                 right_mod = Node::child(Some(right)).unwrap();
             } else {
-
                 if verbose {
                     println!(" -- ABQ::is_inconsistent: positive tbi, negating");
                 }
@@ -171,40 +167,46 @@ impl ABQ {
             }
 
             for i in 0..self_length {
-                let abq_i =  self.items.get(i).unwrap();
+                let abq_i = self.items.get(i).unwrap();
                 let node_i = abq_i.abi().symbol();
 
                 if verbose {
-                    println!(" -- ABQ::is_inconsistent: analysing {} with index {}", abq_i, i);
+                    println!(
+                        " -- ABQ::is_inconsistent: analysing {} with index {}",
+                        abq_i, i
+                    );
                 }
 
                 if node_i == left {
-
                     if verbose {
                         println!(" -- ABQ::is_inconsistent: found match for left side, continuing analysis");
                     }
 
                     for j in 0..self_length {
                         if j != i {
-                            let abq_j =  self.items.get(j).unwrap();
+                            let abq_j = self.items.get(j).unwrap();
                             let node_j = abq_j.abi().symbol();
 
                             if verbose {
-                                println!(" -- ABQ::is_inconsistent: analysing against {} with index {}", abq_j, j);
+                                println!(
+                                    " -- ABQ::is_inconsistent: analysing against {} with index {}",
+                                    abq_j, j
+                                );
                             }
 
                             if node_j == right_mod {
                                 if verbose {
-                                    println!(" -- ABQ::is_inconsistent: found conflict, returning true");
+                                    println!(
+                                        " -- ABQ::is_inconsistent: found conflict, returning true"
+                                    );
                                 }
 
-                                return true
+                                return true;
                             }
                         }
                     }
                 }
             }
-
         }
 
         if verbose {
@@ -477,7 +479,9 @@ impl ABQ {
                     let to_treat = to_treat.lock().unwrap();
                     let already_treated = already_treated.lock().unwrap();
 
-                    println!("    -------------------------------------------------------------------");
+                    println!(
+                        "    -------------------------------------------------------------------"
+                    );
                     println!(
                         "    -----------this is the status at end of iteration {}----------------",
                         iterations
@@ -485,7 +489,9 @@ impl ABQ {
                     println!("    -- items: {:?}", &items);
                     println!("    -- to_treat: {:?}", &to_treat);
                     println!("    -- already_treated: {:?}", &already_treated);
-                    println!("    ===================================================================");
+                    println!(
+                        "    ==================================================================="
+                    );
                 }
 
                 // update the iteration counter

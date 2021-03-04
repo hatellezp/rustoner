@@ -1,19 +1,17 @@
 use crate::dl_lite::abox_item::ABI;
 use crate::dl_lite::native_filetype_utilities::find_bound_of_symbols;
 use crate::dl_lite::node::Node;
-use crate::dl_lite::sqlite_structs::{
-    AboxItemCDb, AboxItemRDb, NodeDb, SymbolDb, TableDb, TboxItemDb,
-};
-use crate::dl_lite::string_formatter::{node_to_string, string_to_abi, string_to_tbi, string_to_abiq};
+use crate::dl_lite::sqlite_structs::{NodeDb, SymbolDb, TableDb, TboxItemDb};
+use crate::dl_lite::string_formatter::{node_to_string, string_to_abiq, string_to_tbi};
 use crate::dl_lite::tbox::TB;
 use crate::dl_lite::tbox_item::TBI;
 use crate::dl_lite::types::DLType;
 
+use crate::dl_lite::abox::ABQ;
+use crate::dl_lite::abox_item_quantum::ABIQ;
+use crate::dl_lite::sqlite_structs_quantum::{AboxQItemCDb, AboxQItemRDb};
 use rusqlite::{Connection, Result, NO_PARAMS};
 use std::collections::HashMap;
-use crate::dl_lite::abox_item_quantum::ABIQ;
-use crate::dl_lite::abox::ABQ;
-use crate::dl_lite::sqlite_structs_quantum::{AboxQItemCDb, AboxQItemRDb};
 
 pub fn connect_to_db(filename: &str, verbose: bool) -> Connection {
     if verbose {
@@ -525,7 +523,6 @@ pub fn drop_tables_from_database(conn: &Connection, tables_to_drop: Vec<&str>, v
     }
 }
 
-
 pub fn add_abi_to_db_quantum(
     symbols: &HashMap<String, (usize, DLType)>,
     ab_name: &str,
@@ -559,7 +556,7 @@ pub fn add_abi_to_db_quantum(
                             c_id,
                             pv,
                     )
-                },
+                }
                 Some(v) => {
                     format!("INSERT OR IGNORE INTO {}_abox_concept(constant_name, concept_name, constant, concept, prevalue, value) VALUES ('{}', '{}', {}, {}, {}, {})",
                             ab_name,
@@ -570,7 +567,7 @@ pub fn add_abi_to_db_quantum(
                             pv,
                             v,
                     )
-                },
+                }
             };
 
             query = command.as_str();
@@ -601,7 +598,7 @@ pub fn add_abi_to_db_quantum(
                             r_id,
                             pv,
                     )
-                },
+                }
                 Some(v) => {
                     format!("INSERT OR IGNORE INTO \
                     {}_abox_role(constant1_name, constant2_name, role_name, constant1, constant2, role, prevalue, value) VALUES ('{}', '{}', '{}', {}, {}, {}, {}, {})",
@@ -615,7 +612,7 @@ pub fn add_abi_to_db_quantum(
                             pv,
                             v,
                     )
-                },
+                }
             };
 
             query = command.as_str();
@@ -718,13 +715,19 @@ pub fn add_abis_from_db_quantum(
     let res_c = match smt_res_c {
         Err(e) => {
             if verbose {
-                println!(" -- sqlite_interface_quantum::add_abis_from_db_quantum: an error occurred: {}", &e);
+                println!(
+                    " -- sqlite_interface_quantum::add_abis_from_db_quantum: an error occurred: {}",
+                    &e
+                );
             }
             Err(e)
         }
         Ok(mut smt) => {
             if verbose {
-                println!(" -- sqlite_interface_quantum::add_abis_from_db_quantum: query: {} succeed", query_c);
+                println!(
+                    " -- sqlite_interface_quantum::add_abis_from_db_quantum: query: {} succeed",
+                    query_c
+                );
             }
 
             let abis_row = smt.query_map(NO_PARAMS, |row| {
@@ -756,7 +759,8 @@ pub fn add_abis_from_db_quantum(
                 abiq_string.push_str(":");
                 abiq_string.push_str(&c_str);
 
-                let (abi_res, _current_id) = string_to_abiq(&abiq_string, symbols, current_id, true); // TODO: come back here for 'for_completion' argument
+                let (abi_res, _current_id) =
+                    string_to_abiq(&abiq_string, symbols, current_id, true); // TODO: come back here for 'for_completion' argument
 
                 if verbose {
                     println!(" -- sqlite_interface_quantum::add_abis_from_db_quantum: attempting to insert abiq {:?}", &abi_res);
@@ -796,13 +800,19 @@ pub fn add_abis_from_db_quantum(
     let res_r = match smt_res_r {
         Err(e) => {
             if verbose {
-                println!(" -- sqlite_interface_quantum::add_abis_from_db_quantum: an error occurred: {}", &e);
+                println!(
+                    " -- sqlite_interface_quantum::add_abis_from_db_quantum: an error occurred: {}",
+                    &e
+                );
             }
             Err(e)
         }
         Ok(mut smt) => {
             if verbose {
-                println!(" -- sqlite_interface_quantum::add_abis_from_db_quantum: query: {} succeed", query_r);
+                println!(
+                    " -- sqlite_interface_quantum::add_abis_from_db_quantum: query: {} succeed",
+                    query_r
+                );
             }
 
             let abis_row = smt.query_map(NO_PARAMS, |row| {
@@ -876,18 +886,22 @@ pub fn add_abis_from_db_quantum(
     match (res_c, res_r) {
         (Err(e), _) => {
             if verbose {
-                println!(" -- sqlite_interface_quantum::add_abis_from_db_quantum: an error ocurred: {}", &e);
+                println!(
+                    " -- sqlite_interface_quantum::add_abis_from_db_quantum: an error ocurred: {}",
+                    &e
+                );
             }
             Err(e)
         }
         (_, Err(e)) => {
             if verbose {
-                println!(" -- sqlite_interface_quantum::add_abis_from_db_quantum: an error ocurred: {}", &e);
+                println!(
+                    " -- sqlite_interface_quantum::add_abis_from_db_quantum: an error ocurred: {}",
+                    &e
+                );
             }
             Err(e)
         }
         (Ok(i1), _) => Ok(i1),
     }
 }
-
-

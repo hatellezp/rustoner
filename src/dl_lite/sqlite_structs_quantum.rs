@@ -6,7 +6,7 @@ pub struct AboxQItemCDb {
     pub(crate) constant_db: i64,
     pub(crate) concept_db: i64,
     pub(crate) prevalue: f64,
-    pub(crate) value: Option<f64>
+    pub(crate) value: Option<f64>,
 }
 
 #[derive(Debug, Clone, PartialEq)]

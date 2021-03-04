@@ -4,9 +4,9 @@ use crate::dl_lite::node::Node;
 use crate::dl_lite::rule::AbRule;
 use crate::dl_lite::tbox_item::TBI;
 
+use crate::dl_lite::abox_item::{Side, ABI};
 use crate::dl_lite::types::DLType;
 use std::cmp::Ordering;
-use crate::dl_lite::abox_item::{ABI, Side};
 use std::hash::{Hash, Hasher};
 
 /*
@@ -56,13 +56,17 @@ impl ABIQ {
     pub fn new(abi: ABI, prevalue: Option<f64>, value: Option<f64>) -> ABIQ {
         let prevalue = match prevalue {
             Some(pv) => pv,
-            _ => 1.0
+            _ => 1.0,
         };
 
-        ABIQ { abi, prevalue, value }
+        ABIQ {
+            abi,
+            prevalue,
+            value,
+        }
     }
 
-    pub fn negate(&self) -> ABIQ  {
+    pub fn negate(&self) -> ABIQ {
         let abi_neg = self.abi.negate();
 
         ABIQ::new(abi_neg, Some(self.prevalue), self.value)

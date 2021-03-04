@@ -1,12 +1,14 @@
-use crate::dl_lite::types::DLType;
-use crate::dl_lite::string_formatter::{abi_to_string, string_to_abi, string_to_symbol, string_to_tbi, tbi_to_string, PS, string_to_abiq, abiq_to_string};
+use crate::dl_lite::abox::ABQ;
+use crate::dl_lite::string_formatter::{
+    abiq_to_string, string_to_abiq, string_to_symbol, string_to_tbi, tbi_to_string, PS,
+};
 use crate::dl_lite::tbox::TB;
+use crate::dl_lite::types::DLType;
 use crate::interface::utilities::parse_name_from_filename;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader, Error, ErrorKind};
-use crate::dl_lite::abox::ABQ;
 
 pub fn parse_symbols_native(
     filename: &str,
@@ -17,7 +19,10 @@ pub fn parse_symbols_native(
     match file_result {
         Err(e) => {
             if verbose {
-                println!(" -- native_utilities::parse_symbols_native: couldn't read the file: {}", e);
+                println!(
+                    " -- native_utilities::parse_symbols_native: couldn't read the file: {}",
+                    e
+                );
             }
 
             Result::Err(e)
@@ -35,12 +40,18 @@ pub fn parse_symbols_native(
                 match line_result {
                     Err(e) => {
                         if verbose {
-                            println!(" -- native_utilities::parse_symbols_native: passing this line: {}", e);
+                            println!(
+                                " -- native_utilities::parse_symbols_native: passing this line: {}",
+                                e
+                            );
                         }
                     }
                     Ok(line) => {
                         if verbose {
-                            println!(" -- native_utilities::parse_symbols_native: trying to parse: {}", &line);
+                            println!(
+                                " -- native_utilities::parse_symbols_native: trying to parse: {}",
+                                &line
+                            );
                         }
 
                         let line_trimmed = line.trim();
@@ -170,7 +181,10 @@ pub fn parse_tbox_native(
     match file_result {
         Err(e) => {
             if verbose {
-                println!(" -- native_utilities::parse_tbox_native: couldn't read the file: {}", e);
+                println!(
+                    " -- native_utilities::parse_tbox_native: couldn't read the file: {}",
+                    e
+                );
             }
 
             Result::Err(e)
@@ -187,12 +201,18 @@ pub fn parse_tbox_native(
                 match line_result {
                     Err(e) => {
                         if verbose {
-                            println!(" -- native_utilities::parse_tbox_native: passing this line: {}", e);
+                            println!(
+                                " -- native_utilities::parse_tbox_native: passing this line: {}",
+                                e
+                            );
                         }
                     }
                     Ok(line) => {
                         if verbose {
-                            println!(" -- native_utilities::parse_tbox_native: trying to parse: {}", &line);
+                            println!(
+                                " -- native_utilities::parse_tbox_native: trying to parse: {}",
+                                &line
+                            );
                         }
 
                         let line_trimmed = line.trim();
@@ -514,4 +534,3 @@ pub fn abox_to_native_string_quantum(
     res.push_str("ENDABOX\n");
     Some(res)
 }
-

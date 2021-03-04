@@ -307,7 +307,6 @@ pub fn dl_lite_abox_rule_one(abis: Vec<&ABI>, _tbis: Vec<&TBI>) -> Option<Vec<AB
         match abi {
             ABI::CA(_, _) => Option::None,
             ABI::RA(r, a, b) => {
-
                 let r_is_neg = r.is_negated();
                 let mut v: Vec<ABI> = Vec::new();
 
@@ -326,10 +325,8 @@ pub fn dl_lite_abox_rule_one(abis: Vec<&ABI>, _tbis: Vec<&TBI>) -> Option<Vec<AB
                         v.push(b_erinv);
 
                         Some(v)
-                    },
+                    }
                 }
-
-
             }
         }
     }

@@ -38,34 +38,22 @@ impl PartialOrd for ABI {
             Some(Ordering::Equal)
         } else {
             match self {
-                ABI::CA(c1, a1) => {
-                    match other {
-                        ABI::RA(_, _, _) => Some(Ordering::Less),
-                        ABI::CA(c2, a2) => {
-                            match c1.cmp(c2) {
-                                Ordering::Equal => {
-                                    Some(a1.cmp(a2))
-                                },
-                                _ => Some(c1.cmp(c2))
-                            }
-                        },
-                    }
+                ABI::CA(c1, a1) => match other {
+                    ABI::RA(_, _, _) => Some(Ordering::Less),
+                    ABI::CA(c2, a2) => match c1.cmp(c2) {
+                        Ordering::Equal => Some(a1.cmp(a2)),
+                        _ => Some(c1.cmp(c2)),
+                    },
                 },
-                ABI::RA(r1, a1, b1) => {
-                    match other {
-                        ABI::CA(_, _) => Some(Ordering::Greater),
-                        ABI::RA(r2, a2, b2) => {
-                            match r1.cmp(r2) {
-                                Ordering::Equal => {
-                                    match a1.cmp(a2) {
-                                        Ordering::Equal => Some(b1.cmp(b2)),
-                                        _ => Some(a1.cmp((a2)))
-                                    }
-                                },
-                                _ => Some(r1.cmp(r2))
-                            }
+                ABI::RA(r1, a1, b1) => match other {
+                    ABI::CA(_, _) => Some(Ordering::Greater),
+                    ABI::RA(r2, a2, b2) => match r1.cmp(r2) {
+                        Ordering::Equal => match a1.cmp(a2) {
+                            Ordering::Equal => Some(b1.cmp(b2)),
+                            _ => Some(a1.cmp(a2)),
                         },
-                    }
+                        _ => Some(r1.cmp(r2)),
+                    },
                 },
             }
         }
@@ -112,12 +100,12 @@ impl ABI {
                 let c_neg = c.clone().negate();
 
                 ABI::new_ca(c_neg, a.clone(), true).unwrap()
-            },
+            }
             ABI::RA(r, a, b) => {
                 let r_neg = r.clone().negate();
 
                 ABI::new_ra(r_neg, a.clone(), b.clone(), true).unwrap()
-            },
+            }
         }
     }
 

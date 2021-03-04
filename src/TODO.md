@@ -1,10 +1,12 @@
-* for ontonlogy (what it should do):
-    * [x] add symbols from file (json for the moment)
-    * [x] add tbox items from file 
-    * [x] avoid adding redundant tbox items while completing
-    * [x] read an abox file and output a consequences file (json would be good)
-    * implement smart completion for abox, without generating tbox consequencees 
-    * I'm adding sqlite support, but the problems the error gestion
-* that's all for the moment
-* make query to get table names
+* tasks that I want:
+    * verify tbox (for consistency)
+        * add consequence tree if possible
+    * complete tbox
+    * verify abox
+        * the consequence tree is valid here too
+    * complete abox
+    * rank abox
+    * create graph
+
+
 * look up Cleora written in rust for graphs

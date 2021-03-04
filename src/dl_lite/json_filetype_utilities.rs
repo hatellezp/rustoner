@@ -319,7 +319,10 @@ pub fn parse_tbox_json(
             match result_value {
                 Result::Err(error) => {
                     if verbose {
-                        println!(" -- json_utilities::parse_tbox_json: something went wrong: {}", &error);
+                        println!(
+                            " -- json_utilities::parse_tbox_json: something went wrong: {}",
+                            &error
+                        );
                     }
 
                     let new_error = Error::new(
@@ -328,53 +331,55 @@ pub fn parse_tbox_json(
                     );
                     Err(new_error)
                 }
-                Result::Ok(value) => match &value {
-                    Value::Object(map) => {
-                        if map.contains_key("tbox") {
-                            let value_array = &map["tbox"];
+                Result::Ok(value) => {
+                    match &value {
+                        Value::Object(map) => {
+                            if map.contains_key("tbox") {
+                                let value_array = &map["tbox"];
 
-                            match value_array {
-                                Value::Array(vec_of_values) => {
-                                    let mut tb = TB::new();
-                                    let mut tbi_result: io::Result<TBI>;
+                                match value_array {
+                                    Value::Array(vec_of_values) => {
+                                        let mut tb = TB::new();
+                                        let mut tbi_result: io::Result<TBI>;
 
-                                    for v in vec_of_values {
-                                        tbi_result = parse_value_to_tbi(v, symbols, verbose);
+                                        for v in vec_of_values {
+                                            tbi_result = parse_value_to_tbi(v, symbols, verbose);
 
-                                        match tbi_result {
-                                            Err(error) => {
-                                                if verbose {
-                                                    println!(
+                                            match tbi_result {
+                                                Err(error) => {
+                                                    if verbose {
+                                                        println!(
                                                         " -- json_utilities::parse_tbox_jons: couldn't parse value: {}, error: {}",
                                                         value, &error
                                                     );
+                                                    }
                                                 }
-                                            }
-                                            Ok(tbi) => {
-                                                tb.add(tbi);
-                                            }
-                                        };
+                                                Ok(tbi) => {
+                                                    tb.add(tbi);
+                                                }
+                                            };
+                                        }
+
+                                        Ok(tb)
                                     }
-
-                                    Ok(tb)
+                                    _ => invalid_data_result(
+                                        format!("not a list of values: {}", &value_array).as_str(),
+                                    ),
                                 }
-                                _ => invalid_data_result(
-                                    format!("not a list of values: {}", &value_array).as_str(),
-                                ),
-                            }
-                        } else {
-                            if verbose {
-                                println!(" -- json_utilities::parse_tbox_json: no tbox in this file: {}", &value);
-                            }
+                            } else {
+                                if verbose {
+                                    println!(" -- json_utilities::parse_tbox_json: no tbox in this file: {}", &value);
+                                }
 
-                            invalid_data_result(
-                                format!("the file doesn't containt a 'tbox' item: {}", &value)
-                                    .as_str(),
-                            )
+                                invalid_data_result(
+                                    format!("the file doesn't containt a 'tbox' item: {}", &value)
+                                        .as_str(),
+                                )
+                            }
                         }
+                        _ => invalid_data_result(format!("not a map item : {}", &value).as_str()),
                     }
-                    _ => invalid_data_result(format!("not a map item : {}", &value).as_str()),
-                },
+                }
             }
         }
     }

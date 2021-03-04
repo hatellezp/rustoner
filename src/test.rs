@@ -7,7 +7,7 @@ mod kb;
 use crate::kb::types::FileType;
 
 use crate::dl_lite::helpers_and_utilities::print_matrix;
-use crate::dl_lite::ontology_quantum::Ontology;
+use crate::dl_lite::ontology::Ontology;
 
 fn main() {
     println!("hello there");
@@ -35,9 +35,7 @@ fn main() {
 
     onto.add_abis_from_abox(&abox_completed);
 
-
     let (ma, rtv, vtr) = onto.conflict_matrix(&abq, true);
-
 
     print_matrix(ma);
     // println!("{}", &onto);

@@ -1,4 +1,5 @@
 use crate::dl_lite::abox_item::ABI;
+use crate::dl_lite::abox_item_quantum::ABIQ;
 use crate::dl_lite::json_filetype_utilities::{invalid_data_result, result_from_error};
 use crate::dl_lite::node::{Mod, Node};
 use crate::dl_lite::tbox_item::TBI;
@@ -8,7 +9,6 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::io;
 use std::io::{Error, ErrorKind};
-use crate::dl_lite::abox_item_quantum::ABIQ;
 
 //--------------------------------------------------------------------------------------------------
 
@@ -309,7 +309,7 @@ pub fn string_to_abi(
                             }
 
                             // then a2
-                            if !symbols.contains_key(a2){
+                            if !symbols.contains_key(a2) {
                                 node2 = Node::new(Some(current_id), DLType::Nominal).unwrap();
 
                                 to_be_added.push((a2.to_string(), (current_id, DLType::Nominal)));
@@ -610,13 +610,12 @@ impl Ord for PS {
     }
 }
 
-
 // this approach is a dynamic one, concepts must be present in symbols,
 // but nominals are added dynamically
 pub fn string_to_abiq(
     s: &str,
     symbols: &mut HashMap<String, (usize, DLType)>,
-    mut current_id: usize,
+    current_id: usize,
     for_completion: bool,
 ) -> (io::Result<(ABIQ, Vec<(String, (usize, DLType))>)>, usize) {
     let splitted = s.trim();
@@ -639,17 +638,16 @@ pub fn string_to_abiq(
                     new_s.push_str(splitted[1]);
 
                     (new_s, 1.0, Option::None)
-                },
-                Ok(n) => {
-                    (new_s, n, Option::None)
-                },
+                }
+                Ok(n) => (new_s, n, Option::None),
             }
-        },
+        }
         3 => {
             let possible_pv = splitted[1].parse::<f64>();
 
             match possible_pv {
-                Err(_) => { // the second term is not a number
+                Err(_) => {
+                    // the second term is not a number
                     new_s.push_str(",");
                     new_s.push_str(splitted[1]);
 
@@ -661,7 +659,7 @@ pub fn string_to_abiq(
                         Err(_) => (new_s, 1.0, v),
                         Ok(n) => (new_s, n, v),
                     }
-                },
+                }
                 Ok(n) => {
                     // it is indeed a number
                     let v_res = splitted[2].parse::<f64>();
@@ -670,9 +668,9 @@ pub fn string_to_abiq(
                         Err(_) => (new_s, n, Option::None),
                         Ok(nvalue) => (new_s, n, Some(nvalue)),
                     }
-                },
+                }
             }
-        },
+        }
         _ => {
             new_s.push_str(",");
             new_s.push_str(splitted[1]);
@@ -686,7 +684,7 @@ pub fn string_to_abiq(
                 (Ok(npvalue), Err(_)) => (new_s, npvalue, Option::None),
                 (Ok(npvalue), Ok(nvalue)) => (new_s, npvalue, Some(nvalue)),
             }
-        },
+        }
     };
 
     // println!("---- len: {}\n     abi: {}\n     pv: {}\n     v: {:?}", splitted.len(), for_abi, pvalue, value);
@@ -694,14 +692,12 @@ pub fn string_to_abiq(
     let (abi_res, cid) = string_to_abi(&for_abi, symbols, current_id, for_completion);
 
     match abi_res {
-        Err(e) => {
-            (Err(e), cid)
-        },
+        Err(e) => (Err(e), cid),
         Ok((abi, v)) => {
             let abiq = ABIQ::new(abi, Some(pvalue), value);
 
             (Ok((abiq, v)), cid)
-        },
+        }
     }
 }
 
@@ -723,4 +719,3 @@ pub fn abiq_to_string(abiq: &ABIQ, symbols: &HashMap<String, (usize, DLType)>) -
         }
     }
 }
-

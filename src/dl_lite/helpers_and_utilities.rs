@@ -246,14 +246,13 @@ pub fn print_matrix<T: Display>(v: Vec<T>) {
 
     for i in 0..msize {
         for j in 0..msize {
-            let to_add = format!("{}", v.get(i*msize + j).unwrap());
+            let to_add = format!("{}", v.get(i * msize + j).unwrap());
 
             s.push_str(to_add.as_str());
 
             if j != msize - 1 {
                 s.push_str(", ");
             }
-
         }
 
         if i != msize - 1 {
