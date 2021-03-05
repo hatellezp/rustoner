@@ -13,7 +13,7 @@ use crate::dl_lite::ontology::Ontology;
 use crate::dl_lite::abox_item_quantum::ABIQ;
 
 use crate::dl_lite::native_filetype_utilities::tbox_to_native_string;
-use crate::dl_lite::string_formatter::{pretty_print_abiq_conflict, tbi_to_string};
+use crate::dl_lite::string_formatter::{pretty_print_abiq_conflict, tbi_to_string, pretty_vector_tbi_to_string, create_string_for_gencontb};
 use crate::dl_lite::tbox_item::TBI;
 
 // from the interface module
@@ -94,7 +94,7 @@ pub fn main() {
                                 println!(" -- possible contradictions were found");
 
                                 // show contradictions
-                                let question_print = "Do you want to see them".to_string();
+                                let question_print = "Do you want to see them?".to_string();
 
                                 let print_output = Question::new(&question_print)
                                     .default(Answer::YES)
@@ -104,21 +104,41 @@ pub fn main() {
                                 if print_output == Answer::YES {
                                     let mut current_tbi_op: Option<String>;
 
+                                    println!("{{");
+
                                     for tbi in contradictions {
                                         current_tbi_op = tbi_to_string(tbi, onto.symbols());
 
                                         if current_tbi_op.is_some() {
-                                            println!("{}", &(current_tbi_op.unwrap()));
+                                            println!("  {},", &(current_tbi_op.unwrap()));
                                         } else {
-                                            println!("passing");
+                                            println!("  passing,");
                                         }
                                     }
+
+                                    println!("}}");
                                 }
                             }
                         }
                     }
                     Task::GENCONTB => {
-                        println!("not implemented yet");
+                        // complete by deduction
+                        let deduction_tree = true;
+                        let new_tb = onto.complete_tbox(deduction_tree, verbose);
+
+                        let pretty_string = create_string_for_gencontb(&new_tb, onto.symbols(), verbose);
+
+                        println!("{}", &pretty_string);
+
+                        // consequences to file if presented
+                        match path_output_op {
+                            Some(path_output) => {
+                                let filename = path_output.to_str().unwrap().to_string();
+
+                                write_str_to_file(&pretty_string, &filename);
+                            }
+                            Option::None => (),
+                        }
                     }
                     Task::CTB => {
                         // deduction tree is activated only in generate consequence tree mode

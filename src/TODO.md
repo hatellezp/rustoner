@@ -1,11 +1,14 @@
 - tasks that I want:
     - [x] verify tbox (for consistency)
-        - add consequence tree if possible
-            - in the mutex find a way to add new impliers
+        - [x] add consequence tree if possible
+            - !!! in the mutex find a way to add new impliers
     - [x] complete tbox
-    - verify abox
+    - generate consequence tree tbox
+    - [x] verify abox
         - the consequence tree is valid here too
+            - same with the mutex here
     - complete abox
+    - generate consequence tree abox
     - rank abox
     - create graph
 

@@ -570,4 +570,14 @@ impl TB {
 
         return true;
     }
+
+    pub fn get_max_level(&self) -> usize {
+        let mut max_level: usize = 0;
+
+        for tbi in &self.items {
+            max_level = max_level.max(tbi.level());
+        }
+
+        max_level
+    }
 }

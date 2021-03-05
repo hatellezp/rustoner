@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::io;
 use std::io::{Error, ErrorKind};
+use crate::dl_lite::tbox::TB;
 
 //--------------------------------------------------------------------------------------------------
 
@@ -764,5 +765,80 @@ pub fn pretty_print_abiq_conflict(
     }
 
     s.push_str("  },");
+    s
+}
+
+pub fn pretty_vector_tbi_to_string(vec: &Vec<TBI>, symbols: &HashMap<String, (usize, DLType)>) -> String {
+    let mut s = String::from("[");
+
+    let vec_len = vec.len();
+    let mut tbi_string_op: Option<String>;
+    let mut tbi_string: String;
+
+    for i in 0..vec_len {
+        tbi_string_op = tbi_to_string(vec.get(i).unwrap(), symbols);
+
+        if tbi_string_op.is_some() {
+            tbi_string = tbi_string_op.unwrap();
+            s.push_str(&tbi_string);
+            s.push_str(", ");
+        }
+    }
+
+    s.push_str("]");
+    s
+}
+
+
+pub fn create_string_for_gencontb(tb: &TB, symbols: &HashMap<String, (usize, DLType)>, verbose: bool) -> String {
+
+    let mut s = String::new();
+    let mut temp_s: String;
+    let new_tb = tb;
+
+    // first compute all levels
+    let levels = new_tb.levels();
+    let max_level = new_tb.get_max_level();
+
+    s.push_str("[\n");
+
+    for level in 0..(max_level  + 1) {
+        temp_s = format!("  level {}: {{\n", level);
+        s.push_str(&temp_s);
+
+        for tbi in new_tb.items() {
+            if tbi.level() == level {
+                s.push_str("    {\n");
+
+                let tbi_to_string = tbi_to_string(tbi, symbols).unwrap();
+
+                temp_s = format!("      tbi: {}\n", &tbi_to_string);
+                s.push_str(&temp_s);
+
+                if level > 0 {
+                    let impliers = tbi.implied_by();
+                    let len_impliers = impliers.len();
+
+                    let mut implier_string = pretty_vector_tbi_to_string(impliers.get(0).unwrap(), symbols);
+
+                    temp_s = format!("      impliers: {}\n", &implier_string);
+                    s.push_str(&temp_s);
+
+                    for i in 1..len_impliers {
+                        implier_string =  pretty_vector_tbi_to_string(impliers.get(i).unwrap(), symbols);
+
+                        temp_s = format!("                {}\n", &implier_string);
+                        s.push_str(&temp_s);
+                    }
+                }
+
+                s.push_str("    },\n");
+            }
+        }
+
+        s.push_str("  },\n");
+    }
+
+    s.push_str("]");
     s
 }
