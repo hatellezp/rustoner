@@ -2,10 +2,13 @@ BEGINSYMBOL
 concept : Man // concept are unary relations
 concept : Human
 concept : Mortal
+concept : Chicken
 role : eats // and role are binary relations (that we don't use in this really simple example)
 ENDSYMBOL // you can put a comment here if you want
 
 BEGINTBOX
 Man < Human
 Human < Mortal
+Chicken < Mortal
+Human < NOT Chicken
 ENDTBOX
