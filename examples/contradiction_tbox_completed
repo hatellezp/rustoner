@@ -1,0 +1,10 @@
+BEGINTBOX
+A < B
+B < C
+C < NOT A
+A < NOT C
+A < C
+A < NOT B
+B < NOT A
+A < NOT A
+ENDTBOX
