@@ -97,6 +97,12 @@ impl TB {
         &(self.items)
     }
 
+    pub fn levels(&self) -> Vec<usize> {
+        let levels: Vec<usize> = self.items.iter().map(|x| x.level()).collect();
+
+        levels
+    }
+
     pub fn sort(&mut self) {
         self.items.sort();
     }
@@ -142,7 +148,7 @@ impl TB {
         neg_tbi
     }
 
-    pub fn complete(&self, verbose: bool) -> TB {
+    pub fn complete(&self, deduction_tree: bool, verbose: bool) -> TB {
         if self.items.len() == 0 {
             if verbose {
                 println!("the tbox is empty, nothing to complete");
@@ -245,7 +251,8 @@ impl TB {
                     for index in 0..length {
                         let item = &items[index];
 
-                        let new_item_vec = TBI::apply_rule(vec![item], &rule_zero);
+                        // here we add the deduction tree switch
+                        let new_item_vec = TBI::apply_rule(vec![item], &rule_zero, deduction_tree);
 
                         // here there is some unnecessary clone stuff
                         if new_item_vec.is_some() {
@@ -293,7 +300,8 @@ impl TB {
                     for index in 0..length {
                         let item = &items[index];
 
-                        let new_item_vec = TBI::apply_rule(vec![item], &rule_one);
+                        // added deduction tree here
+                        let new_item_vec = TBI::apply_rule(vec![item], &rule_one, deduction_tree);
 
                         // here there is some unnecessary clone stuff
                         if new_item_vec.is_some() {
@@ -434,7 +442,8 @@ impl TB {
                             let rule_ord = rule_ordinal[rule_index];
 
                             // three different vectors
-                            let new_item_vec3 = TBI::apply_rule(vec![&current_item, &item], rule);
+                            // added deduction tree
+                            let new_item_vec3 = TBI::apply_rule(vec![&current_item, &item], rule, deduction_tree);
 
                             for optional_vec in vec![&new_item_vec3] {
                                 // if the rule succeeded
@@ -444,8 +453,9 @@ impl TB {
                                     let iterator = optional_vec.as_ref().unwrap();
                                     // try to apply rule zero and one
                                     for tbi in iterator {
-                                        let zero_tbi = TBI::apply_rule(vec![tbi], &rule_zero);
-                                        let one_tbi = TBI::apply_rule(vec![tbi], &rule_one);
+                                        // added deduction tree
+                                        let zero_tbi = TBI::apply_rule(vec![tbi], &rule_zero, deduction_tree);
+                                        let one_tbi = TBI::apply_rule(vec![tbi], &rule_one, deduction_tree);
 
                                         tbis_to_add.push(tbi.clone());
 
@@ -546,11 +556,11 @@ impl TB {
         }
     }
 
-    pub fn is_satisfiable(&self, verbose: bool) -> bool {
-        let new_tb = self.complete(verbose);
+    pub fn is_satisfiable(&self, deduction_tree: bool, verbose: bool) -> bool {
+        let new_tb = self.complete(deduction_tree, verbose);
 
         for tbi in new_tb.items {
-            if tbi.is_contradiction() {
+            if tbi.is_contradiction() && !tbi.is_trivial() {
                 return false;
             }
         }

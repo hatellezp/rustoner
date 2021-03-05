@@ -12,13 +12,16 @@ use crate::dl_lite::types::DLType;
    this type englobe all type of rules for tbox items
    take a number of items and generates a new if possible
 */
-pub type TbRule = fn(Vec<&TBI>) -> Option<Vec<TBI>>;
+pub type TbRule = fn(Vec<&TBI>, bool) -> Option<Vec<TBI>>;
 pub type AbRule = fn(Vec<&ABI>, Vec<&TBI>) -> Option<Vec<ABI>>;
 
 // for the moment we only implement for dl_lite
 
+// TODO: the rules must implement the level and impliers stuff
+
 //--------------------------------------------------------------------------------------------------
-pub fn dl_lite_rule_zero(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
+// rule zero has deduction tree
+pub fn dl_lite_rule_zero(vec: Vec<&TBI>, deduction_tree: bool) -> Option<Vec<TBI>> {
     /*
     bottom is included in everything
     everything is included in Top
@@ -27,7 +30,7 @@ pub fn dl_lite_rule_zero(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
     if vec.len() < 1 {
         Option::None
     } else {
-        let tbi = vec[0];
+        let tbi = vec[0]; // we only take the first
 
         if DLType::all_concepts(tbi.lside().t(), tbi.rside().t()) {
             let bottom = Node::new(Option::None, DLType::Bottom);
@@ -39,22 +42,43 @@ pub fn dl_lite_rule_zero(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
                 let bottom = bottom.unwrap();
                 let top = top.unwrap();
 
+                // here we add the new level
+                let level_to_give = tbi.level() + 1;
+
+
                 // the bottom tbis
-                let bottom1 = TBI::new((&bottom).clone(), tbi.lside().clone());
-                let bottom2 = TBI::new(bottom, tbi.rside().clone());
+                let bottom1 = TBI::new((&bottom).clone(), tbi.lside().clone(), level_to_give);
+                let bottom2 = TBI::new(bottom, tbi.rside().clone(), level_to_give);
 
                 // the top tbis
-                let top1 = TBI::new(tbi.lside().clone(), (&top).clone());
-                let top2 = TBI::new(tbi.rside().clone(), top);
+                let top1 = TBI::new(tbi.lside().clone(), (&top).clone(), level_to_give);
+                let top2 = TBI::new(tbi.rside().clone(), top, level_to_give);
+
 
                 if bottom1.is_none() || bottom2.is_none() || top1.is_none() || top2.is_none() {
                     Option::None
                 } else {
+                    let mut bottom1 = bottom1.unwrap();
+                    let mut bottom2 = bottom2.unwrap();
+                    let mut top1 = top1.unwrap();
+                    let mut top2 = top2.unwrap();
+
+                    // later I must find a way to avoid needlessly clones
+                    if deduction_tree {
+                        let impliers = vec![tbi.clone()];
+
+                        bottom1.add_to_implied_by(impliers.clone());
+                        bottom2.add_to_implied_by(impliers.clone());
+                        top1.add_to_implied_by(impliers.clone());
+                        top2.add_to_implied_by(impliers.clone());
+
+                    }
+
                     Some(vec![
-                        bottom1.unwrap(),
-                        bottom2.unwrap(),
-                        top1.unwrap(),
-                        top2.unwrap(),
+                        bottom1,
+                        bottom2,
+                        top1,
+                        top2,
                     ])
                 }
             }
@@ -64,7 +88,8 @@ pub fn dl_lite_rule_zero(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
     }
 }
 
-pub fn dl_lite_rule_one(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
+// one has deduction tree
+pub fn dl_lite_rule_one(vec: Vec<&TBI>, deduction_tree: bool) -> Option<Vec<TBI>> {
     /*
     negation rule
     A=>notB then B=>notA
@@ -76,14 +101,23 @@ pub fn dl_lite_rule_one(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
 
         if tbi.rside().is_negated() && tbi.rside().t() != DLType::Top {
             // no need to be changing top
-            Some(vec![tbi.reverse_negation().unwrap()])
+            let add_level = true; // change after if necessary
+
+            let mut tbi_reversed = tbi.reverse_negation(add_level).unwrap();
+
+            if deduction_tree {
+                tbi_reversed.add_to_implied_by(vec![tbi.clone()]);
+            }
+
+            Some(vec![tbi_reversed])
         } else {
             Option::None
         }
     }
 }
 
-pub fn dl_lite_rule_two(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
+// two implement deduction tree
+pub fn dl_lite_rule_two(vec: Vec<&TBI>, deduction_tree: bool) -> Option<Vec<TBI>> {
     /*
     chain rule
     A=>B and B=>C then A=>C
@@ -94,13 +128,28 @@ pub fn dl_lite_rule_two(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
         let tbi1 = vec[0];
         let tbi2 = vec[1];
 
+        // the level is added here
+        let biggest_level = if tbi1.level() >= tbi2.level() { tbi1.level() } else { tbi2.level() };
+
         if tbi1.rside() == tbi2.lside() {
+            let mut new_tbi = TBI::new(tbi1.lside().clone(), tbi2.rside().clone(), biggest_level + 1).unwrap();
+
+            if deduction_tree {
+                new_tbi.add_to_implied_by(vec![tbi1.clone(), tbi2.clone()]);
+            }
+
             Some(vec![
-                TBI::new(tbi1.lside().clone(), tbi2.rside().clone()).unwrap()
+                new_tbi
             ])
         } else if tbi2.rside() == tbi1.lside() {
+            let mut new_tbi =   TBI::new(tbi2.lside().clone(), tbi1.rside().clone(), biggest_level + 1).unwrap();
+
+            if deduction_tree {
+                new_tbi.add_to_implied_by(vec![tbi1.clone(), tbi2.clone()]);
+            }
+
             Some(vec![
-                TBI::new(tbi2.lside().clone(), tbi1.rside().clone()).unwrap()
+                new_tbi
             ])
         } else {
             Option::None
@@ -109,13 +158,16 @@ pub fn dl_lite_rule_two(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
 }
 
 // third rule: r1=>r2 and B=>notExists_r2 then B=>notExists_r1 and Exists_r1=>notB
-pub fn dl_lite_rule_three(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
+pub fn dl_lite_rule_three(vec: Vec<&TBI>, deduction_tree: bool) -> Option<Vec<TBI>> {
     // maybe matches are super cool but here will be more complicated, Boxes are complicated
     if vec.len() < 2 {
         Option::None
     } else {
         let tbi1 = vec[0];
         let tbi2 = vec[1];
+
+        let get_max = true;
+        let big_level = TBI::get_extrema_level(vec, 2, get_max);
 
         // verifies you have roles
         if !DLType::all_roles(tbi1.lside().t(), tbi1.rside().t()) {
@@ -125,8 +177,6 @@ pub fn dl_lite_rule_three(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
 
             // I will use recursive child
             let tbi2_rside_second_child = Node::child_r(Some(tbi2.lside()), 2);
-            // this old call works but I'm using the recursive version
-            // let tbi2_rside_second_child = Node::child(Node::child(Some(tbi2.lside())));
 
             if (&tbi2_rside_second_child).is_some() {
                 // this big ass condition verfies that rside of tbi2 is of the correct form
@@ -137,8 +187,18 @@ pub fn dl_lite_rule_three(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
                         let exists_r1 = tbi1.lside().clone().exists().unwrap();
                         let not_exists_r1 = (&exists_r1).clone();
 
-                        let new_tbi1 = TBI::new(tbi2.lside().clone(), not_exists_r1).unwrap();
-                        let new_tbi2 = TBI::new(exists_r1, tbi2.lside().clone().negate()).unwrap();
+                        // add levels
+                        let mut new_tbi1 = TBI::new(tbi2.lside().clone(), not_exists_r1, big_level + 1).unwrap();
+                        let mut new_tbi2 = TBI::new(exists_r1, tbi2.lside().clone().negate(), big_level + 1).unwrap();
+
+
+                        // it is here we put level and deduction tree
+                        if deduction_tree {
+                            let v = vec![tbi1.clone(), tbi2.clone()];
+
+                            new_tbi1.add_to_implied_by(v.clone());
+                            new_tbi2.add_to_implied_by(v);
+                        }
 
                         Some(vec![new_tbi1, new_tbi2])
                     } else {
@@ -155,13 +215,16 @@ pub fn dl_lite_rule_three(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
 }
 
 // fourth rule: r1=>r2 and B=>notExists_r2_inv then B=>notExists_r1_inv
-pub fn dl_lite_rule_four(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
+pub fn dl_lite_rule_four(vec: Vec<&TBI>, deduction_tree: bool) -> Option<Vec<TBI>> {
     // maybe matches are super cool but here will be more complicated, Boxes are complicated
     if vec.len() < 2 {
         Option::None
     } else {
         let tbi1 = vec[0];
         let tbi2 = vec[1];
+
+        let get_max = true;
+        let big_level = TBI::get_extrema_level(vec, 2, get_max);
 
         // verifies you have roles
         if !DLType::all_roles(tbi1.lside().t(), tbi1.rside().t()) {
@@ -182,7 +245,13 @@ pub fn dl_lite_rule_four(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
                         new_rside = new_rside.exists().unwrap();
                         new_rside = new_rside.negate();
 
-                        let new_tbi = TBI::new(tbi2.lside().clone(), new_rside).unwrap();
+                        // added level
+                        let mut new_tbi = TBI::new(tbi2.lside().clone(), new_rside, big_level + 1).unwrap();
+
+                        // added impliers
+                        if deduction_tree {
+                            new_tbi.add_to_implied_by(vec![tbi1.clone(), tbi2.clone()]);
+                        }
 
                         Some(vec![new_tbi])
                     } else {
@@ -199,12 +268,14 @@ pub fn dl_lite_rule_four(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
 }
 
 // fifth rule: Exists_r=>notExists_r then r=>not_r and Exists_r_inv=>notExists_r_inv
-pub fn dl_lite_rule_five(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
+pub fn dl_lite_rule_five(vec: Vec<&TBI>, deduction_tree: bool) -> Option<Vec<TBI>> {
     if vec.len() < 1 {
         Option::None
     } else {
         let tbi = vec[0];
         let tbi_rside_child = Node::child_r(Some(&tbi.rside()), 1);
+
+        let big_level = tbi.level();
 
         if tbi.lside().t() == DLType::ExistsConcept && tbi_rside_child.is_some() {
             if tbi.lside() == tbi_rside_child.unwrap() {
@@ -215,8 +286,14 @@ pub fn dl_lite_rule_five(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
                 let exists = (&inv_role).clone().exists().unwrap();
                 let not_exists = inv_role.exists().unwrap().negate();
 
-                let new_tbi1 = TBI::new(role, not_role).unwrap();
-                let new_tbi2 = TBI::new(exists, not_exists).unwrap();
+                let mut new_tbi1 = TBI::new(role, not_role, big_level + 1).unwrap();
+                let mut new_tbi2 = TBI::new(exists, not_exists, big_level + 1).unwrap();
+
+                if deduction_tree {
+                    let v = vec![tbi.clone()];
+                    new_tbi1.add_to_implied_by(v.clone());
+                    new_tbi2.add_to_implied_by(v);
+                }
 
                 Some(vec![new_tbi1, new_tbi2])
             } else {
@@ -230,16 +307,18 @@ pub fn dl_lite_rule_five(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
 
 // TODO: verify that fifth and sixth rules are really different, for the moment I'm not implementing the sixth rule
 // sixth rule: Exists_r_inv=>notExists_r_inv then r=>not_r and Exists_r=>notExists_r
-pub fn dl_lite_rule_six(_vec: Vec<&TBI>) -> Option<Vec<TBI>> {
+pub fn dl_lite_rule_six(_vec: Vec<&TBI>, deduction_tree: bool) -> Option<Vec<TBI>> {
     Option::None
 }
 
 // seventh rule: r=>not_r then Exists_r=>notExists_r and Exists_r_inv=>notExists_r_inv
-pub fn dl_lite_rule_seven(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
+pub fn dl_lite_rule_seven(vec: Vec<&TBI>, deduction_tree: bool) -> Option<Vec<TBI>> {
     if vec.len() < 1 {
         Option::None
     } else {
         let tbi = vec[0];
+
+        let big_level = tbi.level();
 
         match (tbi.lside().t(), tbi.rside().t()) {
             (DLType::BaseRole, DLType::NegatedRole) => {
@@ -254,8 +333,17 @@ pub fn dl_lite_rule_seven(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
                     let exists_r_inv = r_inv.exists().unwrap();
                     let not_exists_r_inv = (&exists_r_inv).clone().negate();
 
-                    let new_tbi1 = TBI::new(exists_r, not_exists_r).unwrap();
-                    let new_tbi2 = TBI::new(exists_r_inv, not_exists_r_inv).unwrap();
+                    // added level
+                    let mut new_tbi1 = TBI::new(exists_r, not_exists_r, big_level + 1).unwrap();
+                    let mut new_tbi2 = TBI::new(exists_r_inv, not_exists_r_inv, big_level + 1).unwrap();
+
+                    // added impliers
+                    if deduction_tree {
+                        let v = vec![tbi.clone()];
+
+                        new_tbi1.add_to_implied_by(v.clone());
+                        new_tbi2.add_to_implied_by(v);
+                    }
 
                     Some(vec![new_tbi1, new_tbi2])
                 } else {
@@ -268,11 +356,13 @@ pub fn dl_lite_rule_seven(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
 }
 
 // eight rule: r1=>r2 then r1_inv=>r2_inv and Exists_r1=>Exists_r2
-pub fn dl_lite_rule_eight(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
+pub fn dl_lite_rule_eight(vec: Vec<&TBI>, deduction_tree: bool) -> Option<Vec<TBI>> {
     if vec.len() < 1 {
         Option::None
     } else {
         let tbi = vec[0];
+        let big_level = tbi.level();
+
         match (tbi.lside().t(), tbi.rside().t()) {
             (DLType::BaseRole, DLType::BaseRole) => {
                 let r1 = tbi.lside().clone();
@@ -284,8 +374,17 @@ pub fn dl_lite_rule_eight(vec: Vec<&TBI>) -> Option<Vec<TBI>> {
                 let exists_r1 = r1.exists().unwrap();
                 let exists_r2 = r2.exists().unwrap();
 
-                let new_tbi1 = TBI::new(r1_inv, r2_inv).unwrap();
-                let new_tbi2 = TBI::new(exists_r1, exists_r2).unwrap();
+                // added levels
+                let mut new_tbi1 = TBI::new(r1_inv, r2_inv, big_level + 1).unwrap();
+                let mut new_tbi2 = TBI::new(exists_r1, exists_r2, big_level + 1).unwrap();
+
+                // added deduction tree
+                if deduction_tree {
+                    let v = vec![tbi.clone()];
+
+                    new_tbi1.add_to_implied_by(v.clone());
+                    new_tbi2.add_to_implied_by(v);
+                }
 
                 Some(vec![new_tbi1, new_tbi2])
             }

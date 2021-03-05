@@ -103,6 +103,7 @@ pub fn node_to_string(
     }
 }
 
+// TESTING: this function creates a tbi from nothing so level is ZERO
 pub fn string_to_tbi(s: &str, symbols: &HashMap<String, (usize, DLType)>) -> io::Result<Vec<TBI>> {
     let pre_splitted = s.trim();
 
@@ -129,6 +130,7 @@ pub fn string_to_tbi(s: &str, symbols: &HashMap<String, (usize, DLType)>) -> io:
             let mut rside_result1 = invalid_data_result("not done yet");
             let mut lside_result2 = invalid_data_result("not done yet");
             let mut rside_result2 = invalid_data_result("not done yet");
+
             let splitted: Vec<&str>;
             let mut tuples: Vec<(io::Result<Node>, io::Result<Node>)>;
             let mut tbis: Vec<TBI> = Vec::new();
@@ -196,7 +198,8 @@ pub fn string_to_tbi(s: &str, symbols: &HashMap<String, (usize, DLType)>) -> io:
                             Err(new_error)
                         }
                         (Ok(lside), Ok(rside)) => {
-                            let new_tbi_op = TBI::new(lside.clone(), rside.clone());
+                            let level = 0; // newly created tbi level should be zero
+                            let new_tbi_op = TBI::new(lside.clone(), rside.clone(), level);
 
                             match new_tbi_op {
                                 Some(new_tbi) => {
@@ -713,9 +716,50 @@ pub fn abiq_to_string(abiq: &ABIQ, symbols: &HashMap<String, (usize, DLType)>) -
     match abi_to_string {
         Option::None => Option::None,
         Some(s) => {
-            let res = format!("{},{},{}", s, pv_to_string, v_to_string);
+            let res = format!("{}, (pv: {}, v: {})", s, pv_to_string, v_to_string);
 
             Some(res)
         }
     }
+}
+
+pub fn pretty_print_abiq_conflict(conflict_tuple: (&TBI, &Vec<ABIQ>), symbols: &HashMap<String, (usize, DLType)>) -> String {
+    /*
+    quelque chose comme
+    [
+        tbi: fdkfjldfj
+        abisq: dlgjglkfjglfj
+               dlkjgljfglfkjgljg
+               flgjflkgjlfkgj
+    ]
+     */
+
+    let mut s = String::from("  {\n");
+
+    let tbi = conflict_tuple.0;
+    let v_abiq = conflict_tuple.1;
+    let v_abiq_len = v_abiq.len();
+
+    let tbi_string = tbi_to_string(tbi, symbols).unwrap();
+
+    s.push_str("      tbi: ");
+    s.push_str(&tbi_string);
+    s.push_str("\n");
+
+    let abiq_zero_string = abiq_to_string(v_abiq.get(0).unwrap(), symbols).unwrap();
+
+    s.push_str("      abis: ");
+    s.push_str(&abiq_zero_string);
+    s.push_str("\n");
+
+    for i in 1..v_abiq_len {
+        let abiq_string = abiq_to_string(v_abiq.get(i).unwrap(), symbols).unwrap();
+
+        s.push_str("            ");
+        s.push_str(&abiq_string);
+        s.push_str("\n");
+    }
+
+    s.push_str("  },");
+    s
 }

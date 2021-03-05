@@ -62,7 +62,7 @@ impl fmt::Display for Ontology {
         s.push_str(formatted.as_str());
 
         // add the tbox
-        formatted = format!("----<TBox>\n{}\n", &self.tbox_to_string(&self.tbox));
+        formatted = format!("----<TBox>\n{}\n", &self.tbox_to_string(&self.tbox, false));
         s.push_str(formatted.as_str());
 
         // add the tbox
@@ -279,15 +279,15 @@ impl Ontology {
     // here I define a very important method, it will find conflicts in a abox with
     // respect to a tbox and store them in a matrix
 
-    pub fn complete_tbox(&self, verbose: bool) -> TB {
-        let tb = self.tbox.complete(verbose);
+    pub fn complete_tbox(&self, deduction_tree: bool, verbose: bool) -> TB {
+        let tb = self.tbox.complete(deduction_tree, verbose);
 
         tb
     }
 
-    pub fn auto_complete(&mut self, verbose: bool) {
+    pub fn auto_complete(&mut self, deduction_tree: bool, verbose: bool) {
         // the tbox
-        let tb = self.complete_tbox(verbose);
+        let tb = self.complete_tbox(deduction_tree, verbose);
 
         self.add_tbis_from_tbox(&tb);
 
@@ -671,14 +671,18 @@ impl Ontology {
         s
     }
 
-    pub fn tbox_to_string(&self, tb: &TB) -> String {
+    pub fn tbox_to_string(&self, tb: &TB, dont_write_trivial: bool) -> String {
         let mut s = String::from("    {\n");
 
         for tbi in tb.items() {
-            let tbi_string = self.tbi_to_string(tbi);
-            let tbi_formatted = format!("     : {}\n", tbi_string);
 
-            s.push_str(tbi_formatted.as_str());
+            if !tbi.is_trivial() || !dont_write_trivial {
+                let tbi_string = self.tbi_to_string(tbi);
+                let tbi_formatted = format!("     : {}\n", tbi_string);
+
+                s.push_str(tbi_formatted.as_str());
+            }
+
         }
 
         s.push_str("    }");

@@ -184,7 +184,8 @@ pub fn parse_value_to_tbi(
                             (Err(e1), _) => Err(Error::new(ErrorKind::InvalidData, e1.to_string())),
                             (_, Err(e2)) => Err(Error::new(ErrorKind::InvalidData, e2.to_string())),
                             (Ok(ls), Ok(rs)) => {
-                                let new_tbi_op = TBI::new(ls.clone(), rs.clone());
+                                let level: usize = 0;
+                                let new_tbi_op = TBI::new(ls.clone(), rs.clone(), level);
 
                                 match new_tbi_op {
                                     Some(new_tbi) => Ok(new_tbi),

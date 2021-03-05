@@ -101,36 +101,12 @@ impl ABIQ {
     }
 
     pub fn nominal(&self, position: usize) -> Option<&Node> {
-        /*
-        will return a reference (wrapped in an Option) to the wanted nominal:
-        if first position:
-            A(a) -> a
-            R(a,b) -> a
-        if second position:
-            A(a) -> None
-            R(a,b) -> b
-        any other position:
-            -> None
-
-            WARNING: this function returns positions with numeration beginning at 0!!
-         */
         self.abi.nominal(position)
     }
 
-    /*
-    pub fn decompact(self) -> (Node, Node, Option<Node>) {
-        match self {
-            ABIQ::RA(r, a, b) => (r, a, Some(b)),
-            ABIQ::CA(c, a) => (c, a, Option::None),
-        }
+    pub fn same_nominal(&self, other: &Self) -> bool {
+        self.abi.same_nominal(&other.abi)
     }
-
-    pub fn decompact_with_clone(&self) -> (Node, Node, Option<Node>) {
-        let new_self = self.clone();
-        new_self.decompact()
-    }
-
-     */
 
     pub fn is_match(&self, tbi: &TBI) -> Vec<Side> {
         self.abi.is_match(tbi)

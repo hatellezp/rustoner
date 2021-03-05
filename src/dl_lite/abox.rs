@@ -14,6 +14,8 @@ use crate::dl_lite::types::CR;
 use crate::kb::knowledge_base::Data;
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
+use crate::dl_lite::tbox_item::TBI;
+use crate::dl_lite::string_formatter::abiq_to_string;
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct ABQ {
@@ -126,11 +128,108 @@ impl ABQ {
         }
     }
 
+    pub fn is_inconsistent_detailed(&self, tb: &TB, verbose: bool) -> Vec<(TBI, Vec<ABIQ>)> {
+
+        let tbis = tb.items();
+
+        // we can have a:A and A < (-A)
+        // also a:A a:B and A < (-B) the first case is an special case, so we test for the second
+        // only
+
+        let mut contradictions: Vec<(TBI, Vec<ABIQ>)> = Vec::new();
+
+        let mut combs_added_one: Vec<&ABIQ> = Vec::new();
+        let mut combs_added_two: Vec<(&ABIQ, &ABIQ)> = Vec::new();
+
+        let self_length = self.length;
+
+        for tbi in tbis {
+            if verbose {
+                println!(" -- ABQ::is_inconsistent: comparing against {}", &tbi);
+            }
+
+            let left = tbi.lside();
+            let right = tbi.rside();
+            let right_negated = right.clone().negate();
+
+            for i in 0..self_length {
+                let abq_i = self.items.get(i).unwrap();
+                let node_i = abq_i.abi().symbol();
+
+                if verbose {
+                    println!(
+                        " -- ABQ::is_inconsistent: analysing {} with index {}",
+                        abq_i, i
+                    );
+                }
+
+                if node_i == left {
+                    if verbose {
+                        println!(" -- ABQ::is_inconsistent: found match for left side, continuing analysis");
+                    }
+
+                    for j in 0..self_length {
+
+                        let abq_j = self.items.get(j).unwrap();
+                        let node_j = abq_j.abi().symbol();
+
+                        if verbose {
+                            println!(
+                                " -- ABQ::is_inconsistent: analysing against {} with index {}",
+                                abq_j, j
+                            );
+                        }
+
+                        // we need same nominal on both
+                        if abq_i.same_nominal(abq_j) && node_j == (&right_negated){
+                            if verbose {
+                                println!(
+                                    " -- ABQ::is_inconsistent: found conflict, adding ton conflicts"
+                                );
+                            }
+
+                            let mut to_add: Vec<ABIQ> = Vec::new();
+
+                            // verify that elements has not yer been added
+                            let only_one = abq_i == abq_j;
+                            let mut do_we_add: bool;
+
+                            if only_one {
+                                do_we_add = !combs_added_one.contains(&abq_i);
+                            } else {
+                                do_we_add = !combs_added_two.contains(&(abq_i, abq_j)) && !combs_added_two.contains(&(abq_j, abq_i));
+                            }
+
+                            if do_we_add {
+                                to_add.push(abq_i.clone());
+                                if !only_one {
+                                    to_add.push(abq_j.clone());
+                                }
+
+                                // add to contradictions
+                                contradictions.push((tbi.clone(), to_add));
+
+                                // add to tracker
+                                if only_one {
+                                    combs_added_one.push(abq_i);
+                                } else {
+                                    combs_added_two.push((abq_i, abq_j));
+                                }
+                            }
+
+
+
+                        }
+                    }
+                }
+            }
+        }
+
+        contradictions
+    }
+
     pub fn is_inconsistent(&self, tb: &TB, verbose: bool) -> bool {
-        /*
-        this is an error we need to compare against every tbi
-        let negatives = tb.negative_inclusions();
-         */
+
         let tbis = tb.items();
         let _tb_length = tbis.len();
 

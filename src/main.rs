@@ -31,6 +31,9 @@ fn main() {
     let verbose: bool = args.verbose;
     let _ephemere: bool = args.ephemere;
 
+    // for the deduction tree
+    let deduction_tree = false;
+
     match args.task {
         Task::INIT => {
             // to initialize the database you need tbox items
@@ -66,7 +69,7 @@ fn main() {
 
                 // add tbis and complete the tbox
                 onto.add_tbis_from_file(&path_tbox, tb_ft, verbose);
-                onto.auto_complete(verbose);
+                onto.auto_complete(deduction_tree, verbose);
 
                 // create db name
                 let mut path_to_db = match path_db_op {
@@ -115,7 +118,7 @@ fn main() {
                 }
 
                 onto.add_tbis_from_file(&path_tbox, tb_ft, verbose);
-                onto.auto_complete(verbose);
+                onto.auto_complete(deduction_tree, verbose);
 
                 match path_output_op {
                     Some(path_output) => {
@@ -124,7 +127,7 @@ fn main() {
                     Option::None => {
                         let mut s = String::new();
                         let formatted =
-                            format!("----<TBox>\n{}\n", &onto.tbox_to_string(&onto.tbox()));
+                            format!("----<TBox>\n{}\n", &onto.tbox_to_string(&onto.tbox(), false));
                         s.push_str(formatted.as_str());
 
                         println!("{}", s);
@@ -324,7 +327,7 @@ fn main() {
                     }
                 }
             }
-        }
+        },
         Task::RNKAB => println!("not implemented"),
         Task::UNDEFINED => println!("unrecognized task!"),
         _ => println!("not implemented!")

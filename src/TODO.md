@@ -1,6 +1,7 @@
 - tasks that I want:
     - [x] verify tbox (for consistency)
         - add consequence tree if possible
+            - in the mutex find a way to add new impliers
     - [x] complete tbox
     - verify abox
         - the consequence tree is valid here too
@@ -8,5 +9,5 @@
     - rank abox
     - create graph
 
-
+- see why you have duplicates on the tbox
 - look up Cleora written in rust for graphs

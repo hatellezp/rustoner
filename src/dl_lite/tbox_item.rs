@@ -6,13 +6,21 @@ use crate::dl_lite::types::DLType;
 use crate::kb::knowledge_base::AxiomItem;
 use std::cmp::Ordering;
 
-#[derive(PartialEq, Eq, Debug, Hash, Clone)]
+#[derive(Debug, Hash, Clone)]
 pub struct TBI {
     lside: Node,
     rside: Node,
     level: usize,
     implied_by: Vec<Vec<TBI>>,
 }
+
+impl PartialEq for TBI {
+    fn eq(&self, other: &Self) -> bool {
+        self.lside == other.lside && self.rside == other.rside
+    }
+}
+
+impl Eq for TBI {}
 
 impl AxiomItem for TBI {}
 
@@ -41,14 +49,13 @@ impl Ord for TBI {
 }
 
 impl TBI {
-    pub fn new(lside: Node, rside: Node) -> Option<TBI> {
+    pub fn new(lside: Node, rside: Node, level: usize) -> Option<TBI> {
         if lside.t() == DLType::Nominal || rside.t() == DLType::Nominal {
             Option::None
         } else if lside.is_negated() || !DLType::same_type(lside.t(), rside.t()) {
             Option::None
         } else {
             let implied_by: Vec<Vec<TBI>> = Vec::new();
-            let level: usize = 0;
 
             Some(TBI { lside, rside, level, implied_by })
         }
@@ -63,6 +70,12 @@ impl TBI {
     }
 
     pub fn implied_by(&self) -> &Vec<Vec<TBI>>  { &(self.implied_by) }
+
+    pub fn level(&self) -> usize { self.level }
+
+    pub fn add_to_implied_by(&mut self, impliers: Vec<TBI>) {
+        self.implied_by.push(impliers);
+    }
 
     pub fn is_contradiction(&self) -> bool {
         self.lside.is_negation(&self.rside)
@@ -84,7 +97,7 @@ impl TBI {
         !self.is_negative_inclusion()
     }
 
-    pub fn reverse_negation(&self) -> Option<TBI> {
+    pub fn reverse_negation(&self, add_level: bool) -> Option<TBI> {
         /*
         this method creates a new item
          */
@@ -92,21 +105,23 @@ impl TBI {
             let lside = self.lside.clone();
             let rside = self.rside.clone();
 
-            TBI::new(rside.negate(), lside.negate())
+            let level: usize = if !add_level { self.level } else { self.level + 1 };
+
+            TBI::new(rside.negate(), lside.negate(), level)
         } else {
             Option::None
         }
     }
 
-    pub fn apply_rule(tbis: Vec<&TBI>, rule: &TbRule) -> Option<Vec<TBI>> {
+    pub fn apply_rule(tbis: Vec<&TBI>, rule: &TbRule, deduction_tree: bool) -> Option<Vec<TBI>> {
         /*
         put a switch here to add consequences when needed
         every vector in the answer get the vectors that created it in the implied_by field
          */
 
         let prov_vec = match tbis.len() {
-            1 => rule(tbis),
-            2 => rule(tbis),
+            1 => rule(tbis, deduction_tree),
+            2 => rule(tbis, deduction_tree),
             _ => Option::None,
         };
 
@@ -124,5 +139,28 @@ impl TBI {
 
             Some(final_vec)
         }
+    }
+
+    // function utility for levels
+    pub fn get_extrema_level(v: Vec<&TBI>, max_index: usize, get_max: bool) -> usize {
+        // for max or min
+        let mut extrema_level: usize = if get_max { 0 } else { usize::max_value() };
+
+        // this part is independent of max and min
+        let v_len = v.len();
+        let max_index = if (v_len-1) >= max_index { max_index } else { v_len };
+
+        for i in 0..max_index {
+
+            if get_max {
+                extrema_level = extrema_level.max(v.get(i).unwrap().level);
+            } else {
+                extrema_level = extrema_level.min(v.get(i).unwrap().level);
+            }
+
+
+        }
+
+        extrema_level
     }
 }

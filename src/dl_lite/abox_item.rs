@@ -134,6 +134,14 @@ impl ABI {
         }
     }
 
+    pub fn same_nominal(&self, other: &Self) -> bool {
+        match (self, other) {
+            (ABI::RA(_, a1, b1), ABI::RA(_, a2, b2)) => a1 == a2 && b1 == b2,
+            (ABI::CA(_, a1), ABI::CA(_, a2)) => a1 == a2,
+            (_, _) => false,
+        }
+    }
+
     pub fn nominal(&self, position: usize) -> Option<&Node> {
         /*
         will return a reference (wrapped in an Option) to the wanted nominal:
