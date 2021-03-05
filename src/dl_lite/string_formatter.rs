@@ -723,7 +723,10 @@ pub fn abiq_to_string(abiq: &ABIQ, symbols: &HashMap<String, (usize, DLType)>) -
     }
 }
 
-pub fn pretty_print_abiq_conflict(conflict_tuple: (&TBI, &Vec<ABIQ>), symbols: &HashMap<String, (usize, DLType)>) -> String {
+pub fn pretty_print_abiq_conflict(
+    conflict_tuple: (&TBI, &Vec<ABIQ>),
+    symbols: &HashMap<String, (usize, DLType)>,
+) -> String {
     /*
     quelque chose comme
     [

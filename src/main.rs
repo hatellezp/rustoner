@@ -126,8 +126,10 @@ fn main() {
                     }
                     Option::None => {
                         let mut s = String::new();
-                        let formatted =
-                            format!("----<TBox>\n{}\n", &onto.tbox_to_string(&onto.tbox(), false));
+                        let formatted = format!(
+                            "----<TBox>\n{}\n",
+                            &onto.tbox_to_string(&onto.tbox(), false)
+                        );
                         s.push_str(formatted.as_str());
 
                         println!("{}", s);
@@ -327,9 +329,9 @@ fn main() {
                     }
                 }
             }
-        },
+        }
         Task::RNKAB => println!("not implemented"),
         Task::UNDEFINED => println!("unrecognized task!"),
-        _ => println!("not implemented!")
+        _ => println!("not implemented!"),
     }
 }

@@ -7,15 +7,14 @@ use structopt::StructOpt;
 
 // from kb
 
-
 // from the dl_lite module
 use crate::dl_lite::ontology::Ontology;
-use crate::dl_lite::abox_item::ABI;
+
 use crate::dl_lite::abox_item_quantum::ABIQ;
-use crate::dl_lite::abox::ABQ;
+
+use crate::dl_lite::native_filetype_utilities::tbox_to_native_string;
+use crate::dl_lite::string_formatter::{pretty_print_abiq_conflict, tbi_to_string};
 use crate::dl_lite::tbox_item::TBI;
-use crate::dl_lite::native_filetype_utilities::{tbox_to_native_string};
-use crate::dl_lite::string_formatter::{tbi_to_string, pretty_print_abiq_conflict};
 
 // from the interface module
 use crate::interface::cli::{Cli, Task};
@@ -88,7 +87,9 @@ pub fn main() {
                         }
 
                         match contradictions.len() {
-                            0 => println!(" -- no contradictions nor possible contradictions were found"),
+                            0 => println!(
+                                " -- no contradictions nor possible contradictions were found"
+                            ),
                             _ => {
                                 println!(" -- possible contradictions were found");
 
@@ -113,10 +114,12 @@ pub fn main() {
                                         }
                                     }
                                 }
-                            },
+                            }
                         }
-                    },
-                    Task::GENCONTB => { println!("not implemented yet"); },
+                    }
+                    Task::GENCONTB => {
+                        println!("not implemented yet");
+                    }
                     Task::CTB => {
                         // deduction tree is activated only in generate consequence tree mode
                         let deduction_tree = false;
@@ -138,7 +141,11 @@ pub fn main() {
 
                         match path_output_op {
                             Some(path_output) => {
-                                let new_tb_as_string_op = tbox_to_native_string(&new_tb, onto.symbols(), dont_write_trivial);
+                                let new_tb_as_string_op = tbox_to_native_string(
+                                    &new_tb,
+                                    onto.symbols(),
+                                    dont_write_trivial,
+                                );
 
                                 match new_tb_as_string_op {
                                     Option::None => println!("couldn't create output, maybe run with 'verbose' to see more"),
@@ -151,15 +158,17 @@ pub fn main() {
                             }
                             Option::None => (),
                         }
-                    },
+                    }
                     _ => println!("impossible to be here"),
                 }
             }
-        },
+        }
         Task::VERAB | Task::CAB | Task::GENCONAB | Task::RNKAB => {
             // some common stuff
             if (path_tbox_op.is_none()) || path_abox_op.is_none() {
-                println!("you must provide a file containing a tbox and a file containing the abox");
+                println!(
+                    "you must provide a file containing a tbox and a file containing the abox"
+                );
                 std::process::exit(exitcode::USAGE);
             } else {
                 // get information for the tbox
@@ -202,7 +211,7 @@ pub fn main() {
                 let deduction_tree = false;
                 onto.auto_complete(deduction_tree, verbose);
 
-                let option_ref_to_current_abox = onto.abox();
+                let _option_ref_to_current_abox = onto.abox();
                 let abox_completed_op = onto.complete_abox(verbose);
 
                 match abox_completed_op {
@@ -210,7 +219,8 @@ pub fn main() {
                         match task {
                             Task::VERAB => {
                                 //change current abox
-                                let contradictions: Vec<(TBI, Vec<ABIQ>)> = abox_completed.is_inconsistent_detailed(onto.tbox(), verbose);
+                                let contradictions: Vec<(TBI, Vec<ABIQ>)> =
+                                    abox_completed.is_inconsistent_detailed(onto.tbox(), verbose);
                                 // let is_abox_consistent = abox_completed.is_inconsistent(onto.tbox(), verbose);
 
                                 match contradictions.len() {
@@ -227,7 +237,7 @@ pub fn main() {
                                             .confirm();
 
                                         if print_output == Answer::YES {
-                                            let mut current_tbi_op: Option<String>;
+                                            let _current_tbi_op: Option<String>;
 
                                             println!("[");
 
@@ -243,19 +253,21 @@ pub fn main() {
                                         }
                                     },
                                 }
-                            },
-                            Task::CAB => {},
-                            Task::GENCONAB => {},
-                            Task::RNKAB => {},
-                            _ => { println!("not sure how you arrived here..."); }
+                            }
+                            Task::CAB => {}
+                            Task::GENCONAB => {}
+                            Task::RNKAB => {}
+                            _ => {
+                                println!("not sure how you arrived here...");
+                            }
                         }
-                    },
-                    Option::None =>  {
+                    }
+                    Option::None => {
                         println!("the completion output nothing, maybe try to run with '--verbose' to see the errors");
                     }
                 }
             }
-        },
+        }
         _ => println!("not implemented for the moment"),
     }
 }

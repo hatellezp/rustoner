@@ -675,14 +675,12 @@ impl Ontology {
         let mut s = String::from("    {\n");
 
         for tbi in tb.items() {
-
             if !tbi.is_trivial() || !dont_write_trivial {
                 let tbi_string = self.tbi_to_string(tbi);
                 let tbi_formatted = format!("     : {}\n", tbi_string);
 
                 s.push_str(tbi_formatted.as_str());
             }
-
         }
 
         s.push_str("    }");

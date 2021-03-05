@@ -10,12 +10,11 @@ use crate::dl_lite::rule::{
     dl_lite_abox_rule_one, dl_lite_abox_rule_three, dl_lite_abox_rule_two, AbRule,
 };
 use crate::dl_lite::tbox::TB;
+use crate::dl_lite::tbox_item::TBI;
 use crate::dl_lite::types::CR;
 use crate::kb::knowledge_base::Data;
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
-use crate::dl_lite::tbox_item::TBI;
-use crate::dl_lite::string_formatter::abiq_to_string;
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct ABQ {
@@ -129,7 +128,6 @@ impl ABQ {
     }
 
     pub fn is_inconsistent_detailed(&self, tb: &TB, verbose: bool) -> Vec<(TBI, Vec<ABIQ>)> {
-
         let tbis = tb.items();
 
         // we can have a:A and A < (-A)
@@ -169,7 +167,6 @@ impl ABQ {
                     }
 
                     for j in 0..self_length {
-
                         let abq_j = self.items.get(j).unwrap();
                         let node_j = abq_j.abi().symbol();
 
@@ -181,7 +178,7 @@ impl ABQ {
                         }
 
                         // we need same nominal on both
-                        if abq_i.same_nominal(abq_j) && node_j == (&right_negated){
+                        if abq_i.same_nominal(abq_j) && node_j == (&right_negated) {
                             if verbose {
                                 println!(
                                     " -- ABQ::is_inconsistent: found conflict, adding ton conflicts"
@@ -192,12 +189,13 @@ impl ABQ {
 
                             // verify that elements has not yer been added
                             let only_one = abq_i == abq_j;
-                            let mut do_we_add: bool;
+                            let do_we_add: bool;
 
                             if only_one {
                                 do_we_add = !combs_added_one.contains(&abq_i);
                             } else {
-                                do_we_add = !combs_added_two.contains(&(abq_i, abq_j)) && !combs_added_two.contains(&(abq_j, abq_i));
+                                do_we_add = !combs_added_two.contains(&(abq_i, abq_j))
+                                    && !combs_added_two.contains(&(abq_j, abq_i));
                             }
 
                             if do_we_add {
@@ -216,9 +214,6 @@ impl ABQ {
                                     combs_added_two.push((abq_i, abq_j));
                                 }
                             }
-
-
-
                         }
                     }
                 }
@@ -229,7 +224,6 @@ impl ABQ {
     }
 
     pub fn is_inconsistent(&self, tb: &TB, verbose: bool) -> bool {
-
         let tbis = tb.items();
         let _tb_length = tbis.len();
 

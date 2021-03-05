@@ -57,7 +57,12 @@ impl TBI {
         } else {
             let implied_by: Vec<Vec<TBI>> = Vec::new();
 
-            Some(TBI { lside, rside, level, implied_by })
+            Some(TBI {
+                lside,
+                rside,
+                level,
+                implied_by,
+            })
         }
     }
 
@@ -69,9 +74,13 @@ impl TBI {
         &(self.rside)
     }
 
-    pub fn implied_by(&self) -> &Vec<Vec<TBI>>  { &(self.implied_by) }
+    pub fn implied_by(&self) -> &Vec<Vec<TBI>> {
+        &(self.implied_by)
+    }
 
-    pub fn level(&self) -> usize { self.level }
+    pub fn level(&self) -> usize {
+        self.level
+    }
 
     pub fn add_to_implied_by(&mut self, impliers: Vec<TBI>) {
         self.implied_by.push(impliers);
@@ -105,7 +114,11 @@ impl TBI {
             let lside = self.lside.clone();
             let rside = self.rside.clone();
 
-            let level: usize = if !add_level { self.level } else { self.level + 1 };
+            let level: usize = if !add_level {
+                self.level
+            } else {
+                self.level + 1
+            };
 
             TBI::new(rside.negate(), lside.negate(), level)
         } else {
@@ -148,17 +161,18 @@ impl TBI {
 
         // this part is independent of max and min
         let v_len = v.len();
-        let max_index = if (v_len-1) >= max_index { max_index } else { v_len };
+        let max_index = if (v_len - 1) >= max_index {
+            max_index
+        } else {
+            v_len
+        };
 
         for i in 0..max_index {
-
             if get_max {
                 extrema_level = extrema_level.max(v.get(i).unwrap().level);
             } else {
                 extrema_level = extrema_level.min(v.get(i).unwrap().level);
             }
-
-
         }
 
         extrema_level

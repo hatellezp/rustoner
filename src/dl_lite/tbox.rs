@@ -443,7 +443,8 @@ impl TB {
 
                             // three different vectors
                             // added deduction tree
-                            let new_item_vec3 = TBI::apply_rule(vec![&current_item, &item], rule, deduction_tree);
+                            let new_item_vec3 =
+                                TBI::apply_rule(vec![&current_item, &item], rule, deduction_tree);
 
                             for optional_vec in vec![&new_item_vec3] {
                                 // if the rule succeeded
@@ -454,8 +455,10 @@ impl TB {
                                     // try to apply rule zero and one
                                     for tbi in iterator {
                                         // added deduction tree
-                                        let zero_tbi = TBI::apply_rule(vec![tbi], &rule_zero, deduction_tree);
-                                        let one_tbi = TBI::apply_rule(vec![tbi], &rule_one, deduction_tree);
+                                        let zero_tbi =
+                                            TBI::apply_rule(vec![tbi], &rule_zero, deduction_tree);
+                                        let one_tbi =
+                                            TBI::apply_rule(vec![tbi], &rule_one, deduction_tree);
 
                                         tbis_to_add.push(tbi.clone());
 
