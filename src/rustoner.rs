@@ -6,21 +6,18 @@ mod kb;
 use structopt::StructOpt;
 
 // from kb
-use crate::kb::types::FileType;
+
 
 // from the dl_lite module
 use crate::dl_lite::ontology::Ontology;
-use crate::dl_lite::tbox::TB;
+
 use crate::dl_lite::tbox_item::TBI;
 use crate::dl_lite::native_filetype_utilities::{tbox_to_native_string};
 use crate::dl_lite::string_formatter::{tbi_to_string};
 
 // from the interface module
 use crate::interface::cli::{Cli, Task};
-use crate::interface::tasks::{
-    complete_abox, complete_tbox, generate_consequence_tree_abox, generate_consequence_tree_tbox,
-    save_to_file_abox, save_to_file_tbox, verify_abox, verify_tbox,
-};
+
 use crate::interface::utilities::{get_filetype, parse_name_from_filename, write_str_to_file};
 
 // to ask basic questions

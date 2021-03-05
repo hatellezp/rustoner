@@ -10,13 +10,14 @@ use std::cmp::Ordering;
 pub struct TBI {
     lside: Node,
     rside: Node,
+    level: usize,
+    implied_by: Vec<Vec<TBI>>,
 }
 
 impl AxiomItem for TBI {}
 
 impl fmt::Display for TBI {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // write!(f, "{}<={}", self.lside, self.rside)
         write!(f, "{} < {}", self.lside, self.rside)
     }
 }
@@ -46,7 +47,10 @@ impl TBI {
         } else if lside.is_negated() || !DLType::same_type(lside.t(), rside.t()) {
             Option::None
         } else {
-            Some(TBI { lside, rside })
+            let implied_by: Vec<Vec<TBI>> = Vec::new();
+            let level: usize = 0;
+
+            Some(TBI { lside, rside, level, implied_by })
         }
     }
 
@@ -57,6 +61,8 @@ impl TBI {
     pub fn rside(&self) -> &Node {
         &(self.rside)
     }
+
+    pub fn implied_by(&self) -> &Vec<Vec<TBI>>  { &(self.implied_by) }
 
     pub fn is_contradiction(&self) -> bool {
         self.lside.is_negation(&self.rside)
@@ -78,19 +84,6 @@ impl TBI {
         !self.is_negative_inclusion()
     }
 
-    /*
-    // this functions consumes self
-    pub fn decompact(self) -> (Node, Node) {
-        (self.lside, self.rside)
-    }
-
-    // same but leaves self alone
-    pub fn decompact_with_clone(&self) -> (Node, Node) {
-        (self.clone()).decompact()
-    }
-
-     */
-
     pub fn reverse_negation(&self) -> Option<TBI> {
         /*
         this method creates a new item
@@ -106,6 +99,11 @@ impl TBI {
     }
 
     pub fn apply_rule(tbis: Vec<&TBI>, rule: &TbRule) -> Option<Vec<TBI>> {
+        /*
+        put a switch here to add consequences when needed
+        every vector in the answer get the vectors that created it in the implied_by field
+         */
+
         let prov_vec = match tbis.len() {
             1 => rule(tbis),
             2 => rule(tbis),
@@ -119,11 +117,7 @@ impl TBI {
             let mut final_vec: Vec<TBI> = Vec::new();
 
             for item in &prov_vec {
-                // println!("trying to add: {}", item);
-
                 if !item.is_redundant() {
-                    // println!("    success");
-
                     final_vec.push(item.clone());
                 }
             }
