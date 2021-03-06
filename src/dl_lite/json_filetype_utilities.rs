@@ -3,16 +3,18 @@ use std::{fs, io};
 use serde_json::{Result, Value};
 
 // use crate::dl_lite::abox::AB;
-use crate::dl_lite::abox_item::ABI;
-use crate::dl_lite::node::Node;
+use crate::dl_lite::abox_item::ABI_DLlite;
+use crate::dl_lite::node::Node_DLlite;
 // use crate::dl_lite::node::Mod;
-use crate::dl_lite::tbox::TB;
-use crate::dl_lite::tbox_item::TBI;
-use crate::dl_lite::types::DLType;
+use crate::dl_lite::tbox::TB_DLlite;
+use crate::dl_lite::tbox_item::TBI_DLlite;
+use crate::kb::types::DLType;
 // use serde::Deserializer;
 use crate::dl_lite::string_formatter::{node_to_string, string_to_node};
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
+
+use crate::kb::knowledge_base::{TBoxItem, TBox};
 
 /*
 how this works:
@@ -129,7 +131,7 @@ pub fn parse_value_to_tbi(
     value: &Value,
     symbols: &HashMap<String, (usize, DLType)>,
     _verbose: bool,
-) -> io::Result<TBI> {
+) -> io::Result<TBI_DLlite> {
     match value {
         Value::Array(vec_of_values) => {
             if vec_of_values.len() != 2 {
@@ -185,7 +187,7 @@ pub fn parse_value_to_tbi(
                             (_, Err(e2)) => Err(Error::new(ErrorKind::InvalidData, e2.to_string())),
                             (Ok(ls), Ok(rs)) => {
                                 let level: usize = 0;
-                                let new_tbi_op = TBI::new(ls.clone(), rs.clone(), level);
+                                let new_tbi_op = TBI_DLlite::new(ls.clone(), rs.clone(), level);
 
                                 match new_tbi_op {
                                     Some(new_tbi) => Ok(new_tbi),
@@ -207,7 +209,7 @@ pub fn parse_value_to_tbi(
     }
 }
 
-pub fn parse_value_abi(_value: &Value, _symbols: Vec<&Node>) -> Option<ABI> {
+pub fn parse_value_abi(_value: &Value, _symbols: Vec<&Node_DLlite>) -> Option<ABI_DLlite> {
     Option::None
 }
 
@@ -305,7 +307,7 @@ pub fn parse_tbox_json(
     filename: &str,
     symbols: &HashMap<String, (usize, DLType)>,
     verbose: bool,
-) -> io::Result<TB> {
+) -> io::Result<TB_DLlite> {
     let data = fs::read_to_string(filename);
 
     // here I have to precise from where the 'Result' enum comes from
@@ -340,8 +342,8 @@ pub fn parse_tbox_json(
 
                                 match value_array {
                                     Value::Array(vec_of_values) => {
-                                        let mut tb = TB::new();
-                                        let mut tbi_result: io::Result<TBI>;
+                                        let mut tb = TB_DLlite::new();
+                                        let mut tbi_result: io::Result<TBI_DLlite>;
 
                                         for v in vec_of_values {
                                             tbi_result = parse_value_to_tbi(v, symbols, verbose);
@@ -386,7 +388,7 @@ pub fn parse_tbox_json(
     }
 }
 
-fn node_to_value(node: &Node, symbols: &HashMap<String, (usize, DLType)>) -> Option<Value> {
+fn node_to_value(node: &Node_DLlite, symbols: &HashMap<String, (usize, DLType)>) -> Option<Value> {
     let string_op = node_to_string(node, symbols, String::new());
 
     match string_op {
@@ -395,7 +397,7 @@ fn node_to_value(node: &Node, symbols: &HashMap<String, (usize, DLType)>) -> Opt
     }
 }
 
-fn tbi_to_value(tbi: &TBI, symbols: &HashMap<String, (usize, DLType)>) -> Option<Value> {
+fn tbi_to_value(tbi: &TBI_DLlite, symbols: &HashMap<String, (usize, DLType)>) -> Option<Value> {
     let lside_op = node_to_value(tbi.lside(), symbols);
     let rside_op = node_to_value(tbi.rside(), symbols);
 
@@ -406,7 +408,7 @@ fn tbi_to_value(tbi: &TBI, symbols: &HashMap<String, (usize, DLType)>) -> Option
 }
 
 pub fn tbox_to_value(
-    tbox: &TB,
+    tbox: &TB_DLlite,
     symbols: &HashMap<String, (usize, DLType)>,
     dont_write_trivial: bool,
 ) -> Option<Value> {

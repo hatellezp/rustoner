@@ -1,14 +1,16 @@
-use crate::dl_lite::abox::ABQ;
+use crate::dl_lite::abox::ABQ_DLlite;
 use crate::dl_lite::string_formatter::{
     abiq_to_string, string_to_abiq, string_to_symbol, string_to_tbi, tbi_to_string, PS,
 };
-use crate::dl_lite::tbox::TB;
-use crate::dl_lite::types::DLType;
+use crate::dl_lite::tbox::TB_DLlite;
+use crate::kb::types::DLType;
 use crate::interface::utilities::parse_name_from_filename;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader, Error, ErrorKind};
+
+use crate::kb::knowledge_base::{ABoxItem, ABox, TBoxItem, TBox};
 
 pub fn parse_symbols_native(
     filename: &str,
@@ -175,7 +177,7 @@ pub fn parse_tbox_native(
     filename: &str,
     symbols: &HashMap<String, (usize, DLType)>,
     verbose: bool,
-) -> io::Result<TB> {
+) -> io::Result<TB_DLlite> {
     let file_result = File::open(filename);
 
     match file_result {
@@ -195,7 +197,7 @@ pub fn parse_tbox_native(
             let mut begin_tbox_encountered = false;
             let mut end_tbox_encountered = false;
 
-            let mut tb = TB::new();
+            let mut tb = TB_DLlite::new();
 
             for line_result in reader.lines() {
                 match line_result {
@@ -313,7 +315,7 @@ pub fn parse_tbox_native(
 }
 
 pub fn tbox_to_native_string(
-    tbox: &TB,
+    tbox: &TB_DLlite,
     symbols: &HashMap<String, (usize, DLType)>,
     dont_write_trivial: bool,
 ) -> Option<String> {
@@ -382,7 +384,7 @@ pub fn parse_abox_native_quantum(
     filename: &str,
     symbols: &mut HashMap<String, (usize, DLType)>,
     verbose: bool,
-) -> io::Result<ABQ> {
+) -> io::Result<ABQ_DLlite> {
     /*
     this function might add nominal symbols dynamically, so we need to actuallize symbols :/
     dangerous manipulation here...
@@ -407,7 +409,7 @@ pub fn parse_abox_native_quantum(
             let (_, id_bound) = find_bound_of_symbols(symbols);
             let mut current_id = id_bound + 1;
 
-            let mut ab = ABQ::new(ab_name);
+            let mut ab = ABQ_DLlite::new(ab_name);
 
             for line_result in reader.lines() {
                 if verbose {
@@ -505,7 +507,7 @@ pub fn parse_abox_native_quantum(
 }
 
 pub fn abox_to_native_string_quantum(
-    abox: &ABQ,
+    abox: &ABQ_DLlite,
     symbols: &HashMap<String, (usize, DLType)>,
     dont_write_trivial: bool,
 ) -> Option<String> {

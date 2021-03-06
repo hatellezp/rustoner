@@ -1,15 +1,17 @@
-use crate::dl_lite::abox_item::ABI;
-use crate::dl_lite::abox_item_quantum::ABIQ;
+use crate::dl_lite::abox_item::ABI_DLlite;
+use crate::dl_lite::abox_item_quantum::ABIQ_DLlite;
 use crate::dl_lite::json_filetype_utilities::{invalid_data_result, result_from_error};
-use crate::dl_lite::node::{Mod, Node};
-use crate::dl_lite::tbox_item::TBI;
-use crate::dl_lite::types::DLType;
+use crate::dl_lite::node::{Mod, Node_DLlite};
+use crate::dl_lite::tbox_item::TBI_DLlite;
+use crate::kb::types::DLType;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::io;
 use std::io::{Error, ErrorKind};
-use crate::dl_lite::tbox::TB;
+use crate::dl_lite::tbox::TB_DLlite;
+
+use crate::kb::knowledge_base::{TBoxItem, TBox};
 
 //--------------------------------------------------------------------------------------------------
 
@@ -47,7 +49,7 @@ pub fn string_to_symbol(string: &str) -> io::Result<(&str, DLType)> {
     }
 }
 
-pub fn string_to_node(s: &str, symbols: &HashMap<String, (usize, DLType)>) -> io::Result<Node> {
+pub fn string_to_node(s: &str, symbols: &HashMap<String, (usize, DLType)>) -> io::Result<Node_DLlite> {
     /*
     this function need a symbols dictionary reference to function
      */
@@ -58,14 +60,14 @@ pub fn string_to_node(s: &str, symbols: &HashMap<String, (usize, DLType)>) -> io
 }
 
 pub fn node_to_string(
-    node: &Node,
+    node: &Node_DLlite,
     symbols: &HashMap<String, (usize, DLType)>,
     mut current: String,
 ) -> Option<String> {
     match node {
-        Node::B => Some(String::from("Bottom")),
-        Node::T => Some(String::from("Top")),
-        Node::N(n) => {
+        Node_DLlite::B => Some(String::from("Bottom")),
+        Node_DLlite::T => Some(String::from("Top")),
+        Node_DLlite::N(n) => {
             let vec_of_s = find_keys_for_value(symbols, *n);
 
             if vec_of_s.len() > 0 {
@@ -75,7 +77,7 @@ pub fn node_to_string(
                 Option::None
             }
         }
-        Node::R(n) | Node::C(n) => {
+        Node_DLlite::R(n) | Node_DLlite::C(n) => {
             let vec_of_s = find_keys_for_value(symbols, *n);
 
             if vec_of_s.len() > 0 {
@@ -85,7 +87,7 @@ pub fn node_to_string(
                 Option::None
             }
         }
-        Node::X(m, bn) => {
+        Node_DLlite::X(m, bn) => {
             match m {
                 Mod::I => {
                     current.push_str("INV "); // space here
@@ -105,7 +107,7 @@ pub fn node_to_string(
 }
 
 // TESTING: this function creates a tbi from nothing so level is ZERO
-pub fn string_to_tbi(s: &str, symbols: &HashMap<String, (usize, DLType)>) -> io::Result<Vec<TBI>> {
+pub fn string_to_tbi(s: &str, symbols: &HashMap<String, (usize, DLType)>) -> io::Result<Vec<TBI_DLlite>> {
     let pre_splitted = s.trim();
 
     let equiv = pre_splitted.contains("=");
@@ -133,8 +135,8 @@ pub fn string_to_tbi(s: &str, symbols: &HashMap<String, (usize, DLType)>) -> io:
             let mut rside_result2 = invalid_data_result("not done yet");
 
             let splitted: Vec<&str>;
-            let mut tuples: Vec<(io::Result<Node>, io::Result<Node>)>;
-            let mut tbis: Vec<TBI> = Vec::new();
+            let mut tuples: Vec<(io::Result<Node_DLlite>, io::Result<Node_DLlite>)>;
+            let mut tbis: Vec<TBI_DLlite> = Vec::new();
 
             if sub {
                 splitted = pre_splitted.split("<").collect();
@@ -168,7 +170,7 @@ pub fn string_to_tbi(s: &str, symbols: &HashMap<String, (usize, DLType)>) -> io:
                 }
 
                 let mut error_happened = false;
-                let mut try_to_add: Result<Vec<TBI>, Error> = Ok(Vec::new());
+                let mut try_to_add: Result<Vec<TBI_DLlite>, Error> = Ok(Vec::new());
                 while !tuples.is_empty() {
                     let (lside_result, rside_result) = tuples.pop().unwrap();
 
@@ -200,7 +202,7 @@ pub fn string_to_tbi(s: &str, symbols: &HashMap<String, (usize, DLType)>) -> io:
                         }
                         (Ok(lside), Ok(rside)) => {
                             let level = 0; // newly created tbi level should be zero
-                            let new_tbi_op = TBI::new(lside.clone(), rside.clone(), level);
+                            let new_tbi_op = TBI_DLlite::new(lside.clone(), rside.clone(), level);
 
                             match new_tbi_op {
                                 Some(new_tbi) => {
@@ -236,7 +238,7 @@ pub fn string_to_tbi(s: &str, symbols: &HashMap<String, (usize, DLType)>) -> io:
     }
 }
 
-pub fn tbi_to_string(tbi: &TBI, symbols: &HashMap<String, (usize, DLType)>) -> Option<String> {
+pub fn tbi_to_string(tbi: &TBI_DLlite, symbols: &HashMap<String, (usize, DLType)>) -> Option<String> {
     let lstr_op = node_to_string(tbi.lside(), symbols, "".to_string());
     let rstr_op = node_to_string(tbi.rside(), symbols, "".to_string());
 
@@ -260,7 +262,7 @@ pub fn string_to_abi(
     symbols: &mut HashMap<String, (usize, DLType)>,
     mut current_id: usize,
     for_completion: bool,
-) -> (io::Result<(ABI, Vec<(String, (usize, DLType))>)>, usize) {
+) -> (io::Result<(ABI_DLlite, Vec<(String, (usize, DLType))>)>, usize) {
     let splitted = s.trim();
     let splitted: Vec<&str> = splitted.split(":").collect();
 
@@ -292,18 +294,18 @@ pub fn string_to_abi(
 
                             // before augmenting current_id we need to know that the elements are not in symbols
                             to_be_added = Vec::new();
-                            let node1: Node;
-                            let node2: Node;
+                            let node1: Node_DLlite;
+                            let node2: Node_DLlite;
 
                             // each nominal
                             if !symbols.contains_key(a1) {
-                                node1 = Node::new(Some(current_id), DLType::Nominal).unwrap();
+                                node1 = Node_DLlite::new(Some(current_id), DLType::Nominal).unwrap();
 
                                 to_be_added.push((a1.to_string(), (current_id, DLType::Nominal)));
                                 current_id += 1;
                             } else {
                                 let (id1, _) = symbols[a1];
-                                node1 = Node::new(Some(id1), DLType::Nominal).unwrap();
+                                node1 = Node_DLlite::new(Some(id1), DLType::Nominal).unwrap();
                             }
 
                             // adding symbols whenever you can
@@ -314,16 +316,16 @@ pub fn string_to_abi(
 
                             // then a2
                             if !symbols.contains_key(a2) {
-                                node2 = Node::new(Some(current_id), DLType::Nominal).unwrap();
+                                node2 = Node_DLlite::new(Some(current_id), DLType::Nominal).unwrap();
 
                                 to_be_added.push((a2.to_string(), (current_id, DLType::Nominal)));
                                 current_id += 1;
                             } else {
                                 let (id2, _) = symbols[a2];
-                                node2 = Node::new(Some(id2), DLType::Nominal).unwrap();
+                                node2 = Node_DLlite::new(Some(id2), DLType::Nominal).unwrap();
                             }
 
-                            let abi = ABI::new_ra(abi_symbol.clone(), node1, node2, for_completion)
+                            let abi = ABI_DLlite::new_ra(abi_symbol.clone(), node1, node2, for_completion)
                                 .unwrap();
 
                             (Ok((abi, to_be_added)), current_id)
@@ -333,21 +335,21 @@ pub fn string_to_abi(
 
                             // before augmenting current_id we need to know that the elements are not in symbols
                             to_be_added = Vec::new();
-                            let node1: Node;
+                            let node1: Node_DLlite;
 
                             // each nominal
                             if !symbols.contains_key(a1) {
-                                node1 = Node::new(Some(current_id), DLType::Nominal).unwrap();
+                                node1 = Node_DLlite::new(Some(current_id), DLType::Nominal).unwrap();
 
                                 to_be_added.push((a1.to_string(), (current_id, DLType::Nominal)));
                                 current_id += 1;
                             } else {
                                 let (id1, _) = symbols[a1];
-                                node1 = Node::new(Some(id1), DLType::Nominal).unwrap();
+                                node1 = Node_DLlite::new(Some(id1), DLType::Nominal).unwrap();
                             }
 
                             let abi =
-                                ABI::new_ca(abi_symbol.clone(), node1, for_completion).unwrap();
+                                ABI_DLlite::new_ca(abi_symbol.clone(), node1, for_completion).unwrap();
 
                             (Ok((abi, to_be_added)), current_id)
                         }
@@ -375,9 +377,9 @@ pub fn string_to_abi(
     }
 }
 
-pub fn abi_to_string(abi: &ABI, symbols: &HashMap<String, (usize, DLType)>) -> Option<String> {
+pub fn abi_to_string(abi: &ABI_DLlite, symbols: &HashMap<String, (usize, DLType)>) -> Option<String> {
     match abi {
-        ABI::CA(c, a) => {
+        ABI_DLlite::CA(c, a) => {
             let c_str_op = node_to_string(c, symbols, "".to_string());
             let a_str_op = node_to_string(a, symbols, "".to_string());
 
@@ -393,7 +395,7 @@ pub fn abi_to_string(abi: &ABI, symbols: &HashMap<String, (usize, DLType)>) -> O
                 (_, _) => Option::None,
             }
         }
-        ABI::RA(r, a, b) => {
+        ABI_DLlite::RA(r, a, b) => {
             let r_str_op = node_to_string(r, symbols, "".to_string());
             let a_str_op = node_to_string(a, symbols, "".to_string());
             let b_str_op = node_to_string(b, symbols, "".to_string());
@@ -421,12 +423,12 @@ pub fn abi_to_string(abi: &ABI, symbols: &HashMap<String, (usize, DLType)>) -> O
 fn __parse_string_to_node_helper(
     splitted: Vec<&str>,
     symbols: &HashMap<String, (usize, DLType)>,
-) -> io::Result<Node> {
+) -> io::Result<Node_DLlite> {
     // two auxiliary functions to do everything more tidy
-    fn option_negate(n: Node) -> Option<Node> {
+    fn option_negate(n: Node_DLlite) -> Option<Node_DLlite> {
         Some(n.negate())
     }
-    fn none_default(_: Node) -> Option<Node> {
+    fn none_default(_: Node_DLlite) -> Option<Node_DLlite> {
         Option::None
     }
 
@@ -438,7 +440,7 @@ fn __parse_string_to_node_helper(
 
             if symbols.contains_key(splitted[0]) {
                 let value = symbols[splitted[0]];
-                let new_node = Node::new(Some(value.0), value.1).unwrap();
+                let new_node = Node_DLlite::new(Some(value.0), value.1).unwrap();
 
                 Ok(new_node)
             } else {
@@ -459,8 +461,8 @@ fn __parse_string_to_node_helper(
              */
             let function_to_call = match splitted[0] {
                 "NOT" => option_negate,
-                "INV" => Node::inverse,
-                "EXISTS" => Node::exists,
+                "INV" => Node_DLlite::inverse,
+                "EXISTS" => Node_DLlite::exists,
                 _ => none_default,
             };
 
@@ -495,7 +497,7 @@ fn __parse_string_to_node_helper(
              */
             let function_to_call = match splitted[0] {
                 "NOT" => option_negate,
-                "EXISTS" => Node::exists,
+                "EXISTS" => Node_DLlite::exists,
                 _ => none_default,
             };
             let base_node_result =
@@ -621,7 +623,7 @@ pub fn string_to_abiq(
     symbols: &mut HashMap<String, (usize, DLType)>,
     current_id: usize,
     for_completion: bool,
-) -> (io::Result<(ABIQ, Vec<(String, (usize, DLType))>)>, usize) {
+) -> (io::Result<(ABIQ_DLlite, Vec<(String, (usize, DLType))>)>, usize) {
     let splitted = s.trim();
 
     // a normal abi is splitted by ':', here we split by ';' first
@@ -698,14 +700,14 @@ pub fn string_to_abiq(
     match abi_res {
         Err(e) => (Err(e), cid),
         Ok((abi, v)) => {
-            let abiq = ABIQ::new(abi, Some(pvalue), value);
+            let abiq = ABIQ_DLlite::new(abi, Some(pvalue), value);
 
             (Ok((abiq, v)), cid)
         }
     }
 }
 
-pub fn abiq_to_string(abiq: &ABIQ, symbols: &HashMap<String, (usize, DLType)>) -> Option<String> {
+pub fn abiq_to_string(abiq: &ABIQ_DLlite, symbols: &HashMap<String, (usize, DLType)>) -> Option<String> {
     let abi_to_string = abi_to_string(abiq.abi(), symbols);
 
     let pv_to_string = format!("{}", abiq.prevalue());
@@ -725,7 +727,7 @@ pub fn abiq_to_string(abiq: &ABIQ, symbols: &HashMap<String, (usize, DLType)>) -
 }
 
 pub fn pretty_print_abiq_conflict(
-    conflict_tuple: (&TBI, &Vec<ABIQ>),
+    conflict_tuple: (&TBI_DLlite, &Vec<ABIQ_DLlite>),
     symbols: &HashMap<String, (usize, DLType)>,
 ) -> String {
     /*
@@ -768,7 +770,7 @@ pub fn pretty_print_abiq_conflict(
     s
 }
 
-pub fn pretty_vector_tbi_to_string(vec: &Vec<TBI>, symbols: &HashMap<String, (usize, DLType)>) -> String {
+pub fn pretty_vector_tbi_to_string(vec: &Vec<TBI_DLlite>, symbols: &HashMap<String, (usize, DLType)>) -> String {
     let mut s = String::from("[");
 
     let vec_len = vec.len();
@@ -790,14 +792,14 @@ pub fn pretty_vector_tbi_to_string(vec: &Vec<TBI>, symbols: &HashMap<String, (us
 }
 
 
-pub fn create_string_for_gencontb(tb: &TB, symbols: &HashMap<String, (usize, DLType)>, verbose: bool) -> String {
+pub fn create_string_for_gencontb(tb: &TB_DLlite, symbols: &HashMap<String, (usize, DLType)>, _verbose: bool) -> String {
 
     let mut s = String::new();
     let mut temp_s: String;
     let new_tb = tb;
 
     // first compute all levels
-    let levels = new_tb.levels();
+    let _levels = new_tb.levels();
     let max_level = new_tb.get_max_level();
 
     s.push_str("[\n");

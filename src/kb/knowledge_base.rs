@@ -1,52 +1,77 @@
-/*
-The framework defined in 'dl_lite' can be generalized here using traits.
-
-What is what define 'dl_lite':
-    * types for symbol constructors
-    * nodes for the structure of complex symbols
-    * an axiom struct for the rules
-    * an axioms struct to store several rules
-    * an assertion struct for data
-    * a data struct for
- */
-
 use std::collections::HashMap;
 use std::fmt::{Debug, Display};
 use std::hash::Hash;
 use std::io;
 
-pub trait LType: PartialOrd + Ord + PartialEq + Eq + Debug + Hash + Display + Sized {
-    fn same_type(&self, other: &Self) -> bool;
+use crate::dl_lite::abox_item::ABI_DLlite;
+use crate::dl_lite::tbox_item::TBI_DLlite;
+use crate::kb::types::DLType;
+
+pub trait Item: PartialOrd + Ord + PartialEq + Eq + Debug + Hash + Display + Sized {
+    fn t(&self) -> DLType;
+    fn base(node: &Self) -> &Self;
+    fn child(node: Option<&Self>, depth: usize) -> Option<Vec<&Self>>;
+    fn is_negated(&self) -> bool;
 }
 
-pub trait Expression: PartialOrd + Ord + PartialEq + Eq + Debug + Hash + Display + Sized {
-    fn string_to_expression<LT: LType>(
-        s: &str,
-        symbols: &HashMap<String, (usize, LT)>,
-    ) -> io::Result<Self>;
+pub trait ABoxItem: PartialOrd + Ord + PartialEq + Eq + Debug + Hash + Display + Sized {
+    type NodeItem: Item;
 
-    // this method is different of 'Display', it is for writing to file
-    fn expression_to_string(&self) -> String;
+    fn item(&self) -> &Self::NodeItem;
+    fn negate(&self) -> Self;
+    fn t(&self) -> DLType;
 }
 
-pub trait DataItem: PartialOrd + Ord + PartialEq + Eq + Debug + Hash + Display + Sized {
-    fn string_to_data_item<LT: LType>(
-        s: &str,
-        symbols: &HashMap<String, (usize, LT)>,
-    ) -> io::Result<Self>;
+pub trait ABox: PartialEq + Debug + Display {
+    type AbiItem: ABoxItem;
 
-    fn data_item_to_string(&self) -> String;
-}
-
-pub trait Data: PartialEq + Debug + Display {
-    /*
-    fn items<DI: DataItem>(&self) -> Vec<&DI>;
+    fn name(&self) -> String;
     fn len(&self) -> usize;
-    fn add<DI: DataItem>(&mut self, item: DI) -> bool;
-    fn contains<DI: DataItem>(&self, item: &DI) -> bool;
-
-     */
+    fn add(&mut self, abi: Self::AbiItem) -> bool;
+    fn items(&self) -> &Vec<Self::AbiItem>;
+    fn get(&self, index: usize) -> Option<&Self::AbiItem>;
+    fn sort(&mut self);
+    fn is_empty(&self) -> bool;
+    fn contains(&self, abi: &Self::AbiItem) -> bool;
 }
 
-pub trait AxiomItem {}
-pub trait Axioms {}
+pub trait TBoxItem: PartialEq + Eq + PartialOrd + Ord + Debug + Hash + Display + Sized{
+    type NodeItem: Item;
+
+    fn lside(&self) -> &Self::NodeItem;
+    fn rside(&self) -> &Self::NodeItem;
+    fn is_trivial(&self) -> bool;
+    fn is_negative_inclusion(&self) -> bool;
+    fn implied_by(&self) -> &Vec<Vec<Self>>; // where Self: Sized;
+    fn add_to_implied_by(&mut self, impliers: Vec<Self>); // where Self: Sized;
+
+    // test if i can implement here some behaviour
+    fn is_positive_inclusion(&self) -> bool {
+        !self.is_negative_inclusion()
+    }
+
+    fn is_redundant(&self) -> bool {
+        self.lside() == self.rside()
+    }
+}
+
+pub trait TBox: PartialEq + Debug + Display {
+    type TbiItem: TBoxItem;
+
+    fn len(&self) -> usize;
+    fn add(&mut self, abi: Self::TbiItem) -> bool;
+    fn items(&self) -> &Vec<Self::TbiItem>;
+    fn get(&self, index: usize) -> Option<&Self::TbiItem>;
+    fn sort(&mut self);
+    fn is_empty(&self) -> bool;
+    fn contains(&self, tbi: &Self::TbiItem) -> bool;
+}
+
+
+// TESTING: does this work ?
+pub type Symbol= HashMap<String, (usize, DLType)>;
+
+pub type TbRule<T: TBoxItem> = fn(Vec<&T>, bool) -> Option<Vec<T>>;
+// pub type TbRule = fn(Vec<&TBI_DLlite>, bool) -> Option<Vec<TBI_DLlite>>;
+
+pub type AbRule = fn(Vec<&ABI_DLlite>, Vec<&TBI_DLlite>) -> Option<Vec<ABI_DLlite>>;

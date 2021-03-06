@@ -7,7 +7,7 @@ use structopt::StructOpt;
 
 use crate::kb::types::FileType;
 
-use crate::dl_lite::ontology::Ontology;
+use crate::dl_lite::ontology::Ontology_DLlite;
 
 use crate::interface::cli::{Cli, Task};
 use crate::interface::utilities::{get_filetype, parse_name_from_filename};
@@ -18,6 +18,8 @@ use crate::dl_lite::sqlite_interface::{
 };
 use question::{Answer, Question};
 use rusqlite::Connection;
+
+use crate::kb::knowledge_base::{ABoxItem, ABox, TBoxItem, TBox};
 
 fn main() {
     let args = Cli::from_args();
@@ -47,7 +49,7 @@ fn main() {
                 let tb_name = parse_name_from_filename(&path_tbox);
 
                 // create a new ontology
-                let mut onto = Ontology::new(String::from(tb_name));
+                let mut onto = Ontology_DLlite::new(String::from(tb_name));
 
                 // get symbols from a symbols file if specified else from the tbox file
                 match path_symbols_op {
@@ -98,7 +100,7 @@ fn main() {
                 // let path_output_op = args.path_output;
                 // let path_symbols_op = args.path_symbols;
 
-                let mut onto = Ontology::new(String::from(tb_name));
+                let mut onto = Ontology_DLlite::new(String::from(tb_name));
 
                 match path_symbols_op {
                     Some(path_symbols) => {
@@ -157,14 +159,14 @@ fn main() {
                 };
 
                 //the files is always preferred
-                let mut onto: Ontology;
+                let mut onto: Ontology_DLlite;
 
                 if path_tbox_op.is_some() {
                     let path_tbox = path_tbox_op.unwrap().to_str().unwrap().to_string();
                     let onto_name = parse_name_from_filename(&path_tbox);
                     let tb_filetype = get_filetype(&path_tbox);
 
-                    onto = Ontology::new(onto_name.to_string());
+                    onto = Ontology_DLlite::new(onto_name.to_string());
 
                     // add symbols
                     if path_symbols_op.is_some() {
@@ -187,7 +189,7 @@ fn main() {
                     conn = connect_to_db(&path_db, verbose);
 
                     // initiate won't add existent aboxes, only symbols and the tbox
-                    let onto_res = Ontology::initiate_from_db(&path_db, verbose);
+                    let onto_res = Ontology_DLlite::initiate_from_db(&path_db, verbose);
 
                     onto = match onto_res {
                         Err(e) => {

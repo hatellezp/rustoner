@@ -1,32 +1,75 @@
+use std::collections::VecDeque;
 use std::fmt;
+use std::sync::{Arc, Mutex};
 
-use crate::dl_lite::abox_item_quantum::ABIQ;
-
+use crate::dl_lite::abox_item_quantum::ABIQ_DLlite;
 use crate::dl_lite::helpers_and_utilities::{
     complete_helper_add_if_necessary_general, complete_helper_dump_from_mutex_temporal_to_current2,
 };
-use crate::dl_lite::node::Node;
+use crate::dl_lite::node::Node_DLlite;
 use crate::dl_lite::rule::{
-    dl_lite_abox_rule_one, dl_lite_abox_rule_three, dl_lite_abox_rule_two, AbRule,
+    dl_lite_abox_rule_one, dl_lite_abox_rule_three, dl_lite_abox_rule_two,
 };
-use crate::dl_lite::tbox::TB;
-use crate::dl_lite::tbox_item::TBI;
-use crate::dl_lite::types::CR;
-use crate::kb::knowledge_base::Data;
-use std::collections::VecDeque;
-use std::sync::{Arc, Mutex};
+use crate::dl_lite::tbox::TB_DLlite;
+use crate::dl_lite::tbox_item::TBI_DLlite;
+use crate::kb::knowledge_base::{ABox, ABoxItem, AbRule, TBox, TBoxItem};
+use crate::kb::types::CR;
 
 #[derive(PartialEq, Debug, Clone)]
-pub struct ABQ {
+pub struct ABQ_DLlite {
     name: String,
-    items: Vec<ABIQ>,
+    items: Vec<ABIQ_DLlite>,
     completed: bool,
     length: usize,
 }
 
-impl Data for ABQ {}
+impl ABox for ABQ_DLlite {
+    type AbiItem = ABIQ_DLlite;
 
-impl fmt::Display for ABQ {
+    fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn len(&self) -> usize {
+        self.length
+    }
+
+    fn add(&mut self, abi: ABIQ_DLlite) -> bool {
+        /*
+        returns true if the item was successfully inserted, false otherwise
+         */
+        if !self.items.contains(&abi) {
+            self.items.push(abi);
+            self.length += 1;
+            self.completed = false;
+            true
+        } else {
+            false
+        }
+    }
+
+    fn items(&self) -> &Vec<ABIQ_DLlite> {
+        &self.items
+    }
+
+    fn get(&self, index: usize) -> Option<&ABIQ_DLlite> {
+        self.items.get(index)
+    }
+
+    fn sort(&mut self) {
+        self.items.sort()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.items.len() == 0
+    }
+
+    fn contains(&self, abi: &ABIQ_DLlite) -> bool {
+        self.items.contains(abi)
+    }
+}
+
+impl fmt::Display for ABQ_DLlite {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.length == 0 {
             write!(f, "<ABQ>[]")
@@ -45,9 +88,9 @@ impl fmt::Display for ABQ {
     }
 }
 
-impl ABQ {
-    pub fn new(name: &str) -> ABQ {
-        ABQ {
+impl ABQ_DLlite {
+    pub fn new(name: &str) -> ABQ_DLlite {
+        ABQ_DLlite {
             name: name.to_string(),
             items: vec![],
             length: 0,
@@ -55,8 +98,8 @@ impl ABQ {
         }
     }
 
-    pub fn from_vec(name: &str, mut v: Vec<ABIQ>) -> ABQ {
-        let mut abq = ABQ::new(name);
+    pub fn from_vec(name: &str, mut v: Vec<ABIQ_DLlite>) -> ABQ_DLlite {
+        let mut abq = ABQ_DLlite::new(name);
 
         while !v.is_empty() {
             let abiq = v.pop().unwrap();
@@ -67,52 +110,18 @@ impl ABQ {
         abq
     }
 
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    pub fn len(&self) -> usize {
-        self.length
-    }
-
     pub fn is_completed(&self) -> bool {
         self.completed
     }
 
-    pub fn add(&mut self, abi: ABIQ) -> bool {
-        /*
-        returns true if the item was successfully inserted, false otherwise
-         */
-        if !self.items.contains(&abi) {
-            self.items.push(abi);
-            self.length += 1;
-            self.completed = false;
-            true
-        } else {
-            false
-        }
-    }
-
-    pub fn get(&self, index: usize) -> Option<&ABIQ> {
-        self.items.get(index)
-    }
-
-    pub fn items(&self) -> &Vec<ABIQ> {
-        &self.items
-    }
-
-    pub fn sort(&mut self) {
-        self.items.sort()
-    }
-
     // create an abox from a vec of index, will help when finding conflicts in a database
-    pub fn sub_abox(&self, index: Vec<usize>, name: Option<&str>) -> Option<ABQ> {
+    pub fn sub_abox(&self, index: Vec<usize>, name: Option<&str>) -> Option<ABQ_DLlite> {
         let name = match name {
             Option::None => "tmp",
             Some(s) => s,
         };
 
-        let mut sub_abox = ABQ::new(name);
+        let mut sub_abox = ABQ_DLlite::new(name);
 
         for i in index {
             if i < self.length {
@@ -127,17 +136,17 @@ impl ABQ {
         }
     }
 
-    pub fn is_inconsistent_detailed(&self, tb: &TB, verbose: bool) -> Vec<(TBI, Vec<ABIQ>)> {
+    pub fn is_inconsistent_detailed(&self, tb: &TB_DLlite, verbose: bool) -> Vec<(TBI_DLlite, Vec<ABIQ_DLlite>)> {
         let tbis = tb.items();
 
         // we can have a:A and A < (-A)
         // also a:A a:B and A < (-B) the first case is an special case, so we test for the second
         // only
 
-        let mut contradictions: Vec<(TBI, Vec<ABIQ>)> = Vec::new();
+        let mut contradictions: Vec<(TBI_DLlite, Vec<ABIQ_DLlite>)> = Vec::new();
 
-        let mut combs_added_one: Vec<&ABIQ> = Vec::new();
-        let mut combs_added_two: Vec<(&ABIQ, &ABIQ)> = Vec::new();
+        let mut combs_added_one: Vec<&ABIQ_DLlite> = Vec::new();
+        let mut combs_added_two: Vec<(&ABIQ_DLlite, &ABIQ_DLlite)> = Vec::new();
 
         let self_length = self.length;
 
@@ -185,7 +194,7 @@ impl ABQ {
                                 );
                             }
 
-                            let mut to_add: Vec<ABIQ> = Vec::new();
+                            let mut to_add: Vec<ABIQ_DLlite> = Vec::new();
 
                             // verify that elements has not yer been added
                             let only_one = abq_i == abq_j;
@@ -223,7 +232,7 @@ impl ABQ {
         contradictions
     }
 
-    pub fn is_inconsistent(&self, tb: &TB, verbose: bool) -> bool {
+    pub fn is_inconsistent(&self, tb: &TB_DLlite, verbose: bool) -> bool {
         let tbis = tb.items();
         let _tb_length = tbis.len();
 
@@ -241,15 +250,15 @@ impl ABQ {
             let left = tbi.lside();
             let right = tbi.rside();
 
-            let right_keeper: Node;
-            let right_mod: &Node;
+            let right_keeper: Node_DLlite;
+            let right_mod: &Node_DLlite;
 
             if tbi.is_negative_inclusion() {
                 if verbose {
                     println!(" -- ABQ::is_inconsistent: negative tbi, taking its child");
                 }
 
-                right_mod = Node::child(Some(right)).unwrap();
+                right_mod = Node_DLlite::child_old(Some(right)).unwrap();
             } else {
                 if verbose {
                     println!(" -- ABQ::is_inconsistent: positive tbi, negating");
@@ -308,14 +317,14 @@ impl ABQ {
         false
     }
 
-    pub fn complete(&self, tbox: &TB, verbose: bool) -> ABQ {
+    pub fn complete(&self, tbox: &TB_DLlite, verbose: bool) -> ABQ_DLlite {
         if self.items.len() == 0 {
             if verbose {
                 println!(" -- ABQ::complete: the abox is empty, nothing to complete");
             }
 
             let new_name = format!("{}_completion_not", &self.name);
-            ABQ::new(&new_name)
+            ABQ_DLlite::new(&new_name)
         } else {
             /*
             the strategy is as follows, for each Vec or VecDeque keeps two, one that change during the
@@ -323,8 +332,8 @@ impl ABQ {
              */
 
             // keep the items
-            let items: Arc<Mutex<VecDeque<ABIQ>>> = Arc::new(Mutex::new(VecDeque::new()));
-            let items_temporal: Arc<Mutex<VecDeque<ABIQ>>> = Arc::new(Mutex::new(VecDeque::new()));
+            let items: Arc<Mutex<VecDeque<ABIQ_DLlite>>> = Arc::new(Mutex::new(VecDeque::new()));
+            let items_temporal: Arc<Mutex<VecDeque<ABIQ_DLlite>>> = Arc::new(Mutex::new(VecDeque::new()));
 
             // keep the index to be treated
             let to_treat: Arc<Mutex<VecDeque<usize>>> = Arc::new(Mutex::new(VecDeque::new()));
@@ -338,7 +347,7 @@ impl ABQ {
             // indicators for the while main loop
             let mut stop_condition: bool; // stop condition for the loop, see if to_treat is 'empty' or not
             let mut current_index: usize; // at each iteration keeps the index to be treated
-            let mut current_item: ABIQ; // at each iteration keeps the item to be treated
+            let mut current_item: ABIQ_DLlite; // at each iteration keeps the item to be treated
             let mut is_already_treated: bool;
             let mut iterations: usize;
 
@@ -493,7 +502,7 @@ impl ABQ {
                                 }
 
                                 let new_item_vec3 =
-                                    ABIQ::apply_rule(vec![&current_item, &item], vec![tbi], rule);
+                                    ABIQ_DLlite::apply_rule(vec![&current_item, &item], vec![tbi], rule);
 
                                 for optional_vec in vec![&new_item_vec3] {
                                     // if the rule succeeded
@@ -501,7 +510,7 @@ impl ABQ {
                                     // println!("--- in abox complete, optional vec is : {:?}", &optional_vec);
 
                                     if optional_vec.is_some() {
-                                        let mut abis_to_add: Vec<ABIQ> = Vec::new();
+                                        let mut abis_to_add: Vec<ABIQ_DLlite> = Vec::new();
                                         let iterator = optional_vec.as_ref().unwrap();
 
                                         let _abi_already_exits = false;
@@ -592,7 +601,7 @@ impl ABQ {
             }
 
             let new_name = format!("{}_completed", self.name);
-            let mut new_abq = ABQ::new(&new_name);
+            let mut new_abq = ABQ_DLlite::new(&new_name);
             {
                 let mut items = items.lock().unwrap();
                 while !items.is_empty() {

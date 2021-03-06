@@ -7,7 +7,7 @@ mod kb;
 use crate::kb::types::FileType;
 
 use crate::dl_lite::helpers_and_utilities::print_matrix;
-use crate::dl_lite::ontology::Ontology;
+use crate::dl_lite::ontology::Ontology_DLlite;
 
 fn main() {
     println!("hello there");
@@ -17,7 +17,7 @@ fn main() {
     let ontology_file = String::from("ontology2");
     let abox_file = String::from("abox2_quantum");
 
-    let mut onto = Ontology::new(ontology_file.clone());
+    let mut onto = Ontology_DLlite::new(ontology_file.clone());
 
     onto.add_symbols_from_file(&ontology_file, native, verbose);
     onto.add_tbis_from_file(&ontology_file, native, verbose);

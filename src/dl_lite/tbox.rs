@@ -9,27 +9,66 @@ use crate::dl_lite::helpers_and_utilities::{
 };
 use crate::dl_lite::rule::{
     dl_lite_rule_eight, dl_lite_rule_five, dl_lite_rule_four, dl_lite_rule_one, dl_lite_rule_seven,
-    dl_lite_rule_six, dl_lite_rule_three, dl_lite_rule_two, dl_lite_rule_zero, TbRule,
+    dl_lite_rule_six, dl_lite_rule_three, dl_lite_rule_two, dl_lite_rule_zero,
 };
-use crate::dl_lite::tbox_item::TBI;
-use crate::dl_lite::types::CR;
-use crate::kb::knowledge_base::Axioms;
+use crate::dl_lite::tbox_item::TBI_DLlite;
+use crate::kb::knowledge_base::{TBox, TBoxItem, TbRule};
+use crate::kb::types::CR;
 
 #[derive(PartialEq, Debug, Clone)]
-pub struct TB {
-    items: Vec<TBI>,
+pub struct TB_DLlite {
+    items: Vec<TBI_DLlite>,
     // items: HashSet<TBI>,
     length: usize,
     completed: bool,
 }
 
-impl Axioms for TB {}
+impl TBox for TB_DLlite {
+    type TbiItem = TBI_DLlite;
+
+    fn add(&mut self, tbi: TBI_DLlite) -> bool {
+        /*
+        returns true if the item was successfully inserted, false otherwise
+         */
+        if !self.items.contains(&tbi) {
+            self.items.push(tbi);
+            self.length += 1;
+            true
+        } else {
+            false
+        }
+    }
+
+    fn len(&self) -> usize {
+        self.length
+    }
+
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    fn items(&self) -> &Vec<TBI_DLlite> {
+        &(self.items)
+    }
+
+    fn sort(&mut self) {
+        self.items.sort();
+    }
+
+    fn get(&self, index: usize) -> Option<&TBI_DLlite> {
+        self.items.get(index)
+    }
+
+    fn contains(&self, tbi: &TBI_DLlite) -> bool {
+        self.items.contains(tbi)
+    }
+}
 
 /*
 for the moment it is empty, but after I have to add functionality here
  */
 
-impl fmt::Display for TB {
+impl fmt::Display for TB_DLlite {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.length == 0 {
             write!(f, "<TB>[]")
@@ -48,35 +87,23 @@ impl fmt::Display for TB {
     }
 }
 
-impl TB {
-    pub fn new() -> TB {
+impl TB_DLlite {
+    pub fn new() -> TB_DLlite {
         // let items: HashSet<TBI> = HashSet::new();
-        let items: Vec<TBI> = Vec::new();
-        TB {
+        let items: Vec<TBI_DLlite> = Vec::new();
+        TB_DLlite {
             items,
             length: 0,
             completed: false,
         }
     }
 
-    pub fn add(&mut self, tbi: TBI) -> bool {
-        /*
-        returns true if the item was successfully inserted, false otherwise
-         */
-        if !self.items.contains(&tbi) {
-            self.items.push(tbi);
-            self.length += 1;
-            true
-        } else {
-            false
-        }
-    }
 
-    pub fn new_from_iter<I>(it: I) -> TB
+    pub fn new_from_iter<I>(it: I) -> TB_DLlite
     where
-        I: Iterator<Item = TBI>,
+        I: Iterator<Item =TBI_DLlite>,
     {
-        let mut tb = TB::new();
+        let mut tb = TB_DLlite::new();
 
         for item in it {
             tb.add(item);
@@ -85,34 +112,14 @@ impl TB {
         tb
     }
 
-    pub fn len(&self) -> usize {
-        self.length
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
-    pub fn items(&self) -> &Vec<TBI> {
-        &(self.items)
-    }
-
     pub fn levels(&self) -> Vec<usize> {
         let levels: Vec<usize> = self.items.iter().map(|x| x.level()).collect();
 
         levels
     }
 
-    pub fn sort(&mut self) {
-        self.items.sort();
-    }
-
     pub fn completed(&self) -> &bool {
         &(self.completed)
-    }
-
-    pub fn contains(&self, tbi: &TBI) -> bool {
-        self.items.contains(tbi)
     }
 
     pub fn is_completed(&self) -> bool {
@@ -121,7 +128,7 @@ impl TB {
 
     pub fn remove_trivial(&mut self) {
         if !self.items.is_empty() {
-            let mut new_items: Vec<TBI> = Vec::new();
+            let mut new_items: Vec<TBI_DLlite> = Vec::new();
 
             while !self.items.is_empty() {
                 let tbi = self.items.pop().unwrap();
@@ -136,8 +143,8 @@ impl TB {
     }
 
     // get a list to negative inclusions
-    pub fn negative_inclusions(&self) -> Vec<&TBI> {
-        let mut neg_tbi: Vec<&TBI> = Vec::new();
+    pub fn negative_inclusions(&self) -> Vec<&TBI_DLlite> {
+        let mut neg_tbi: Vec<&TBI_DLlite> = Vec::new();
 
         for tbi in &self.items {
             if tbi.is_negative_inclusion() {
@@ -148,13 +155,16 @@ impl TB {
         neg_tbi
     }
 
-    pub fn complete(&self, deduction_tree: bool, verbose: bool) -> TB {
+    pub fn complete(&self, deduction_tree: bool, verbose: bool) -> TB_DLlite {
+        // TESTING: for type constriction
+        type T = TBI_DLlite;
+
         if self.items.len() == 0 {
             if verbose {
                 println!("the tbox is empty, nothing to complete");
-                TB::new()
+                TB_DLlite::new()
             } else {
-                TB::new()
+                TB_DLlite::new()
             }
         } else {
             /*
@@ -163,8 +173,8 @@ impl TB {
              */
 
             // keep the items
-            let items: Arc<Mutex<VecDeque<TBI>>> = Arc::new(Mutex::new(VecDeque::new()));
-            let items_temporal: Arc<Mutex<VecDeque<TBI>>> = Arc::new(Mutex::new(VecDeque::new()));
+            let items: Arc<Mutex<VecDeque<TBI_DLlite>>> = Arc::new(Mutex::new(VecDeque::new()));
+            let items_temporal: Arc<Mutex<VecDeque<TBI_DLlite>>> = Arc::new(Mutex::new(VecDeque::new()));
 
             // keep the index to be treated
             let to_treat: Arc<Mutex<VecDeque<usize>>> = Arc::new(Mutex::new(VecDeque::new()));
@@ -178,7 +188,7 @@ impl TB {
             // indicators for the while main loop
             let mut stop_condition: bool; // stop condition for the loop, see if to_treat is 'empty' or not
             let mut current_index: usize; // at each iteration keeps the index to be treated
-            let mut current_item: TBI; // at each iteration keeps the item to be treated
+            let mut current_item: TBI_DLlite; // at each iteration keeps the item to be treated
             let mut is_already_treated: bool;
             let mut iterations: usize;
 
@@ -189,18 +199,18 @@ impl TB {
             /*
             I WILL PUT THE RULES HERE, WE CAN ADD OTHERS IF NEEDED
             */
-            let rule_zero: TbRule = dl_lite_rule_zero;
-            let rule_one: TbRule = dl_lite_rule_one;
-            let rule_two: TbRule = dl_lite_rule_two;
-            let rule_three: TbRule = dl_lite_rule_three;
-            let rule_four: TbRule = dl_lite_rule_four;
-            let rule_five: TbRule = dl_lite_rule_five;
-            let rule_six: TbRule = dl_lite_rule_six;
-            let rule_seven: TbRule = dl_lite_rule_seven;
-            let rule_eight: TbRule = dl_lite_rule_eight;
+            let rule_zero: TbRule<T> = dl_lite_rule_zero;
+            let rule_one: TbRule<T> = dl_lite_rule_one;
+            let rule_two: TbRule<T> = dl_lite_rule_two;
+            let rule_three: TbRule<T> = dl_lite_rule_three;
+            let rule_four: TbRule<T> = dl_lite_rule_four;
+            let rule_five: TbRule<T> = dl_lite_rule_five;
+            let rule_six: TbRule<T> = dl_lite_rule_six;
+            let rule_seven: TbRule<T> = dl_lite_rule_seven;
+            let rule_eight: TbRule<T> = dl_lite_rule_eight;
 
             let number_of_rules: usize = 7;
-            let rules: [&TbRule; 7] = [
+            let rules: [&TbRule<T>; 7] = [
                 &rule_two,
                 &rule_three,
                 &rule_four,
@@ -252,7 +262,7 @@ impl TB {
                         let item = &items[index];
 
                         // here we add the deduction tree switch
-                        let new_item_vec = TBI::apply_rule(vec![item], &rule_zero, deduction_tree);
+                        let new_item_vec = TBI_DLlite::apply_rule(vec![item], &rule_zero, deduction_tree);
 
                         // here there is some unnecessary clone stuff
                         if new_item_vec.is_some() {
@@ -301,7 +311,7 @@ impl TB {
                         let item = &items[index];
 
                         // added deduction tree here
-                        let new_item_vec = TBI::apply_rule(vec![item], &rule_one, deduction_tree);
+                        let new_item_vec = TBI_DLlite::apply_rule(vec![item], &rule_one, deduction_tree);
 
                         // here there is some unnecessary clone stuff
                         if new_item_vec.is_some() {
@@ -438,27 +448,27 @@ impl TB {
                         let item = &items[index];
 
                         for rule_index in 0..number_of_rules {
-                            let rule: &TbRule = rules[rule_index];
+                            let rule: &TbRule<T> = rules[rule_index];
                             let rule_ord = rule_ordinal[rule_index];
 
                             // three different vectors
                             // added deduction tree
                             let new_item_vec3 =
-                                TBI::apply_rule(vec![&current_item, &item], rule, deduction_tree);
+                                TBI_DLlite::apply_rule(vec![&current_item, &item], rule, deduction_tree);
 
                             for optional_vec in vec![&new_item_vec3] {
                                 // if the rule succeeded
 
                                 if optional_vec.is_some() {
-                                    let mut tbis_to_add: Vec<TBI> = Vec::new();
+                                    let mut tbis_to_add: Vec<TBI_DLlite> = Vec::new();
                                     let iterator = optional_vec.as_ref().unwrap();
                                     // try to apply rule zero and one
                                     for tbi in iterator {
                                         // added deduction tree
                                         let zero_tbi =
-                                            TBI::apply_rule(vec![tbi], &rule_zero, deduction_tree);
+                                            TBI_DLlite::apply_rule(vec![tbi], &rule_zero, deduction_tree);
                                         let one_tbi =
-                                            TBI::apply_rule(vec![tbi], &rule_one, deduction_tree);
+                                            TBI_DLlite::apply_rule(vec![tbi], &rule_one, deduction_tree);
 
                                         tbis_to_add.push(tbi.clone());
 
@@ -545,7 +555,7 @@ impl TB {
                 iterations += 1;
             }
 
-            let mut new_tb = TB::new();
+            let mut new_tb = TB_DLlite::new();
             {
                 let mut items = items.lock().unwrap();
                 while !items.is_empty() {

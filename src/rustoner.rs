@@ -6,15 +6,16 @@ mod kb;
 use structopt::StructOpt;
 
 // from kb
+use crate::kb::knowledge_base::{TBoxItem, TBox};
 
 // from the dl_lite module
-use crate::dl_lite::ontology::Ontology;
+use crate::dl_lite::ontology::Ontology_DLlite;
 
-use crate::dl_lite::abox_item_quantum::ABIQ;
+use crate::dl_lite::abox_item_quantum::ABIQ_DLlite;
 
 use crate::dl_lite::native_filetype_utilities::tbox_to_native_string;
-use crate::dl_lite::string_formatter::{pretty_print_abiq_conflict, tbi_to_string, pretty_vector_tbi_to_string, create_string_for_gencontb};
-use crate::dl_lite::tbox_item::TBI;
+use crate::dl_lite::string_formatter::{pretty_print_abiq_conflict, tbi_to_string, create_string_for_gencontb};
+use crate::dl_lite::tbox_item::TBI_DLlite;
 
 // from the interface module
 use crate::interface::cli::{Cli, Task};
@@ -54,7 +55,7 @@ pub fn main() {
                 let tb_name = parse_name_from_filename(&path_tbox);
 
                 // create a temporal ontology
-                let mut onto = Ontology::new(String::from(tb_name));
+                let mut onto = Ontology_DLlite::new(String::from(tb_name));
 
                 // get symbols from this file if possible
                 match path_symbols_op {
@@ -78,7 +79,7 @@ pub fn main() {
                         let deduction_tree = false;
                         let new_tb = onto.complete_tbox(deduction_tree, verbose);
 
-                        let mut contradictions: Vec<&TBI> = Vec::new();
+                        let mut contradictions: Vec<&TBI_DLlite> = Vec::new();
 
                         for tbi in new_tb.items() {
                             if tbi.is_contradiction() && !tbi.is_trivial() {
@@ -196,7 +197,7 @@ pub fn main() {
                 let onto_name = parse_name_from_filename(&path_tbox);
                 let tb_filetype = get_filetype(&path_tbox);
 
-                let mut onto = Ontology::new(onto_name.to_string());
+                let mut onto = Ontology_DLlite::new(onto_name.to_string());
 
                 // add symbols from where you can
                 if path_symbols_op.is_some() {
@@ -239,7 +240,7 @@ pub fn main() {
                         match task {
                             Task::VERAB => {
                                 //change current abox
-                                let contradictions: Vec<(TBI, Vec<ABIQ>)> =
+                                let contradictions: Vec<(TBI_DLlite, Vec<ABIQ_DLlite>)> =
                                     abox_completed.is_inconsistent_detailed(onto.tbox(), verbose);
                                 // let is_abox_consistent = abox_completed.is_inconsistent(onto.tbox(), verbose);
 

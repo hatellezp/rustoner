@@ -1,5 +1,5 @@
-use crate::dl_lite::tbox_item::TBI;
-use crate::dl_lite::types::CR;
+use crate::dl_lite::tbox_item::TBI_DLlite;
+use crate::kb::types::CR;
 
 use std::collections::VecDeque;
 use std::fmt::{Debug, Display};
@@ -80,8 +80,8 @@ pub fn complete_helper_dump_from_mutex_temporal_to_current2<
 
 // find a way to avoid duplicate code here !!!
 pub fn tbox_complete_helper_dump_from_mutex_temporal_to_current2(
-    mu: &mut MutexGuard<VecDeque<TBI>>,
-    mu_temp: &mut MutexGuard<VecDeque<TBI>>,
+    mu: &mut MutexGuard<VecDeque<TBI_DLlite>>,
+    mu_temp: &mut MutexGuard<VecDeque<TBI_DLlite>>,
     mut mu_length: usize,
     mu_temp_length: usize,
     mu_to_treat: Option<&mut MutexGuard<VecDeque<usize>>>,
@@ -145,6 +145,24 @@ pub fn complete_helper_add_if_necessary_general<T: Display + PartialEq + Eq + Cl
 ) -> usize {
     for new_item in created_items {
         if mu_all.contains(&new_item) || mu.contains(&new_item) {
+
+            // if new_item is present then we need to update the implied by
+            if mu_all.contains(&new_item) && !mu.contains(&new_item){
+                for item in mu_all.iter() {
+                    if &new_item == &item {
+                        ()
+                    }
+                }
+            }
+            if mu.contains(&new_item) {
+               for item in mu.iter() {
+                   if &new_item == &item {
+                       ()
+                   }
+               }
+            }
+
+
             if verbose {
                 println!(" -- helpers_and_utilities::complete_helper_add_if_necessary_general: {} rule applied here for {}, giving {}, but the item won't be added, it already exists", rn, print_vector_of_tbi_references(&applied_items), &new_item);
             }

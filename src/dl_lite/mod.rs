@@ -13,4 +13,3 @@ pub mod sqlite_structs_quantum;
 pub mod string_formatter;
 pub mod tbox;
 pub mod tbox_item;
-pub mod types;

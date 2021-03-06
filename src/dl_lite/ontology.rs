@@ -1,9 +1,9 @@
-use crate::dl_lite::abox_item::ABI;
+use crate::dl_lite::abox_item::ABI_DLlite;
 use crate::dl_lite::json_filetype_utilities::{parse_symbols_json, parse_tbox_json, tbox_to_value};
-use crate::dl_lite::node::{Mod, Node};
-use crate::dl_lite::tbox::TB;
-use crate::dl_lite::tbox_item::TBI;
-use crate::dl_lite::types::DLType;
+use crate::dl_lite::node::{Mod, Node_DLlite};
+use crate::dl_lite::tbox::TB_DLlite;
+use crate::dl_lite::tbox_item::TBI_DLlite;
+use crate::kb::types::DLType;
 use crate::kb::types::FileType;
 use serde_json::json;
 use std::collections::HashMap;
@@ -20,13 +20,16 @@ use crate::dl_lite::native_filetype_utilities::{
 
 use rusqlite::{Connection, Result};
 
-use crate::dl_lite::abox::ABQ;
-use crate::dl_lite::abox_item_quantum::ABIQ;
+use crate::dl_lite::abox::ABQ_DLlite;
+use crate::dl_lite::abox_item_quantum::ABIQ_DLlite;
 use crate::dl_lite::sqlite_interface::{
     add_basic_tables_to_db, add_symbols_from_db, add_symbols_to_db, add_tbis_from_db,
     add_tbis_to_db,
 };
 use crate::interface::utilities::parse_name_from_filename;
+
+// import traits
+use crate::kb::knowledge_base::{ABoxItem, ABox, TBoxItem, TBox};
 
 /*
 an ontology model
@@ -38,14 +41,14 @@ an ontology model
     - latest_id is higher number present in the symbols dictionary
  */
 #[derive(PartialEq, Clone, Debug)]
-pub struct Ontology {
+pub struct Ontology_DLlite {
     name: String,
     symbols: HashMap<String, (usize, DLType)>,
-    tbox: TB,
-    current_abox: Option<ABQ>,
+    tbox: TB_DLlite,
+    current_abox: Option<ABQ_DLlite>,
 }
 
-impl fmt::Display for Ontology {
+impl fmt::Display for Ontology_DLlite {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut s = String::new();
         let mut formatted: String;
@@ -57,7 +60,7 @@ impl fmt::Display for Ontology {
         // add the symbols
         formatted = format!(
             "--<Symbols>\n{}\n",
-            Ontology::symbols_to_string(&self.symbols)
+            Ontology_DLlite::symbols_to_string(&self.symbols)
         );
         s.push_str(formatted.as_str());
 
@@ -82,11 +85,11 @@ impl fmt::Display for Ontology {
     }
 }
 
-impl Ontology {
+impl Ontology_DLlite {
     //-------------------------------------------------------------------------
     // public functions for the interface
 
-    pub fn new(s: String) -> Ontology {
+    pub fn new(s: String) -> Ontology_DLlite {
         let mut symbols: HashMap<String, (usize, DLType)> = HashMap::new();
 
         /*
@@ -95,15 +98,15 @@ impl Ontology {
         symbols.insert(String::from("Top"), (1, DLType::Top));
         symbols.insert(String::from("Bottom"), (0, DLType::Bottom));
 
-        Ontology {
+        Ontology_DLlite {
             name: s,
             symbols,
-            tbox: TB::new(),
+            tbox: TB_DLlite::new(),
             current_abox: Option::None,
         }
     }
 
-    pub fn abox(&self) -> Option<&ABQ> {
+    pub fn abox(&self) -> Option<&ABQ_DLlite> {
         match &self.current_abox {
             Option::None => Option::None,
             Some(ab) => Some(ab),
@@ -173,7 +176,7 @@ impl Ontology {
         }
     }
 
-    pub fn new_abox_from_aboxq(&mut self, ab: ABQ) {
+    pub fn new_abox_from_aboxq(&mut self, ab: ABQ_DLlite) {
         self.current_abox = Some(ab);
     }
 
@@ -253,7 +256,7 @@ impl Ontology {
         }
     }
 
-    pub fn add_abi(&mut self, abi: &ABIQ) {
+    pub fn add_abi(&mut self, abi: &ABIQ_DLlite) {
         // you must have created a new abox
         if self.current_abox.is_some() {
             let abox = self.current_abox.as_mut().unwrap();
@@ -261,13 +264,13 @@ impl Ontology {
         }
     }
 
-    pub fn add_abis_from_abox(&mut self, ab: &ABQ) {
+    pub fn add_abis_from_abox(&mut self, ab: &ABQ_DLlite) {
         for abi in ab.items() {
             self.add_abi(abi)
         }
     }
 
-    pub fn add_tbis_from_tbox(&mut self, tb: &TB) {
+    pub fn add_tbis_from_tbox(&mut self, tb: &TB_DLlite) {
         for tbi in tb.items() {
             self.add_tbi(tbi);
         }
@@ -279,7 +282,7 @@ impl Ontology {
     // here I define a very important method, it will find conflicts in a abox with
     // respect to a tbox and store them in a matrix
 
-    pub fn complete_tbox(&self, deduction_tree: bool, verbose: bool) -> TB {
+    pub fn complete_tbox(&self, deduction_tree: bool, verbose: bool) -> TB_DLlite {
         let tb = self.tbox.complete(deduction_tree, verbose);
 
         tb
@@ -298,7 +301,7 @@ impl Ontology {
         self.current_abox = ab_op;
     }
 
-    pub fn complete_abox(&self, verbose: bool) -> Option<ABQ> {
+    pub fn complete_abox(&self, verbose: bool) -> Option<ABQ_DLlite> {
         match &self.current_abox {
             Some(ab) => Some(ab.complete(self.tbox(), verbose)),
             _ => Option::None,
@@ -308,7 +311,7 @@ impl Ontology {
     // please note that this matrix detect also implications
     pub fn conflict_matrix(
         &self,
-        abq: &ABQ,
+        abq: &ABQ_DLlite,
         verbose: bool,
     ) -> (Vec<i8>, Vec<(usize, Option<usize>)>, Vec<(usize, usize)>) {
         /*
@@ -415,9 +418,9 @@ impl Ontology {
                             println!(" -- Ontology::conflict_matrix: comparing against {} and its negation {}", abiq_j, &abiq_j_neg);
                         }
 
-                        let abq_tmp = ABQ::from_vec("tmp", vec![abiq_i.clone(), abiq_j.clone()]);
+                        let abq_tmp = ABQ_DLlite::from_vec("tmp", vec![abiq_i.clone(), abiq_j.clone()]);
                         let abq_tmp_neg =
-                            ABQ::from_vec("tmp_neg", vec![abiq_i.clone(), abiq_j_neg]);
+                            ABQ_DLlite::from_vec("tmp_neg", vec![abiq_i.clone(), abiq_j_neg]);
 
                         println!(
                             "    --  abq_tmp: {}\n    --  abq_tmp_neg: {}",
@@ -489,9 +492,9 @@ impl Ontology {
         &self,
         filename: &str,
         _filetype: FileType,
-    ) -> io::Result<ABQ> {
+    ) -> io::Result<ABQ_DLlite> {
         let ab_name = parse_name_from_filename(filename);
-        Ok(ABQ::new(ab_name))
+        Ok(ABQ_DLlite::new(ab_name))
     }
 
     // -------------------------------------------------------------------------------------------
@@ -501,7 +504,7 @@ impl Ontology {
         &self.symbols
     }
 
-    pub fn tbox(&self) -> &TB {
+    pub fn tbox(&self) -> &TB_DLlite {
         &self.tbox
     }
 
@@ -524,7 +527,7 @@ impl Ontology {
 
                 // we need to update the id to avoid conflict with the current numbers
                 let (_low, high) =
-                    Ontology::find_lower_and_highest_value_from_symbols(self.symbols());
+                    Ontology_DLlite::find_lower_and_highest_value_from_symbols(self.symbols());
 
                 self.symbols.insert(new_name.clone(), (high + 1, t));
                 // self.number_of_symbols += 1;
@@ -538,7 +541,7 @@ impl Ontology {
         }
     }
 
-    fn add_tbi(&mut self, tbi: &TBI) -> bool {
+    fn add_tbi(&mut self, tbi: &TBI_DLlite) -> bool {
         if self.tbox.contains(&tbi) {
             false
         } else {
@@ -593,7 +596,7 @@ impl Ontology {
     // ------------------------------------------------------------------------
     // pretty print functions
 
-    fn node_to_string(&self, node: &Node) -> String {
+    fn node_to_string(&self, node: &Node_DLlite) -> String {
         let left_current = String::new();
         let right_current = String::new();
 
@@ -602,14 +605,14 @@ impl Ontology {
 
     fn node_to_string_helper(
         &self,
-        node: &Node,
+        node: &Node_DLlite,
         mut left_current: String,
         mut right_current: String,
     ) -> String {
         match node {
-            Node::T => String::from("Top"),    // format!("{}", node),
-            Node::B => String::from("Bottom"), // format!("{}", node),
-            Node::N(n) | Node::R(n) | Node::C(n) => {
+            Node_DLlite::T => String::from("Top"),    // format!("{}", node),
+            Node_DLlite::B => String::from("Bottom"), // format!("{}", node),
+            Node_DLlite::N(n) | Node_DLlite::R(n) | Node_DLlite::C(n) => {
                 // find the name
                 let mut name_found = false;
                 let mut name: String = String::new();
@@ -628,13 +631,13 @@ impl Ontology {
                 }
 
                 match node {
-                    Node::N(_) => format!("{}{}{}", left_current, name, right_current),
-                    Node::R(_) => format!("{}{}{}", left_current, name, right_current),
-                    Node::C(_) => format!("{}{}{}", left_current, name, right_current),
+                    Node_DLlite::N(_) => format!("{}{}{}", left_current, name, right_current),
+                    Node_DLlite::R(_) => format!("{}{}{}", left_current, name, right_current),
+                    Node_DLlite::C(_) => format!("{}{}{}", left_current, name, right_current),
                     _ => String::from("you shouldn't be here"),
                 }
             }
-            Node::X(m, bn) => {
+            Node_DLlite::X(m, bn) => {
                 let left_addition = match m {
                     Mod::N => "-",
                     Mod::I => "(",
@@ -671,7 +674,7 @@ impl Ontology {
         s
     }
 
-    pub fn tbox_to_string(&self, tb: &TB, dont_write_trivial: bool) -> String {
+    pub fn tbox_to_string(&self, tb: &TB_DLlite, dont_write_trivial: bool) -> String {
         let mut s = String::from("    {\n");
 
         for tbi in tb.items() {
@@ -687,7 +690,7 @@ impl Ontology {
         s
     }
 
-    pub fn abox_to_string_quantum(&self, ab: &ABQ) -> String {
+    pub fn abox_to_string_quantum(&self, ab: &ABQ_DLlite) -> String {
         let mut s = String::from("    {\n");
 
         for abi in ab.items() {
@@ -705,7 +708,7 @@ impl Ontology {
     }
 
     // I suppose that the tbi is in the self.tbox
-    fn tbi_to_string(&self, tbi: &TBI) -> String {
+    fn tbi_to_string(&self, tbi: &TBI_DLlite) -> String {
         let lside = self.node_to_string(tbi.lside());
         let rside = self.node_to_string(tbi.rside());
 
@@ -714,7 +717,7 @@ impl Ontology {
         s
     }
 
-    fn abiq_to_string(&self, abiq: &ABIQ) -> String {
+    fn abiq_to_string(&self, abiq: &ABIQ_DLlite) -> String {
         let abi_to_string = self.abi_to_string(abiq.abi());
 
         let v = match abiq.value() {
@@ -726,9 +729,9 @@ impl Ontology {
         res
     }
 
-    fn abi_to_string(&self, abi: &ABI) -> String {
+    fn abi_to_string(&self, abi: &ABI_DLlite) -> String {
         let s = match abi {
-            ABI::RA(r, a, b) => {
+            ABI_DLlite::RA(r, a, b) => {
                 let r = self.node_to_string(r);
                 let a = self.node_to_string(a);
                 let b = self.node_to_string(b);
@@ -736,7 +739,7 @@ impl Ontology {
                 let s = format!("{},{} : {}", a, b, r);
                 s
             }
-            ABI::CA(c, a) => {
+            ABI_DLlite::CA(c, a) => {
                 let c = self.node_to_string(c);
                 let a = self.node_to_string(a);
 
@@ -885,7 +888,7 @@ impl Ontology {
         true
     }
 
-    pub fn initiate_from_db(filename: &str, verbose: bool) -> Result<Ontology> {
+    pub fn initiate_from_db(filename: &str, verbose: bool) -> Result<Ontology_DLlite> {
         let conn_res = Connection::open(filename);
 
         match conn_res {
@@ -898,7 +901,7 @@ impl Ontology {
             Ok(conn) => {
                 let tb_name = parse_name_from_filename(filename);
 
-                let mut onto = Ontology::new(String::from(tb_name));
+                let mut onto = Ontology_DLlite::new(String::from(tb_name));
 
                 let _symbol_res = add_symbols_from_db(&mut onto.symbols, &conn, verbose);
                 let _tbis_res = add_tbis_from_db(&onto.symbols, &mut onto.tbox, &conn, verbose);

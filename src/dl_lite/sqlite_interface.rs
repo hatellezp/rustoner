@@ -1,17 +1,19 @@
-use crate::dl_lite::abox_item::ABI;
+use crate::dl_lite::abox_item::ABI_DLlite;
 use crate::dl_lite::native_filetype_utilities::find_bound_of_symbols;
-use crate::dl_lite::node::Node;
+use crate::dl_lite::node::Node_DLlite;
 use crate::dl_lite::sqlite_structs::{NodeDb, SymbolDb, TableDb, TboxItemDb};
 use crate::dl_lite::string_formatter::{node_to_string, string_to_abiq, string_to_tbi};
-use crate::dl_lite::tbox::TB;
-use crate::dl_lite::tbox_item::TBI;
-use crate::dl_lite::types::DLType;
+use crate::dl_lite::tbox::TB_DLlite;
+use crate::dl_lite::tbox_item::TBI_DLlite;
+use crate::kb::types::DLType;
 
-use crate::dl_lite::abox::ABQ;
-use crate::dl_lite::abox_item_quantum::ABIQ;
+use crate::dl_lite::abox::ABQ_DLlite;
+use crate::dl_lite::abox_item_quantum::ABIQ_DLlite;
 use crate::dl_lite::sqlite_structs_quantum::{AboxQItemCDb, AboxQItemRDb};
 use rusqlite::{Connection, Result, NO_PARAMS};
 use std::collections::HashMap;
+
+use crate::kb::knowledge_base::{Item, ABoxItem, ABox, TBoxItem, TBox};
 
 pub fn connect_to_db(filename: &str, verbose: bool) -> Connection {
     if verbose {
@@ -182,7 +184,7 @@ pub fn add_symbols_to_db(
 
 pub fn add_nodes_to_db(
     symbols: &HashMap<String, (usize, DLType)>,
-    nodes: Vec<&Node>,
+    nodes: Vec<&Node_DLlite>,
     conn: &Connection,
     verbose: bool,
 ) {
@@ -193,7 +195,7 @@ pub fn add_nodes_to_db(
 
 pub fn add_node_to_db(
     symbols: &HashMap<String, (usize, DLType)>,
-    node: &Node,
+    node: &Node_DLlite,
     conn: &Connection,
     verbose: bool,
 ) {
@@ -220,7 +222,7 @@ pub fn add_node_to_db(
 
             // add the childs too
             if !is_base {
-                let child = Node::child(Some(&node)).unwrap();
+                let child = Node_DLlite::child_old(Some(&node)).unwrap();
 
                 if verbose {
                     println!("calling method on child")
@@ -234,7 +236,7 @@ pub fn add_node_to_db(
 
 pub fn get_node_from_db(
     symbols: &HashMap<String, (usize, DLType)>,
-    node: &Node,
+    node: &Node_DLlite,
     conn: &Connection,
     verbose: bool,
 ) -> Option<Vec<NodeDb>> {
@@ -278,7 +280,7 @@ pub fn get_node_from_db(
 }
 pub fn add_tbi_to_db(
     symbols: &HashMap<String, (usize, DLType)>,
-    tbi: &TBI,
+    tbi: &TBI_DLlite,
     conn: &Connection,
     verbose: bool,
 ) {
@@ -310,7 +312,7 @@ pub fn add_tbi_to_db(
 
 pub fn add_tbis_to_db(
     symbols: &HashMap<String, (usize, DLType)>,
-    tbis: &Vec<TBI>,
+    tbis: &Vec<TBI_DLlite>,
     conn: &Connection,
     verbose: bool,
 ) {
@@ -351,7 +353,7 @@ pub fn add_symbols_from_db(
             for symbol in symbols_row {
                 let symbol = symbol.unwrap();
                 let t_id = symbol.type_db as usize;
-                let t_op = DLType::to_type_from_usize_for_db(t_id);
+                let t_op = DLType::usize_type_from_usize_for_db(t_id);
 
                 if verbose {
                     println!("attempting to insert symbol onto ontology {:?}", &symbol);
@@ -381,7 +383,7 @@ pub fn add_symbols_from_db(
 
 pub fn add_tbis_from_db(
     symbols: &HashMap<String, (usize, DLType)>,
-    tbox: &mut TB,
+    tbox: &mut TB_DLlite,
     conn: &Connection,
     verbose: bool,
 ) -> Result<usize> {
@@ -526,7 +528,7 @@ pub fn drop_tables_from_database(conn: &Connection, tables_to_drop: Vec<&str>, v
 pub fn add_abi_to_db_quantum(
     symbols: &HashMap<String, (usize, DLType)>,
     ab_name: &str,
-    abiq: &ABIQ,
+    abiq: &ABIQ_DLlite,
     conn: &Connection,
     verbose: bool,
 ) {
@@ -540,7 +542,7 @@ pub fn add_abi_to_db_quantum(
 
     // match abi type
     match abi {
-        ABI::CA(c, a) => {
+        ABI_DLlite::CA(c, a) => {
             add_nodes_to_db(symbols, vec![c, a], conn, verbose);
 
             let c_id = get_node_from_db(symbols, c, conn, verbose).unwrap()[0].id_db as usize;
@@ -578,7 +580,7 @@ pub fn add_abi_to_db_quantum(
                 println!("query: {}\nreturned: {:?}", query, &res);
             }
         }
-        ABI::RA(r, a, b) => {
+        ABI_DLlite::RA(r, a, b) => {
             add_nodes_to_db(symbols, vec![r, a, b], conn, verbose);
 
             let r_id = get_node_from_db(symbols, r, conn, verbose).unwrap()[0].id_db as usize;
@@ -628,7 +630,7 @@ pub fn add_abi_to_db_quantum(
 
 pub fn add_abis_to_db_quantum(
     symbols: &HashMap<String, (usize, DLType)>,
-    abiqs: &Vec<ABIQ>,
+    abiqs: &Vec<ABIQ_DLlite>,
     ab_name: &str,
     conn: &Connection,
     verbose: bool,
@@ -699,7 +701,7 @@ pub fn add_abis_to_db_quantum(
 
 pub fn add_abis_from_db_quantum(
     symbols: &mut HashMap<String, (usize, DLType)>,
-    abq: &mut ABQ,
+    abq: &mut ABQ_DLlite,
     conn: &Connection,
     ab_name: &str,
     verbose: bool,
