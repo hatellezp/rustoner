@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Display};
 use std::hash::Hash;
-use std::io;
+
 
 use crate::dl_lite::abox_item::ABI_DLlite;
 use crate::dl_lite::tbox_item::TBI_DLlite;
@@ -69,9 +69,8 @@ pub trait TBox: PartialEq + Debug + Display {
 
 
 // TESTING: does this work ?
-pub type Symbol= HashMap<String, (usize, DLType)>;
+pub type SymbolDict = HashMap<String, (usize, DLType)>;
 
 pub type TbRule<T: TBoxItem> = fn(Vec<&T>, bool) -> Option<Vec<T>>;
-// pub type TbRule = fn(Vec<&TBI_DLlite>, bool) -> Option<Vec<TBI_DLlite>>;
 
-pub type AbRule = fn(Vec<&ABI_DLlite>, Vec<&TBI_DLlite>) -> Option<Vec<ABI_DLlite>>;
+pub type AbRule<T: TBoxItem, A: ABoxItem> = fn(Vec<&A>, Vec<&T>) -> Option<Vec<A>>;

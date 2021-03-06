@@ -318,6 +318,9 @@ impl ABQ_DLlite {
     }
 
     pub fn complete(&self, tbox: &TB_DLlite, verbose: bool) -> ABQ_DLlite {
+        type T = TBI_DLlite;
+        type A = ABIQ_DLlite;
+
         if self.items.len() == 0 {
             if verbose {
                 println!(" -- ABQ::complete: the abox is empty, nothing to complete");
@@ -358,12 +361,12 @@ impl ABQ_DLlite {
             /*
             I WILL PUT THE RULES HERE, WE CAN ADD OTHERS IF NEEDED
             */
-            let rule_one: AbRule = dl_lite_abox_rule_one;
-            let rule_two: AbRule = dl_lite_abox_rule_two;
-            let rule_three: AbRule = dl_lite_abox_rule_three;
+            let rule_one: AbRule<T, A> = dl_lite_abox_rule_one;
+            let rule_two: AbRule<T, A> = dl_lite_abox_rule_two;
+            let rule_three: AbRule<T, A> = dl_lite_abox_rule_three;
 
             let number_of_rules: usize = 3;
-            let rules: [&AbRule; 3] = [&rule_one, &rule_two, &rule_three];
+            let rules: [&AbRule<T, A>; 3] = [&rule_one, &rule_two, &rule_three];
 
             let rule_ordinal = [CR::First, CR::Second, CR::Third];
 
@@ -490,7 +493,7 @@ impl ABQ_DLlite {
                         let item = &items[index];
 
                         for rule_index in 0..number_of_rules {
-                            let rule: &AbRule = rules[rule_index];
+                            let rule: &AbRule<T, A> = rules[rule_index];
                             let rule_ord = rule_ordinal[rule_index];
 
                             // use each item

@@ -14,7 +14,7 @@ use crate::dl_lite::string_formatter::{node_to_string, string_to_node};
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 
-use crate::kb::knowledge_base::{TBoxItem, TBox};
+use crate::kb::knowledge_base::{TBoxItem, TBox, SymbolDict};
 
 /*
 how this works:
@@ -129,7 +129,7 @@ pub fn parse_symbol(
 
 pub fn parse_value_to_tbi(
     value: &Value,
-    symbols: &HashMap<String, (usize, DLType)>,
+    symbols: &SymbolDict,
     _verbose: bool,
 ) -> io::Result<TBI_DLlite> {
     match value {
@@ -215,7 +215,7 @@ pub fn parse_value_abi(_value: &Value, _symbols: Vec<&Node_DLlite>) -> Option<AB
 
 // when manipulating use &str to avoid unnecessary copies and when returning the data
 // then use String
-pub fn parse_symbols_json(filename: &str) -> io::Result<HashMap<String, (usize, DLType)>> {
+pub fn parse_symbols_json(filename: &str) -> io::Result<SymbolDict> {
     let data = fs::read_to_string(filename);
 
     // here I have to precise from where the 'Result' enum comes from
@@ -248,7 +248,7 @@ pub fn parse_symbols_json(filename: &str) -> io::Result<HashMap<String, (usize, 
                                     let mut parsed_result: io::Result<(&str, usize, DLType)>;
                                     let _unwrapped_parsed: (&str, usize, DLType);
 
-                                    let mut symbols: HashMap<String, (usize, DLType)> =
+                                    let mut symbols: SymbolDict =
                                         HashMap::new();
 
                                     for value in vec_of_values {
@@ -305,7 +305,7 @@ pub fn parse_symbols_json(filename: &str) -> io::Result<HashMap<String, (usize, 
 
 pub fn parse_tbox_json(
     filename: &str,
-    symbols: &HashMap<String, (usize, DLType)>,
+    symbols: &SymbolDict,
     verbose: bool,
 ) -> io::Result<TB_DLlite> {
     let data = fs::read_to_string(filename);
@@ -388,7 +388,7 @@ pub fn parse_tbox_json(
     }
 }
 
-fn node_to_value(node: &Node_DLlite, symbols: &HashMap<String, (usize, DLType)>) -> Option<Value> {
+fn node_to_value(node: &Node_DLlite, symbols: &SymbolDict) -> Option<Value> {
     let string_op = node_to_string(node, symbols, String::new());
 
     match string_op {
@@ -397,7 +397,7 @@ fn node_to_value(node: &Node_DLlite, symbols: &HashMap<String, (usize, DLType)>)
     }
 }
 
-fn tbi_to_value(tbi: &TBI_DLlite, symbols: &HashMap<String, (usize, DLType)>) -> Option<Value> {
+fn tbi_to_value(tbi: &TBI_DLlite, symbols: &SymbolDict) -> Option<Value> {
     let lside_op = node_to_value(tbi.lside(), symbols);
     let rside_op = node_to_value(tbi.rside(), symbols);
 
@@ -409,7 +409,7 @@ fn tbi_to_value(tbi: &TBI_DLlite, symbols: &HashMap<String, (usize, DLType)>) ->
 
 pub fn tbox_to_value(
     tbox: &TB_DLlite,
-    symbols: &HashMap<String, (usize, DLType)>,
+    symbols: &SymbolDict,
     dont_write_trivial: bool,
 ) -> Option<Value> {
     let mut vec_of_tbis: Vec<Value> = Vec::new();

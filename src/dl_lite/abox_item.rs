@@ -208,28 +208,4 @@ impl ABI_DLlite {
             v
         }
     }
-
-    // pub fn apply_two(one: &ABI, two: &ABI, tbox: &TB) -> Option<Vec<ABI>> {}
-    pub fn apply_rule(abis: Vec<&ABI_DLlite>, tbis: Vec<&TBI_DLlite>, rule: &AbRule) -> Option<Vec<ABI_DLlite>> {
-        let prov_vec = match tbis.len() {
-            1 => rule(abis, tbis),
-            2 => rule(abis, tbis),
-            _ => Option::None,
-        };
-
-        if prov_vec.is_none() {
-            Option::None
-        } else {
-            let prov_vec: Vec<ABI_DLlite> = prov_vec.unwrap();
-            let mut final_vec: Vec<ABI_DLlite> = Vec::new();
-
-            for item in &prov_vec {
-                if !item.is_trivial() {
-                    final_vec.push(item.clone());
-                }
-            }
-
-            Some(final_vec)
-        }
-    }
 }

@@ -10,12 +10,12 @@ use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader, Error, ErrorKind};
 
-use crate::kb::knowledge_base::{ABoxItem, ABox, TBoxItem, TBox};
+use crate::kb::knowledge_base::{ABoxItem, ABox, TBoxItem, TBox, SymbolDict};
 
 pub fn parse_symbols_native(
     filename: &str,
     verbose: bool,
-) -> io::Result<HashMap<String, (usize, DLType)>> {
+) -> io::Result<SymbolDict> {
     let file_result = File::open(filename);
 
     match file_result {
@@ -35,7 +35,7 @@ pub fn parse_symbols_native(
             let mut begin_symbol_encountered = false;
             let mut end_symbol_encountered = false;
 
-            let mut symbols: HashMap<String, (usize, DLType)> = HashMap::new();
+            let mut symbols: SymbolDict = HashMap::new();
             let mut unsorted_symbols: Vec<PS> = Vec::new();
 
             for line_result in reader.lines() {
@@ -175,7 +175,7 @@ pub fn parse_symbols_native(
 
 pub fn parse_tbox_native(
     filename: &str,
-    symbols: &HashMap<String, (usize, DLType)>,
+    symbols: &SymbolDict,
     verbose: bool,
 ) -> io::Result<TB_DLlite> {
     let file_result = File::open(filename);
@@ -316,7 +316,7 @@ pub fn parse_tbox_native(
 
 pub fn tbox_to_native_string(
     tbox: &TB_DLlite,
-    symbols: &HashMap<String, (usize, DLType)>,
+    symbols: &SymbolDict,
     dont_write_trivial: bool,
 ) -> Option<String> {
     let mut res = String::new();
@@ -345,7 +345,7 @@ pub fn tbox_to_native_string(
     Some(res)
 }
 
-pub fn find_bound_of_symbols(symbols: &HashMap<String, (usize, DLType)>) -> (usize, usize) {
+pub fn find_bound_of_symbols(symbols: &SymbolDict) -> (usize, usize) {
     if symbols.is_empty() {
         (0, 0)
     } else {
@@ -382,7 +382,7 @@ pub fn find_bound_of_symbols(symbols: &HashMap<String, (usize, DLType)>) -> (usi
 
 pub fn parse_abox_native_quantum(
     filename: &str,
-    symbols: &mut HashMap<String, (usize, DLType)>,
+    symbols: &mut SymbolDict,
     verbose: bool,
 ) -> io::Result<ABQ_DLlite> {
     /*
@@ -508,7 +508,7 @@ pub fn parse_abox_native_quantum(
 
 pub fn abox_to_native_string_quantum(
     abox: &ABQ_DLlite,
-    symbols: &HashMap<String, (usize, DLType)>,
+    symbols: &SymbolDict,
     dont_write_trivial: bool,
 ) -> Option<String> {
     let mut res = String::new();

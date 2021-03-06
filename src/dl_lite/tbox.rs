@@ -18,13 +18,16 @@ use crate::kb::types::CR;
 #[derive(PartialEq, Debug, Clone)]
 pub struct TB_DLlite {
     items: Vec<TBI_DLlite>,
-    // items: HashSet<TBI>,
     length: usize,
     completed: bool,
 }
 
 impl TBox for TB_DLlite {
     type TbiItem = TBI_DLlite;
+
+    fn len(&self) -> usize {
+        self.length
+    }
 
     fn add(&mut self, tbi: TBI_DLlite) -> bool {
         /*
@@ -39,24 +42,20 @@ impl TBox for TB_DLlite {
         }
     }
 
-    fn len(&self) -> usize {
-        self.length
-    }
-
-    fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
     fn items(&self) -> &Vec<TBI_DLlite> {
         &(self.items)
+    }
+
+    fn get(&self, index: usize) -> Option<&TBI_DLlite> {
+        self.items.get(index)
     }
 
     fn sort(&mut self) {
         self.items.sort();
     }
 
-    fn get(&self, index: usize) -> Option<&TBI_DLlite> {
-        self.items.get(index)
+    fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     fn contains(&self, tbi: &TBI_DLlite) -> bool {
@@ -89,7 +88,6 @@ impl fmt::Display for TB_DLlite {
 
 impl TB_DLlite {
     pub fn new() -> TB_DLlite {
-        // let items: HashSet<TBI> = HashSet::new();
         let items: Vec<TBI_DLlite> = Vec::new();
         TB_DLlite {
             items,

@@ -11,7 +11,7 @@ use std::io;
 use std::io::{Error, ErrorKind};
 use crate::dl_lite::tbox::TB_DLlite;
 
-use crate::kb::knowledge_base::{TBoxItem, TBox};
+use crate::kb::knowledge_base::{TBoxItem, TBox, SymbolDict};
 
 //--------------------------------------------------------------------------------------------------
 
@@ -49,7 +49,7 @@ pub fn string_to_symbol(string: &str) -> io::Result<(&str, DLType)> {
     }
 }
 
-pub fn string_to_node(s: &str, symbols: &HashMap<String, (usize, DLType)>) -> io::Result<Node_DLlite> {
+pub fn string_to_node(s: &str, symbols: &SymbolDict) -> io::Result<Node_DLlite> {
     /*
     this function need a symbols dictionary reference to function
      */
@@ -61,7 +61,7 @@ pub fn string_to_node(s: &str, symbols: &HashMap<String, (usize, DLType)>) -> io
 
 pub fn node_to_string(
     node: &Node_DLlite,
-    symbols: &HashMap<String, (usize, DLType)>,
+    symbols: &SymbolDict,
     mut current: String,
 ) -> Option<String> {
     match node {
@@ -107,7 +107,7 @@ pub fn node_to_string(
 }
 
 // TESTING: this function creates a tbi from nothing so level is ZERO
-pub fn string_to_tbi(s: &str, symbols: &HashMap<String, (usize, DLType)>) -> io::Result<Vec<TBI_DLlite>> {
+pub fn string_to_tbi(s: &str, symbols: &SymbolDict) -> io::Result<Vec<TBI_DLlite>> {
     let pre_splitted = s.trim();
 
     let equiv = pre_splitted.contains("=");
@@ -238,7 +238,7 @@ pub fn string_to_tbi(s: &str, symbols: &HashMap<String, (usize, DLType)>) -> io:
     }
 }
 
-pub fn tbi_to_string(tbi: &TBI_DLlite, symbols: &HashMap<String, (usize, DLType)>) -> Option<String> {
+pub fn tbi_to_string(tbi: &TBI_DLlite, symbols: &SymbolDict) -> Option<String> {
     let lstr_op = node_to_string(tbi.lside(), symbols, "".to_string());
     let rstr_op = node_to_string(tbi.rside(), symbols, "".to_string());
 
@@ -259,7 +259,7 @@ pub fn tbi_to_string(tbi: &TBI_DLlite, symbols: &HashMap<String, (usize, DLType)
 // but nominals are added dynamically
 pub fn string_to_abi(
     s: &str,
-    symbols: &mut HashMap<String, (usize, DLType)>,
+    symbols: &mut SymbolDict,
     mut current_id: usize,
     for_completion: bool,
 ) -> (io::Result<(ABI_DLlite, Vec<(String, (usize, DLType))>)>, usize) {
@@ -377,7 +377,7 @@ pub fn string_to_abi(
     }
 }
 
-pub fn abi_to_string(abi: &ABI_DLlite, symbols: &HashMap<String, (usize, DLType)>) -> Option<String> {
+pub fn abi_to_string(abi: &ABI_DLlite, symbols: &SymbolDict) -> Option<String> {
     match abi {
         ABI_DLlite::CA(c, a) => {
             let c_str_op = node_to_string(c, symbols, "".to_string());
@@ -422,7 +422,7 @@ pub fn abi_to_string(abi: &ABI_DLlite, symbols: &HashMap<String, (usize, DLType)
 // real functions live here
 fn __parse_string_to_node_helper(
     splitted: Vec<&str>,
-    symbols: &HashMap<String, (usize, DLType)>,
+    symbols: &SymbolDict,
 ) -> io::Result<Node_DLlite> {
     // two auxiliary functions to do everything more tidy
     fn option_negate(n: Node_DLlite) -> Option<Node_DLlite> {
@@ -555,7 +555,7 @@ fn __parse_string_to_node_helper(
     }
 }
 
-fn find_keys_for_value(symbols: &HashMap<String, (usize, DLType)>, value: usize) -> Vec<String> {
+fn find_keys_for_value(symbols: &SymbolDict, value: usize) -> Vec<String> {
     symbols
         .iter()
         .filter_map(|(key, &val)| {
@@ -620,7 +620,7 @@ impl Ord for PS {
 // but nominals are added dynamically
 pub fn string_to_abiq(
     s: &str,
-    symbols: &mut HashMap<String, (usize, DLType)>,
+    symbols: &mut SymbolDict,
     current_id: usize,
     for_completion: bool,
 ) -> (io::Result<(ABIQ_DLlite, Vec<(String, (usize, DLType))>)>, usize) {
@@ -707,7 +707,7 @@ pub fn string_to_abiq(
     }
 }
 
-pub fn abiq_to_string(abiq: &ABIQ_DLlite, symbols: &HashMap<String, (usize, DLType)>) -> Option<String> {
+pub fn abiq_to_string(abiq: &ABIQ_DLlite, symbols: &SymbolDict) -> Option<String> {
     let abi_to_string = abi_to_string(abiq.abi(), symbols);
 
     let pv_to_string = format!("{}", abiq.prevalue());
@@ -728,7 +728,7 @@ pub fn abiq_to_string(abiq: &ABIQ_DLlite, symbols: &HashMap<String, (usize, DLTy
 
 pub fn pretty_print_abiq_conflict(
     conflict_tuple: (&TBI_DLlite, &Vec<ABIQ_DLlite>),
-    symbols: &HashMap<String, (usize, DLType)>,
+    symbols: &SymbolDict,
 ) -> String {
     /*
     quelque chose comme
@@ -770,7 +770,7 @@ pub fn pretty_print_abiq_conflict(
     s
 }
 
-pub fn pretty_vector_tbi_to_string(vec: &Vec<TBI_DLlite>, symbols: &HashMap<String, (usize, DLType)>) -> String {
+pub fn pretty_vector_tbi_to_string(vec: &Vec<TBI_DLlite>, symbols: &SymbolDict) -> String {
     let mut s = String::from("[");
 
     let vec_len = vec.len();
@@ -792,7 +792,7 @@ pub fn pretty_vector_tbi_to_string(vec: &Vec<TBI_DLlite>, symbols: &HashMap<Stri
 }
 
 
-pub fn create_string_for_gencontb(tb: &TB_DLlite, symbols: &HashMap<String, (usize, DLType)>, _verbose: bool) -> String {
+pub fn create_string_for_gencontb(tb: &TB_DLlite, symbols: &SymbolDict, _verbose: bool) -> String {
 
     let mut s = String::new();
     let mut temp_s: String;
@@ -843,4 +843,9 @@ pub fn create_string_for_gencontb(tb: &TB_DLlite, symbols: &HashMap<String, (usi
 
     s.push_str("]");
     s
+}
+
+
+pub fn create_string_for_unravel_conflict_tbox(tb: TB_DLlite, symbols: &SymbolDict) -> String {
+    String::from("nope")
 }

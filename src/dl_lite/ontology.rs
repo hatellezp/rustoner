@@ -29,7 +29,7 @@ use crate::dl_lite::sqlite_interface::{
 use crate::interface::utilities::parse_name_from_filename;
 
 // import traits
-use crate::kb::knowledge_base::{ABoxItem, ABox, TBoxItem, TBox};
+use crate::kb::knowledge_base::{ABoxItem, ABox, TBoxItem, TBox, SymbolDict};
 
 /*
 an ontology model
@@ -43,7 +43,7 @@ an ontology model
 #[derive(PartialEq, Clone, Debug)]
 pub struct Ontology_DLlite {
     name: String,
-    symbols: HashMap<String, (usize, DLType)>,
+    symbols: SymbolDict,
     tbox: TB_DLlite,
     current_abox: Option<ABQ_DLlite>,
 }
@@ -90,7 +90,7 @@ impl Ontology_DLlite {
     // public functions for the interface
 
     pub fn new(s: String) -> Ontology_DLlite {
-        let mut symbols: HashMap<String, (usize, DLType)> = HashMap::new();
+        let mut symbols: SymbolDict = HashMap::new();
 
         /*
         bottom and top are added by default
@@ -120,7 +120,7 @@ impl Ontology_DLlite {
         }
     }
 
-    pub fn symbols_as_mut(&mut self) -> &mut HashMap<String, (usize, DLType)> {
+    pub fn symbols_as_mut(&mut self) -> &mut SymbolDict {
         &mut self.symbols
     }
     // ------------------------------------------------------------------------
@@ -500,7 +500,7 @@ impl Ontology_DLlite {
     // -------------------------------------------------------------------------------------------
     // get methods
 
-    pub fn symbols(&self) -> &HashMap<String, (usize, DLType)> {
+    pub fn symbols(&self) -> &SymbolDict {
         &self.symbols
     }
 
@@ -518,7 +518,7 @@ impl Ontology_DLlite {
 
     fn add_symbol(
         &mut self,
-        new_symbols: &HashMap<String, (usize, DLType)>,
+        new_symbols: &SymbolDict,
         new_name: &String,
     ) -> bool {
         if new_symbols.contains_key(new_name) {
@@ -553,7 +553,7 @@ impl Ontology_DLlite {
     }
 
     fn find_lower_and_highest_value_from_symbols(
-        symbols: &HashMap<String, (usize, DLType)>,
+        symbols: &SymbolDict,
     ) -> (usize, usize) {
         let mut lowest: Option<usize> = Option::None;
         let mut highest: Option<usize> = Option::None;
@@ -660,7 +660,7 @@ impl Ontology_DLlite {
 
     // this is helper function, but because is particular to symbols here defined I won't
     // move somewhere else
-    fn symbols_to_string(symbols: &HashMap<String, (usize, DLType)>) -> String {
+    fn symbols_to_string(symbols: &SymbolDict) -> String {
         let mut s = String::from("    {\n");
 
         for symbol in symbols {

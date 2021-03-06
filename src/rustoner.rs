@@ -119,6 +119,22 @@ pub fn main() {
 
                                     println!("}}");
                                 }
+
+                                // now ask if they want to see the tree for the contradictions
+                                let question_print = "Do you want unravel for conflicts?".to_string();
+
+                                let print_output = Question::new(&question_print)
+                                    .default(Answer::YES)
+                                    .show_defaults()
+                                    .confirm();
+
+                                if print_output == Answer::YES {
+                                    println!("i will unravel for you !!!");
+                                    let new_tb = onto.complete_tbox(deduction_tree, verbose);
+
+
+                                }
+
                             }
                         }
                     }

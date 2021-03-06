@@ -9,7 +9,6 @@ pub mod ontology;
 pub mod rule;
 pub mod sqlite_interface;
 pub mod sqlite_structs;
-pub mod sqlite_structs_quantum;
 pub mod string_formatter;
 pub mod tbox;
 pub mod tbox_item;

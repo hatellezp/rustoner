@@ -1,19 +1,18 @@
+use std::collections::HashMap;
+
+use rusqlite::{Connection, NO_PARAMS, Result};
+
+use crate::dl_lite::abox::ABQ_DLlite;
 use crate::dl_lite::abox_item::ABI_DLlite;
+use crate::dl_lite::abox_item_quantum::ABIQ_DLlite;
 use crate::dl_lite::native_filetype_utilities::find_bound_of_symbols;
 use crate::dl_lite::node::Node_DLlite;
-use crate::dl_lite::sqlite_structs::{NodeDb, SymbolDb, TableDb, TboxItemDb};
+use crate::dl_lite::sqlite_structs::{AboxQItemCDb, AboxQItemRDb, NodeDb, SymbolDb, TableDb, TboxItemDb};
 use crate::dl_lite::string_formatter::{node_to_string, string_to_abiq, string_to_tbi};
 use crate::dl_lite::tbox::TB_DLlite;
 use crate::dl_lite::tbox_item::TBI_DLlite;
+use crate::kb::knowledge_base::{ABox, ABoxItem, Item, SymbolDict, TBox, TBoxItem};
 use crate::kb::types::DLType;
-
-use crate::dl_lite::abox::ABQ_DLlite;
-use crate::dl_lite::abox_item_quantum::ABIQ_DLlite;
-use crate::dl_lite::sqlite_structs_quantum::{AboxQItemCDb, AboxQItemRDb};
-use rusqlite::{Connection, Result, NO_PARAMS};
-use std::collections::HashMap;
-
-use crate::kb::knowledge_base::{Item, ABoxItem, ABox, TBoxItem, TBox};
 
 pub fn connect_to_db(filename: &str, verbose: bool) -> Connection {
     if verbose {
@@ -173,7 +172,7 @@ pub fn add_symbol_to_db(symbol: (&String, &(usize, DLType)), conn: &Connection, 
 }
 
 pub fn add_symbols_to_db(
-    symbols: &HashMap<String, (usize, DLType)>,
+    symbols: &SymbolDict,
     conn: &Connection,
     verbose: bool,
 ) {
@@ -183,7 +182,7 @@ pub fn add_symbols_to_db(
 }
 
 pub fn add_nodes_to_db(
-    symbols: &HashMap<String, (usize, DLType)>,
+    symbols: &SymbolDict,
     nodes: Vec<&Node_DLlite>,
     conn: &Connection,
     verbose: bool,
@@ -194,7 +193,7 @@ pub fn add_nodes_to_db(
 }
 
 pub fn add_node_to_db(
-    symbols: &HashMap<String, (usize, DLType)>,
+    symbols: &SymbolDict,
     node: &Node_DLlite,
     conn: &Connection,
     verbose: bool,
@@ -235,7 +234,7 @@ pub fn add_node_to_db(
 }
 
 pub fn get_node_from_db(
-    symbols: &HashMap<String, (usize, DLType)>,
+    symbols: &SymbolDict,
     node: &Node_DLlite,
     conn: &Connection,
     verbose: bool,
@@ -279,7 +278,7 @@ pub fn get_node_from_db(
     }
 }
 pub fn add_tbi_to_db(
-    symbols: &HashMap<String, (usize, DLType)>,
+    symbols: &SymbolDict,
     tbi: &TBI_DLlite,
     conn: &Connection,
     verbose: bool,
@@ -311,7 +310,7 @@ pub fn add_tbi_to_db(
 }
 
 pub fn add_tbis_to_db(
-    symbols: &HashMap<String, (usize, DLType)>,
+    symbols: &SymbolDict,
     tbis: &Vec<TBI_DLlite>,
     conn: &Connection,
     verbose: bool,
@@ -322,7 +321,7 @@ pub fn add_tbis_to_db(
 }
 
 pub fn add_symbols_from_db(
-    symbols: &mut HashMap<String, (usize, DLType)>,
+    symbols: &mut SymbolDict,
     conn: &Connection,
     verbose: bool,
 ) -> Result<usize> {
@@ -382,7 +381,7 @@ pub fn add_symbols_from_db(
 }
 
 pub fn add_tbis_from_db(
-    symbols: &HashMap<String, (usize, DLType)>,
+    symbols: &SymbolDict,
     tbox: &mut TB_DLlite,
     conn: &Connection,
     verbose: bool,
@@ -454,7 +453,7 @@ pub fn add_tbis_from_db(
 
 // TODO: maybe more information in these functions that work with the database
 pub fn update_symbols_to_db(
-    symbols: &HashMap<String, (usize, DLType)>,
+    symbols: &SymbolDict,
     conn: &Connection,
     verbose: bool,
 ) {
@@ -526,7 +525,7 @@ pub fn drop_tables_from_database(conn: &Connection, tables_to_drop: Vec<&str>, v
 }
 
 pub fn add_abi_to_db_quantum(
-    symbols: &HashMap<String, (usize, DLType)>,
+    symbols: &SymbolDict,
     ab_name: &str,
     abiq: &ABIQ_DLlite,
     conn: &Connection,
@@ -629,7 +628,7 @@ pub fn add_abi_to_db_quantum(
 }
 
 pub fn add_abis_to_db_quantum(
-    symbols: &HashMap<String, (usize, DLType)>,
+    symbols: &SymbolDict,
     abiqs: &Vec<ABIQ_DLlite>,
     ab_name: &str,
     conn: &Connection,
@@ -700,7 +699,7 @@ pub fn add_abis_to_db_quantum(
 }
 
 pub fn add_abis_from_db_quantum(
-    symbols: &mut HashMap<String, (usize, DLType)>,
+    symbols: &mut SymbolDict,
     abq: &mut ABQ_DLlite,
     conn: &Connection,
     ab_name: &str,

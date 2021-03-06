@@ -3,6 +3,7 @@ use crate::dl_lite::node::Node_DLlite;
 use crate::dl_lite::tbox_item::TBI_DLlite;
 use crate::kb::knowledge_base::{ABox, ABoxItem, Item, TBox, TBoxItem};
 use crate::kb::types::DLType;
+use crate::dl_lite::abox_item_quantum::ABIQ_DLlite;
 
 /*
    I'm changing the rule philosophy, now they (if they can) take the first
@@ -402,17 +403,17 @@ pub fn dl_lite_rule_eight(vec: Vec<&TBI_DLlite>, deduction_tree: bool) -> Option
 // here I will put the rules for aboxes
 
 // if (a,b):r then a:Er and b:Er^⁻
-pub fn dl_lite_abox_rule_one(abis: Vec<&ABI_DLlite>, _tbis: Vec<&TBI_DLlite>) -> Option<Vec<ABI_DLlite>> {
+pub fn dl_lite_abox_rule_one(abis: Vec<&ABIQ_DLlite>, _tbis: Vec<&TBI_DLlite>) -> Option<Vec<ABIQ_DLlite>> {
     if abis.len() < 1 {
         Option::None
     } else {
-        let abi = abis[0];
+        let abi = abis[0].abi();
 
         match abi {
             ABI_DLlite::CA(_, _) => Option::None,
             ABI_DLlite::RA(r, a, b) => {
                 let r_is_neg = r.is_negated();
-                let mut v: Vec<ABI_DLlite> = Vec::new();
+                let mut v: Vec<ABIQ_DLlite> = Vec::new();
 
                 match r_is_neg {
                     true => Some(v),
@@ -425,8 +426,11 @@ pub fn dl_lite_abox_rule_one(abis: Vec<&ABI_DLlite>, _tbis: Vec<&TBI_DLlite>) ->
                         let erinv = r.clone().inverse().unwrap().exists().unwrap();
                         let b_erinv = ABI_DLlite::new_ca(erinv, b.clone(), true).unwrap();
 
-                        v.push(a_er);
-                        v.push(b_erinv);
+                        let a_er_q = ABIQ_DLlite::new(a_er, Option::None, Option::None);
+                        let b_erinv_q = ABIQ_DLlite::new(b_erinv, Option::None, Option::None);
+
+                        v.push(a_er_q);
+                        v.push(b_erinv_q);
 
                         Some(v)
                     }
@@ -437,11 +441,11 @@ pub fn dl_lite_abox_rule_one(abis: Vec<&ABI_DLlite>, _tbis: Vec<&TBI_DLlite>) ->
 }
 
 // if (a,b):r and r < s then (a,b):s
-pub fn dl_lite_abox_rule_two(abis: Vec<&ABI_DLlite>, tbis: Vec<&TBI_DLlite>) -> Option<Vec<ABI_DLlite>> {
+pub fn dl_lite_abox_rule_two(abis: Vec<&ABIQ_DLlite>, tbis: Vec<&TBI_DLlite>) -> Option<Vec<ABIQ_DLlite>> {
     if abis.len() < 1 || tbis.len() < 1 {
         Option::None
     } else {
-        let abi = abis[0];
+        let abi = abis[0].abi();
         let tbi = tbis[0];
 
         match abi {
@@ -450,7 +454,9 @@ pub fn dl_lite_abox_rule_two(abis: Vec<&ABI_DLlite>, tbis: Vec<&TBI_DLlite>) -> 
                 if r == tbi.lside() {
                     let new_ra = ABI_DLlite::new_ra(tbi.rside().clone(), a.clone(), b.clone(), true);
 
-                    let v = vec![new_ra.unwrap()];
+                    let new_ra_q = ABIQ_DLlite::new(new_ra.unwrap(), Option::None, Option::None);
+
+                    let v = vec![new_ra_q];
 
                     Some(v)
                 } else {
@@ -462,11 +468,11 @@ pub fn dl_lite_abox_rule_two(abis: Vec<&ABI_DLlite>, tbis: Vec<&TBI_DLlite>) -> 
 }
 
 // if a:c and c < d then a:d
-pub fn dl_lite_abox_rule_three(abis: Vec<&ABI_DLlite>, tbis: Vec<&TBI_DLlite>) -> Option<Vec<ABI_DLlite>> {
+pub fn dl_lite_abox_rule_three(abis: Vec<&ABIQ_DLlite>, tbis: Vec<&TBI_DLlite>) -> Option<Vec<ABIQ_DLlite>> {
     if abis.len() < 1 || tbis.len() < 1 {
         Option::None
     } else {
-        let abi = abis[0];
+        let abi = abis[0].abi();
         let tbi = tbis[0];
 
         match abi {
@@ -475,7 +481,9 @@ pub fn dl_lite_abox_rule_three(abis: Vec<&ABI_DLlite>, tbis: Vec<&TBI_DLlite>) -
                 if c == tbi.lside() {
                     let new_ca = ABI_DLlite::new_ca(tbi.rside().clone(), a.clone(), true);
 
-                    let v = vec![new_ca.unwrap()];
+                    let new_ca_q = ABIQ_DLlite::new(new_ca.unwrap(), Option::None, Option::None);
+
+                    let v = vec![new_ca_q];
 
                     Some(v)
                 } else {
