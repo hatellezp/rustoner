@@ -8,15 +8,16 @@ edition = "2018"
 
 [[bin]]
 name = "rustoner_old"
-path = "src/main.rs"
+path = "src/main_old.rs"
 
 [[bin]]
 name = "tester"
 path = "src/test.rs"
 
+# this is the good one
 [[bin]]
 name = "rustoner"
-path = "src/rustoner.rs"
+path = "src/main.rs"
 
 [dependencies]
 serde = { version = "*", features = ["derive"] }
