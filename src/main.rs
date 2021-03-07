@@ -5,103 +5,59 @@ mod kb;
 // for cli interface
 use structopt::StructOpt;
 
-use crate::kb::types::FileType;
+// from kb
+use crate::kb::knowledge_base::{TBoxItem, TBox};
 
+// from the dl_lite module
 use crate::dl_lite::ontology::Ontology_DLlite;
 
+use crate::dl_lite::abox_item_quantum::ABIQ_DLlite;
+
+use crate::dl_lite::native_filetype_utilities::tbox_to_native_string;
+use crate::dl_lite::string_formatter::{pretty_print_abiq_conflict, tbi_to_string, create_string_for_gencontb};
+use crate::dl_lite::tbox_item::TBI_DLlite;
+
+// from the interface module
 use crate::interface::cli::{Cli, Task};
-use crate::interface::utilities::{get_filetype, parse_name_from_filename};
 
-use crate::dl_lite::sqlite_interface::{
-    add_abis_to_db_quantum, connect_to_db, drop_tables_from_database, get_table_names,
-    update_symbols_to_db,
-};
+use crate::interface::utilities::{get_filetype, parse_name_from_filename, write_str_to_file};
+
+// to ask basic questions
 use question::{Answer, Question};
-use rusqlite::Connection;
 
-use crate::kb::knowledge_base::{ABoxItem, ABox, TBoxItem, TBox};
+// the main function
+pub fn main() {
+    // to avoid trivial tbi written to file
+    let dont_write_trivial = true;
 
-fn main() {
     let args = Cli::from_args();
 
     // get all arguments regardless of the task
-    let path_db_op: Option<std::path::PathBuf> = args.path_db;
+    let task: Task = args.task;
+    // let path_db_op: Option<std::path::PathBuf> = args.path_db;
     let path_tbox_op: Option<std::path::PathBuf> = args.path_tbox;
     let path_abox_op: Option<std::path::PathBuf> = args.path_abox;
     let path_symbols_op: Option<std::path::PathBuf> = args.path_symbols;
     let path_output_op: Option<std::path::PathBuf> = args.path_output;
     let verbose: bool = args.verbose;
-    let _ephemere: bool = args.ephemere;
+    // let _ephemere: bool = args.ephemere;
 
-    // for the deduction tree
-    let deduction_tree = false;
-
-    match args.task {
-        Task::INIT => {
-            // to initialize the database you need tbox items
-            if path_tbox_op.is_none() {
-                println!("you must provide a tbox file to initialize the database");
-                std::process::exit(exitcode::USAGE);
-            } else {
-                // get info from the tbox file
-                let path_tbox = path_tbox_op.unwrap().to_str().unwrap().to_string();
-                let tb_ft = get_filetype(&path_tbox);
-                let tb_name = parse_name_from_filename(&path_tbox);
-
-                // create a new ontology
-                let mut onto = Ontology_DLlite::new(String::from(tb_name));
-
-                // get symbols from a symbols file if specified else from the tbox file
-                match path_symbols_op {
-                    Some(path_symbols) => {
-                        let path_symbols = path_symbols.to_str().unwrap();
-                        let symbols_ft = get_filetype(path_symbols);
-
-                        onto.add_symbols_from_file(path_symbols, symbols_ft, verbose);
-                    }
-                    Option::None => {
-                        if verbose {
-                            // what is this ??
-                            // println!("here: {:?} and {:?}", &path_tbox, &tb_ft);
-                        }
-
-                        onto.add_symbols_from_file(&path_tbox, tb_ft, verbose);
-                    }
-                }
-
-                // add tbis and complete the tbox
-                onto.add_tbis_from_file(&path_tbox, tb_ft, verbose);
-                onto.auto_complete(deduction_tree, verbose);
-
-                // create db name
-                let mut path_to_db = match path_db_op {
-                    Option::None => String::from(tb_name),
-                    Some(pdb) => String::from(pdb.to_str().unwrap()),
-                };
-                // let mut path_to_db = String::from(tb_name);
-                path_to_db.push_str(".db");
-
-                // attempt to connect
-                let conn = connect_to_db(&path_to_db, verbose);
-
-                // populate
-                onto.populate_db(&conn, verbose);
-            }
-        }
-        Task::CTB => {
+    // now do what you are ask
+    match task {
+        Task::VERTB | Task::GENCONTB | Task::CTB => {
             if path_tbox_op.is_none() {
                 println!("you must provide a tbox file to complete");
                 std::process::exit(exitcode::USAGE);
             } else {
+                // get the information from the file: name and bla bla
                 let path_tbox = path_tbox_op.unwrap().to_str().unwrap().to_string();
                 let tb_ft = get_filetype(&path_tbox);
                 let tb_name = parse_name_from_filename(&path_tbox);
 
-                // let path_output_op = args.path_output;
-                // let path_symbols_op = args.path_symbols;
-
+                // create a temporal ontology
                 let mut onto = Ontology_DLlite::new(String::from(tb_name));
 
+                // get symbols from this file if possible
                 match path_symbols_op {
                     Some(path_symbols) => {
                         let path_symbols = path_symbols.to_str().unwrap();
@@ -110,104 +66,167 @@ fn main() {
                         onto.add_symbols_from_file(path_symbols, symbols_ft, args.verbose);
                     }
                     Option::None => {
-                        // println!("here: {:?} and {:?}", &path_tbox, &tb_ft);
+                        // else add from the tbox file
                         onto.add_symbols_from_file(&path_tbox, tb_ft, args.verbose);
                     }
                 }
 
-                if verbose {
-                    println!("attempting to add tbox items and complete");
-                }
-
+                // now add tbis from the tbox file
                 onto.add_tbis_from_file(&path_tbox, tb_ft, verbose);
-                onto.auto_complete(deduction_tree, verbose);
 
-                match path_output_op {
-                    Some(path_output) => {
-                        onto.tbox_to_file(path_output.to_str().unwrap(), FileType::NATIVE, true);
-                    }
-                    Option::None => {
-                        let mut s = String::new();
-                        let formatted = format!(
-                            "----<TBox>\n{}\n",
-                            &onto.tbox_to_string(&onto.tbox(), false)
-                        );
-                        s.push_str(formatted.as_str());
+                match task {
+                    Task::VERTB => {
+                        let deduction_tree = false;
+                        let new_tb = onto.complete_tbox(deduction_tree, verbose);
 
-                        println!("{}", s);
+                        let mut contradictions: Vec<&TBI_DLlite> = Vec::new();
+
+                        for tbi in new_tb.items() {
+                            if tbi.is_contradiction() && !tbi.is_trivial() {
+                                contradictions.push(tbi);
+                            }
+                        }
+
+                        match contradictions.len() {
+                            0 => println!(
+                                " -- no contradictions nor possible contradictions were found"
+                            ),
+                            _ => {
+                                println!(" -- possible contradictions were found");
+
+                                // show contradictions
+                                let question_print = "Do you want to see them?".to_string();
+
+                                let print_output = Question::new(&question_print)
+                                    .default(Answer::YES)
+                                    .show_defaults()
+                                    .confirm();
+
+                                if print_output == Answer::YES {
+                                    let mut current_tbi_op: Option<String>;
+
+                                    println!("{{");
+
+                                    for tbi in contradictions {
+                                        current_tbi_op = tbi_to_string(tbi, onto.symbols());
+
+                                        if current_tbi_op.is_some() {
+                                            println!("  {},", &(current_tbi_op.unwrap()));
+                                        } else {
+                                            println!("  passing,");
+                                        }
+                                    }
+
+                                    println!("}}");
+                                }
+
+                                // now ask if they want to see the tree for the contradictions
+                                let question_print = "Do you want unravel for conflicts?".to_string();
+
+                                let print_output = Question::new(&question_print)
+                                    .default(Answer::YES)
+                                    .show_defaults()
+                                    .confirm();
+
+                                if print_output == Answer::YES {
+                                    println!("i will unravel for you !!!");
+                                    let new_tb = onto.complete_tbox(deduction_tree, verbose);
+
+
+                                }
+
+                            }
+                        }
                     }
+                    Task::GENCONTB => {
+                        // complete by deduction
+                        let deduction_tree = true;
+                        let new_tb = onto.complete_tbox(deduction_tree, verbose);
+
+                        let pretty_string = create_string_for_gencontb(&new_tb, onto.symbols(), verbose);
+
+                        println!("{}", &pretty_string);
+
+                        // consequences to file if presented
+                        match path_output_op {
+                            Some(path_output) => {
+                                let filename = path_output.to_str().unwrap().to_string();
+
+                                write_str_to_file(&pretty_string, &filename);
+                            }
+                            Option::None => (),
+                        }
+                    }
+                    Task::CTB => {
+                        // deduction tree is activated only in generate consequence tree mode
+                        let deduction_tree = false;
+
+                        let new_tb = onto.complete_tbox(deduction_tree, verbose);
+
+                        let question_print = "Do you want to see the output".to_string();
+                        let print_output = Question::new(&question_print)
+                            .default(Answer::YES)
+                            .show_defaults()
+                            .confirm();
+
+                        if print_output == Answer::YES {
+                            let dont_write_trivial = true;
+                            let new_tb_as_string = onto.tbox_to_string(&new_tb, dont_write_trivial);
+
+                            println!(" -- <TBox>\n{}", &new_tb_as_string);
+                        }
+
+                        match path_output_op {
+                            Some(path_output) => {
+                                let new_tb_as_string_op = tbox_to_native_string(
+                                    &new_tb,
+                                    onto.symbols(),
+                                    dont_write_trivial,
+                                );
+
+                                match new_tb_as_string_op {
+                                    Option::None => println!("couldn't create output, maybe run with 'verbose' to see more"),
+                                    Some(new_tb_as_string) => {
+                                        let filename = path_output.to_str().unwrap().to_string();
+
+                                        write_str_to_file(&new_tb_as_string, &filename);
+                                    },
+                                }
+                            }
+                            Option::None => (),
+                        }
+                    }
+                    _ => println!("impossible to be here"),
                 }
             }
         }
-        Task::CAB => {
-            if (path_db_op.is_none() && path_tbox_op.is_none()) || path_abox_op.is_none() {
-                println!("you must provide a database or a file containing an ontology, if you don't have a database maybe create one with the 'init' task");
+        Task::VERAB | Task::CAB | Task::GENCONAB | Task::RNKAB => {
+            // some common stuff
+            if (path_tbox_op.is_none()) || path_abox_op.is_none() {
+                println!(
+                    "you must provide a file containing a tbox and a file containing the abox"
+                );
                 std::process::exit(exitcode::USAGE);
             } else {
-                let _isfile = path_tbox_op.is_some();
-                let isdb = path_tbox_op.is_none(); // only use the database if no tbox file is specified
-                let conn = Connection::open_in_memory();
+                // get information for the tbox
+                let path_tbox = path_tbox_op.unwrap().to_str().unwrap().to_string();
+                let onto_name = parse_name_from_filename(&path_tbox);
+                let tb_filetype = get_filetype(&path_tbox);
 
-                let mut conn = match conn {
-                    Err(e) => {
-                        if verbose {
-                            println!("an error ocurred: {}", &e);
-                        }
-                        std::process::exit(exitcode::TEMPFAIL);
-                    }
-                    Ok(c) => c,
-                };
+                let mut onto = Ontology_DLlite::new(onto_name.to_string());
 
-                //the files is always preferred
-                let mut onto: Ontology_DLlite;
+                // add symbols from where you can
+                if path_symbols_op.is_some() {
+                    let path_symbols = path_symbols_op.unwrap().to_str().unwrap().to_string();
+                    let symbols_filetype = get_filetype(&path_symbols);
 
-                if path_tbox_op.is_some() {
-                    let path_tbox = path_tbox_op.unwrap().to_str().unwrap().to_string();
-                    let onto_name = parse_name_from_filename(&path_tbox);
-                    let tb_filetype = get_filetype(&path_tbox);
-
-                    onto = Ontology_DLlite::new(onto_name.to_string());
-
-                    // add symbols
-                    if path_symbols_op.is_some() {
-                        let path_symbols = path_symbols_op.unwrap().to_str().unwrap().to_string();
-                        let symbols_filetype = get_filetype(&path_symbols);
-
-                        onto.add_symbols_from_file(&path_symbols, symbols_filetype, verbose);
-                    } else {
-                        onto.add_symbols_from_file(&path_tbox, tb_filetype, verbose);
-                    }
-
-                    // add tbis
-                    onto.add_tbis_from_file(&path_tbox, tb_filetype, verbose);
+                    onto.add_symbols_from_file(&path_symbols, symbols_filetype, verbose);
                 } else {
-                    // read the database into an ontology
-                    let path_db = path_db_op.clone().unwrap().to_str().unwrap().to_string();
-
-                    // establish connection it should be fine
-                    let conn: Connection;
-                    conn = connect_to_db(&path_db, verbose);
-
-                    // initiate won't add existent aboxes, only symbols and the tbox
-                    let onto_res = Ontology_DLlite::initiate_from_db(&path_db, verbose);
-
-                    onto = match onto_res {
-                        Err(e) => {
-                            println!("an error ocurred: {}", &e);
-                            std::process::exit(exitcode::IOERR);
-                        }
-                        Ok(o) => {
-                            if verbose {
-                                println!(
-                                    "succeed on connection to database: {} with connection: {:?}",
-                                    &path_db, &conn
-                                );
-                            }
-                            o
-                        }
-                    };
+                    onto.add_symbols_from_file(&path_tbox, tb_filetype, verbose);
                 }
-                // up here we defined onto
+
+                // add tbis
+                onto.add_tbis_from_file(&path_tbox, tb_filetype, verbose);
 
                 // path and name of the abox
                 let path_abox = path_abox_op.unwrap().to_str().unwrap().to_string();
@@ -220,120 +239,72 @@ fn main() {
                     std::process::exit(exitcode::USAGE);
                 }
 
-                // real work
-
                 // add abox
                 onto.new_abox_from_file_quantum(&path_abox, ab_ft, verbose);
 
-                if isdb {
-                    let path_db = path_db_op.unwrap().to_str().unwrap().to_string();
-                    conn = connect_to_db(&path_db, verbose);
-
-                    // udpate the new symbols
-                    update_symbols_to_db(onto.symbols(), &conn, verbose);
-
-                    // add this abox to the database if it don't exists
-                    let table_names_res = get_table_names(&conn, verbose);
-                    let ab_table_name_c = format!("{}_abox_concept", &ab_name);
-                    let ab_table_name_r = format!("{}_abox_role", &ab_name);
-
-                    let mut table_exists = false;
-                    match table_names_res {
-                        Ok(v) => {
-                            for s in &v {
-                                table_exists = table_exists
-                                    || s.contains(&ab_table_name_c)
-                                    || s.contains(&ab_table_name_r);
-                            }
-                        }
-                        _ => (),
-                    };
-
-                    // if table exists ask if you want to drop it
-                    if table_exists {
-                        let question_drop_table = format!("ABox {} already exists in database, drop it ? if this is a new abox better change the name and restart", &ab_name);
-                        let drop_table = Question::new(&question_drop_table)
-                            .default(Answer::NO)
-                            .show_defaults()
-                            .confirm();
-
-                        if drop_table == Answer::YES {
-                            println!("dropping abox...");
-
-                            let tb_c = format!("{}_abox_concept", &ab_name);
-                            let tb_r = format!("{}_abox_role", &ab_name);
-                            let tables_to_drop = vec![tb_c.as_str(), tb_r.as_str()];
-
-                            // drop the tables
-                            drop_tables_from_database(&conn, tables_to_drop, verbose);
-                        } else {
-                            println!("aborting");
-                            std::process::exit(exitcode::OK)
-                        }
-                    }
-
-                    // first put the original abox in the database
-                    add_abis_to_db_quantum(
-                        onto.symbols(),
-                        onto.abox().unwrap().items(),
-                        &onto.abox_name(),
-                        &conn,
-                        verbose,
-                    );
-                }
-
                 // we continue with the completion
                 // we continue here after
+                // before completion of abox you need to autocomplete the tbox in onto
+                let deduction_tree = false;
+                onto.auto_complete(deduction_tree, verbose);
+
+                let _option_ref_to_current_abox = onto.abox();
                 let abox_completed_op = onto.complete_abox(verbose);
 
                 match abox_completed_op {
                     Some(abox_completed) => {
-                        //change current abox
-                        onto.new_abox_from_aboxq(abox_completed);
+                        match task {
+                            Task::VERAB => {
+                                //change current abox
+                                let contradictions: Vec<(TBI_DLlite, Vec<ABIQ_DLlite>)> =
+                                    abox_completed.is_inconsistent_detailed(onto.tbox(), verbose);
+                                // let is_abox_consistent = abox_completed.is_inconsistent(onto.tbox(), verbose);
 
-                        if isdb {
-                            add_abis_to_db_quantum(
-                                onto.symbols(),
-                                onto.abox().unwrap().items(),
-                                &onto.abox_name(),
-                                &conn,
-                                verbose,
-                            );
-                        }
+                                match contradictions.len() {
+                                    0 => println!(" -- no contradictions nor possible contradictions were found"),
+                                    _ => {
+                                        println!(" -- possible contradictions were found");
 
-                        match path_output_op {
-                            Some(path_output) => {
-                                let path_as_string = path_output.to_str().unwrap().to_string();
-                                let _abox_completed_name =
-                                    parse_name_from_filename(&path_as_string);
-                                let abox_completed_filetype = get_filetype(&path_as_string);
+                                        // show contradictions
+                                        let question_print = "Do you want to see them".to_string();
 
-                                onto.abox_to_file(&path_as_string, abox_completed_filetype, true);
-                            }
-                            _ => {
-                                let question_print = "Do you want to see the output".to_string();
-                                let print_output = Question::new(&question_print)
-                                    .default(Answer::YES)
-                                    .show_defaults()
-                                    .confirm();
+                                        let print_output = Question::new(&question_print)
+                                            .default(Answer::YES)
+                                            .show_defaults()
+                                            .confirm();
 
-                                if print_output == Answer::YES {
-                                    let abox_as_string =
-                                        onto.abox_to_string_quantum(onto.abox().unwrap());
+                                        if print_output == Answer::YES {
+                                            let _current_tbi_op: Option<String>;
 
-                                    println!("{}", &abox_as_string);
+                                            println!("[");
+
+                                            for tuple in contradictions.iter() {
+                                                let container = tuple.clone();
+
+                                                let v_abiq_s = pretty_print_abiq_conflict((&container.0, &container.1), onto.symbols());
+
+                                                println!("{}", &v_abiq_s);
+                                            }
+
+                                            println!("]");
+                                        }
+                                    },
                                 }
+                            }
+                            Task::CAB => {}
+                            Task::GENCONAB => {}
+                            Task::RNKAB => {}
+                            _ => {
+                                println!("not sure how you arrived here...");
                             }
                         }
                     }
-                    _ => {
+                    Option::None => {
                         println!("the completion output nothing, maybe try to run with '--verbose' to see the errors");
                     }
                 }
             }
         }
-        Task::RNKAB => println!("not implemented"),
-        Task::UNDEFINED => println!("unrecognized task!"),
-        _ => println!("not implemented!"),
+        _ => println!("not implemented for the moment"),
     }
 }
