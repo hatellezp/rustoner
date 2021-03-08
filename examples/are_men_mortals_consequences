@@ -1,0 +1,86 @@
+[
+  level 0: {
+    {
+      tbi: Man < Human
+    },
+    {
+      tbi: Human < Mortal
+    },
+    {
+      tbi: Chicken < Mortal
+    },
+    {
+      tbi: Human < NOT Chicken
+    },
+  },
+  level 1: {
+    {
+      tbi: Chicken < Top
+      impliers: [Chicken < Mortal, ]
+    },
+    {
+      tbi: Bottom < Chicken
+      impliers: [Chicken < Mortal, ]
+    },
+    {
+      tbi: Mortal < Top
+      impliers: [Human < Mortal, ]
+    },
+    {
+      tbi: Bottom < Mortal
+      impliers: [Human < Mortal, ]
+    },
+    {
+      tbi: Human < Top
+      impliers: [Man < Human, ]
+    },
+    {
+      tbi: Man < Top
+      impliers: [Man < Human, ]
+    },
+    {
+      tbi: Bottom < Human
+      impliers: [Man < Human, ]
+    },
+    {
+      tbi: Bottom < Man
+      impliers: [Man < Human, ]
+    },
+    {
+      tbi: Chicken < NOT Human
+      impliers: [Human < NOT Chicken, ]
+    },
+    {
+      tbi: Man < NOT Chicken
+      impliers: [Man < Human, Human < NOT Chicken, ]
+    },
+    {
+      tbi: Man < Mortal
+      impliers: [Man < Human, Human < Mortal, ]
+    },
+  },
+  level 2: {
+    {
+      tbi: Chicken < NOT Man
+      impliers: [Man < NOT Chicken, ]
+    },
+    {
+      tbi: Bottom < NOT Chicken
+      impliers: [Human < NOT Chicken, Bottom < Human, ]
+    },
+    {
+      tbi: Bottom < Top
+      impliers: [Chicken < Top, Bottom < Chicken, ]
+    },
+    {
+      tbi: Bottom < NOT Human
+      impliers: [Bottom < Chicken, Chicken < NOT Human, ]
+    },
+  },
+  level 3: {
+    {
+      tbi: Bottom < NOT Man
+      impliers: [Bottom < Chicken, Chicken < NOT Man, ]
+    },
+  },
+]
