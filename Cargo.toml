@@ -7,8 +7,8 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [[bin]]
-name = "rustoner_old"
-path = "src/main_old.rs"
+name = "rustoner_shiq"
+path = "src/main_shiq.rs"
 
 [[bin]]
 name = "tester"
@@ -16,8 +16,8 @@ path = "src/test.rs"
 
 # this is the good one
 [[bin]]
-name = "rustoner"
-path = "src/main.rs"
+name = "rustoner_dllite"
+path = "src/main_dl_lite.rs"
 
 [dependencies]
 serde = { version = "*", features = ["derive"] }
@@ -27,3 +27,4 @@ paw = "1.0"
 rusqlite = "*"
 exitcode = "*"
 question = "0.2.2"
+quick-xml = { version = "0.22.0", features = ["serialize"] }

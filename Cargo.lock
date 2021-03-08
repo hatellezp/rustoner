@@ -208,6 +208,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "acbb3ede7a8f9a8ab89e714637f2cf40001b58f21340d4242b2f11533e65fa8d"
 
 [[package]]
+name = "quick-xml"
+version = "0.22.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8533f14c8382aaad0d592c812ac3b826162128b65662331e1127b45c3d18536b"
+dependencies = [
+ "memchr",
+ "serde",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -238,6 +248,7 @@ dependencies = [
  "exitcode",
  "paw",
  "question",
+ "quick-xml",
  "rusqlite",
  "serde",
  "serde_json",
