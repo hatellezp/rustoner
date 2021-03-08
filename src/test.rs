@@ -1,44 +1,30 @@
-mod dl_lite;
 mod interface;
 mod kb;
-
+mod shiq;
+mod dl_lite;
 // for cli interface
+use std::path::PathBuf;
+use structopt::StructOpt;
 
 use crate::kb::types::FileType;
 
-use crate::dl_lite::helpers_and_utilities::print_matrix;
-use crate::dl_lite::ontology::Ontology_DLlite;
+use crate::shiq::helpers_and_utilities::print_matrix;
+use crate::shiq::ontology::Ontology_SHIQ;
+
+use crate::shiq::xml_parser::{read_from_filename};
+
+#[derive(Debug, StructOpt)]
+#[structopt(name="example")]
+struct Opt {
+    #[structopt(parse(from_os_str))]
+    input: PathBuf,
+}
 
 fn main() {
-    println!("hello there");
+    let opt = Opt::from_args();
 
-    let verbose = false;
-    let native = FileType::NATIVE;
-    let ontology_file = String::from("ontology2");
-    let abox_file = String::from("abox2_quantum");
+    let p: PathBuf = opt.input;
 
-    let mut onto = Ontology_DLlite::new(ontology_file.clone());
+    read_from_filename(&p);
 
-    onto.add_symbols_from_file(&ontology_file, native, verbose);
-    onto.add_tbis_from_file(&ontology_file, native, verbose);
-    onto.new_abox_from_file_quantum(&abox_file, native, verbose);
-
-    println!("{}", &onto);
-
-    let abox = onto.abox().unwrap();
-    let tbox = onto.tbox();
-    let abq = abox.clone();
-
-    let abox_completed = (&abox).complete(tbox, false);
-
-    // println!("{}", &abox_completed);
-
-    onto.add_abis_from_abox(&abox_completed);
-
-    let (ma, rtv, vtr) = onto.conflict_matrix(&abq, true);
-
-    print_matrix(ma);
-    // println!("{}", &onto);
-
-    println!("rtv: {:?}\nvtr: {:?}", &rtv, &vtr);
 }

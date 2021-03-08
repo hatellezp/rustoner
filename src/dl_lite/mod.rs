@@ -12,3 +12,4 @@ pub mod sqlite_structs;
 pub mod string_formatter;
 pub mod tbox;
 pub mod tbox_item;
+pub mod xml_parser;
