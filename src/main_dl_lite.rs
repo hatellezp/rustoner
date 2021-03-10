@@ -6,15 +6,20 @@ mod kb;
 use structopt::StructOpt;
 
 // from kb
-use crate::kb::knowledge_base::{TBoxItem, TBox};
+use crate::kb::knowledge_base::{ABox, SymbolDict, TBox, TBoxItem};
+use crate::kb::types::FileType;
 
 // from the dl_lite module
 use crate::dl_lite::ontology::Ontology_DLlite;
 
+use crate::dl_lite::abox::ABQ_DLlite;
 use crate::dl_lite::abox_item_quantum::ABIQ_DLlite;
-
 use crate::dl_lite::native_filetype_utilities::tbox_to_native_string;
-use crate::dl_lite::string_formatter::{pretty_print_abiq_conflict, tbi_to_string, create_string_for_gencontb};
+use crate::dl_lite::string_formatter::{
+    create_string_for_gencontb, create_string_for_unravel_conflict_abox,
+    create_string_for_unravel_conflict_tbox, pretty_print_abiq_conflict, tbi_to_string,
+};
+use crate::dl_lite::tbox::TB_DLlite;
 use crate::dl_lite::tbox_item::TBI_DLlite;
 
 // from the interface module
@@ -27,9 +32,6 @@ use question::{Answer, Question};
 
 // the main function
 pub fn main() {
-    // to avoid trivial tbi written to file
-    let dont_write_trivial = true;
-
     let args = Cli::from_args();
 
     // get all arguments regardless of the task
@@ -40,28 +42,55 @@ pub fn main() {
     let path_symbols_op: Option<std::path::PathBuf> = args.path_symbols;
     let path_output_op: Option<std::path::PathBuf> = args.path_output;
     let verbose: bool = args.verbose;
+    let silent: bool = args.silent;
     // let _ephemere: bool = args.ephemere;
+
+    // ---------------------------------
+    // this are variables used in several places
+
+    // to avoid trivial tbi written to file
+    let _dont_write_trivial = true;
+
+    // whenever we need a pretty string
+    let mut pretty_string: String;
+
+    // moving tb
+    let mut new_tb: TB_DLlite;
+
+    // symbols:
+    let symbols: &SymbolDict;
+
+    // for the deduction tree
+    let mut deduction_tree = false;
+
+    let path_tbox: String;
+    let tb_ft: FileType;
+    let tb_name: &str;
+    let mut onto: Ontology_DLlite;
+    let symbols_ft: FileType;
+    let only_conflicts: bool;
+    let dont_write_trivial: bool;
 
     // now do what you are ask
     match task {
         Task::VERTB | Task::GENCONTB | Task::CTB => {
             if path_tbox_op.is_none() {
-                println!("you must provide a tbox file to complete");
+                println!("ERROR: you must provide a tbox file");
                 std::process::exit(exitcode::USAGE);
             } else {
                 // get the information from the file: name and bla bla
-                let path_tbox = path_tbox_op.unwrap().to_str().unwrap().to_string();
-                let tb_ft = get_filetype(&path_tbox);
-                let tb_name = parse_name_from_filename(&path_tbox);
+                path_tbox = path_tbox_op.unwrap().to_str().unwrap().to_string();
+                tb_ft = get_filetype(&path_tbox);
+                tb_name = parse_name_from_filename(&path_tbox);
 
                 // create a temporal ontology
-                let mut onto = Ontology_DLlite::new(String::from(tb_name));
+                onto = Ontology_DLlite::new(String::from(tb_name));
 
                 // get symbols from this file if possible
                 match path_symbols_op {
                     Some(path_symbols) => {
                         let path_symbols = path_symbols.to_str().unwrap();
-                        let symbols_ft = get_filetype(path_symbols);
+                        symbols_ft = get_filetype(path_symbols);
 
                         onto.add_symbols_from_file(path_symbols, symbols_ft, args.verbose);
                     }
@@ -74,10 +103,12 @@ pub fn main() {
                 // now add tbis from the tbox file
                 onto.add_tbis_from_file(&path_tbox, tb_ft, verbose);
 
+                // here we bound symbols
+                symbols = onto.symbols();
+
                 match task {
                     Task::VERTB => {
-                        let deduction_tree = false;
-                        let new_tb = onto.complete_tbox(deduction_tree, verbose);
+                        new_tb = onto.complete_tbox(deduction_tree, verbose);
 
                         let mut contradictions: Vec<&TBI_DLlite> = Vec::new();
 
@@ -88,40 +119,47 @@ pub fn main() {
                         }
 
                         match contradictions.len() {
-                            0 => println!(
-                                " -- no contradictions nor possible contradictions were found"
-                            ),
+                            0 => {
+                                println!(
+                                    " -- no contradictions nor possible contradictions were found"
+                                );
+                                std::process::exit(exitcode::OK);
+                            }
                             _ => {
                                 println!(" -- possible contradictions were found");
 
-                                // show contradictions
-                                let question_print = "Do you want to see them?".to_string();
+                                if !silent {
+                                    // show contradictions
+                                    let question_print =
+                                        " -- do you want to see the contradictions?".to_string();
 
-                                let print_output = Question::new(&question_print)
-                                    .default(Answer::YES)
-                                    .show_defaults()
-                                    .confirm();
+                                    let print_output = Question::new(&question_print)
+                                        .default(Answer::YES)
+                                        .show_defaults()
+                                        .confirm();
 
-                                if print_output == Answer::YES {
-                                    let mut current_tbi_op: Option<String>;
+                                    if print_output == Answer::YES {
+                                        let mut current_tbi_op: Option<String>;
 
-                                    println!("{{");
+                                        println!("{{");
 
-                                    for tbi in contradictions {
-                                        current_tbi_op = tbi_to_string(tbi, onto.symbols());
+                                        for tbi in contradictions {
+                                            current_tbi_op = tbi_to_string(tbi, symbols);
 
-                                        if current_tbi_op.is_some() {
-                                            println!("  {},", &(current_tbi_op.unwrap()));
-                                        } else {
-                                            println!("  passing,");
+                                            if current_tbi_op.is_some() {
+                                                println!("  {},", &(current_tbi_op.unwrap()));
+                                            } else {
+                                                println!("  passing,");
+                                            }
                                         }
-                                    }
 
-                                    println!("}}");
+                                        println!("}}");
+                                    }
                                 }
 
                                 // now ask if they want to see the tree for the contradictions
-                                let question_print = "Do you want unravel for conflicts?".to_string();
+                                let question_print =
+                                    " -- do you want unravel for conflicts?".to_string();
 
                                 let print_output = Question::new(&question_print)
                                     .default(Answer::YES)
@@ -129,23 +167,50 @@ pub fn main() {
                                     .confirm();
 
                                 if print_output == Answer::YES {
-                                    println!("i will unravel for you !!!");
-                                    let new_tb = onto.complete_tbox(deduction_tree, verbose);
+                                    deduction_tree = true;
+                                    new_tb = onto.complete_tbox(deduction_tree, verbose);
+                                    only_conflicts = true;
+                                    pretty_string = create_string_for_unravel_conflict_tbox(
+                                        &new_tb,
+                                        symbols,
+                                        only_conflicts,
+                                    );
 
+                                    if !silent {
+                                        println!("{}", &pretty_string);
+                                    }
 
+                                    // don't forget to copy to file if output is specified
+
+                                    match path_output_op {
+                                        Some(path_output) => {
+                                            let filename =
+                                                path_output.to_str().unwrap().to_string();
+                                            write_str_to_file(&pretty_string, &filename);
+
+                                            std::process::exit(exitcode::OK);
+                                        }
+                                        Option::None => std::process::exit(exitcode::OK),
+                                    }
                                 }
-
                             }
                         }
                     }
                     Task::GENCONTB => {
                         // complete by deduction
-                        let deduction_tree = true;
-                        let new_tb = onto.complete_tbox(deduction_tree, verbose);
+                        deduction_tree = true;
+                        dont_write_trivial = true;
+                        new_tb = onto.complete_tbox(deduction_tree, verbose);
+                        pretty_string = create_string_for_gencontb(
+                            &new_tb,
+                            symbols,
+                            dont_write_trivial,
+                            verbose,
+                        );
 
-                        let pretty_string = create_string_for_gencontb(&new_tb, onto.symbols(), verbose);
-
-                        println!("{}", &pretty_string);
+                        if !silent {
+                            println!("{}", &pretty_string);
+                        }
 
                         // consequences to file if presented
                         match path_output_op {
@@ -159,33 +224,33 @@ pub fn main() {
                     }
                     Task::CTB => {
                         // deduction tree is activated only in generate consequence tree mode
-                        let deduction_tree = false;
+                        deduction_tree = false;
+                        dont_write_trivial = true;
 
-                        let new_tb = onto.complete_tbox(deduction_tree, verbose);
+                        new_tb = onto.complete_tbox(deduction_tree, verbose);
 
-                        let question_print = "Do you want to see the output".to_string();
-                        let print_output = Question::new(&question_print)
-                            .default(Answer::YES)
-                            .show_defaults()
-                            .confirm();
+                        if !silent {
+                            let question_print = " -- do you want to see the output?".to_string();
+                            let print_output = Question::new(&question_print)
+                                .default(Answer::YES)
+                                .show_defaults()
+                                .confirm();
 
-                        if print_output == Answer::YES {
-                            let dont_write_trivial = true;
-                            let new_tb_as_string = onto.tbox_to_string(&new_tb, dont_write_trivial);
+                            if print_output == Answer::YES {
+                                let new_tb_as_string =
+                                    onto.tbox_to_string(&new_tb, dont_write_trivial);
 
-                            println!(" -- <TBox>\n{}", &new_tb_as_string);
+                                println!(" -- <TBox>\n{}", &new_tb_as_string);
+                            }
                         }
 
                         match path_output_op {
                             Some(path_output) => {
-                                let new_tb_as_string_op = tbox_to_native_string(
-                                    &new_tb,
-                                    onto.symbols(),
-                                    dont_write_trivial,
-                                );
+                                let new_tb_as_string_op =
+                                    tbox_to_native_string(&new_tb, symbols, dont_write_trivial);
 
                                 match new_tb_as_string_op {
-                                    Option::None => println!("couldn't create output, maybe run with 'verbose' to see more"),
+                                    Option::None => println!("ERROR: couldn't create output, maybe run with 'verbose' to see more"),
                                     Some(new_tb_as_string) => {
                                         let filename = path_output.to_str().unwrap().to_string();
 
@@ -200,14 +265,16 @@ pub fn main() {
                 }
             }
         }
-        Task::VERAB | Task::CAB | Task::GENCONAB | Task::RNKAB => {
+        Task::VERAB | Task::CLEANAB | Task::CAB | Task::GENCONAB | Task::RNKAB => {
             // some common stuff
             if (path_tbox_op.is_none()) || path_abox_op.is_none() {
                 println!(
-                    "you must provide a file containing a tbox and a file containing the abox"
+                    "ERROR: you must provide a file containing a tbox and a file containing the abox"
                 );
                 std::process::exit(exitcode::USAGE);
             } else {
+                println!(" -- be sure to have an abox without self conflicting facts before going further, you can use the 'cleanab' task for this");
+
                 // get information for the tbox
                 let path_tbox = path_tbox_op.unwrap().to_str().unwrap().to_string();
                 let onto_name = parse_name_from_filename(&path_tbox);
@@ -235,7 +302,7 @@ pub fn main() {
 
                 // reserved name
                 if ab_name == "temp_abox" {
-                    println!("the name 'temp_abox' is reserved, please use another one");
+                    println!("ERROR: the name 'temp_abox' is reserved, please use another one");
                     std::process::exit(exitcode::USAGE);
                 }
 
@@ -243,13 +310,14 @@ pub fn main() {
                 onto.new_abox_from_file_quantum(&path_abox, ab_ft, verbose);
 
                 // we continue with the completion
-                // we continue here after
                 // before completion of abox you need to autocomplete the tbox in onto
-                let deduction_tree = false;
-                onto.auto_complete(deduction_tree, verbose);
+                deduction_tree = true;
+                new_tb = onto.complete_tbox(false, verbose); // I put false here because I only need deduction for abox
+                onto.add_tbis_from_vec(new_tb.items()); // add what you don't have
 
-                let _option_ref_to_current_abox = onto.abox();
-                let abox_completed_op = onto.complete_abox(verbose);
+                let abox_completed_op = onto.complete_abox(deduction_tree, verbose);
+
+                symbols = onto.symbols();
 
                 match abox_completed_op {
                     Some(abox_completed) => {
@@ -261,12 +329,43 @@ pub fn main() {
                                 // let is_abox_consistent = abox_completed.is_inconsistent(onto.tbox(), verbose);
 
                                 match contradictions.len() {
-                                    0 => println!(" -- no contradictions nor possible contradictions were found"),
+                                    0 => println!(" -- no contradictions  were found"),
                                     _ => {
-                                        println!(" -- possible contradictions were found");
+                                        println!(" -- contradictions were found");
 
-                                        // show contradictions
-                                        let question_print = "Do you want to see them".to_string();
+                                        if !silent {
+                                            // show contradictions
+                                            let question_print =
+                                                " -- do you want to see them".to_string();
+
+                                            let print_output = Question::new(&question_print)
+                                                .default(Answer::YES)
+                                                .show_defaults()
+                                                .confirm();
+
+                                            if print_output == Answer::YES {
+                                                let _current_tbi_op: Option<String>;
+
+                                                println!("[");
+
+                                                for tuple in contradictions.iter() {
+                                                    let container = tuple.clone();
+
+                                                    let v_abiq_s = pretty_print_abiq_conflict(
+                                                        (&container.0, &container.1),
+                                                        symbols,
+                                                    );
+
+                                                    println!("{}", &v_abiq_s);
+                                                }
+
+                                                println!("]");
+                                            }
+                                        }
+
+                                        // now unravel for conflicts
+                                        let question_print =
+                                            " -- do you want unravel for conflicts?".to_string();
 
                                         let print_output = Question::new(&question_print)
                                             .default(Answer::YES)
@@ -274,24 +373,164 @@ pub fn main() {
                                             .confirm();
 
                                         if print_output == Answer::YES {
-                                            let _current_tbi_op: Option<String>;
+                                            only_conflicts = true;
+                                            pretty_string = create_string_for_unravel_conflict_abox(
+                                                &new_tb,
+                                                &abox_completed,
+                                                symbols,
+                                                only_conflicts,
+                                                &contradictions,
+                                            );
 
-                                            println!("[");
-
-                                            for tuple in contradictions.iter() {
-                                                let container = tuple.clone();
-
-                                                let v_abiq_s = pretty_print_abiq_conflict((&container.0, &container.1), onto.symbols());
-
-                                                println!("{}", &v_abiq_s);
+                                            if !silent {
+                                                println!("{}", &pretty_string);
+                                                println!(" -- if you see that one sole element might be sprouting conflicts, use the 'cleanab' task to clean the abox from self conflicting facts");
                                             }
 
-                                            println!("]");
+                                            // don't forget to copy to file if output is specified
+
+                                            match path_output_op {
+                                                Some(path_output) => {
+                                                    let filename =
+                                                        path_output.to_str().unwrap().to_string();
+                                                    write_str_to_file(&pretty_string, &filename);
+                                                }
+                                                Option::None => (),
+                                            }
                                         }
-                                    },
+                                    }
                                 }
                             }
-                            Task::CAB => {}
+                            Task::CLEANAB => {
+                                let clean_name = "clean";
+                                let dirty_name = "dirty";
+                                let mut clean_ab = ABQ_DLlite::new(clean_name);
+                                let mut dirty_ab = ABQ_DLlite::new(dirty_name);
+
+                                let orig_ab_op = onto.abox();
+
+                                match orig_ab_op {
+                                    Option::None => {
+                                        println!("ERROR: the original abox is not present, maybe run with 'verbose' for more information");
+                                        std::process::exit(exitcode::DATAERR);
+                                    }
+                                    Some(orig_ab) => {
+                                        let mut is_self_conflict: bool;
+
+                                        // remember that onto has the completed tbox
+                                        for abiq in orig_ab.items() {
+                                            is_self_conflict =
+                                                ABQ_DLlite::abiq_is_self_contradicting(
+                                                    abiq,
+                                                    onto.tbox(),
+                                                );
+
+                                            if is_self_conflict {
+                                                dirty_ab.add(abiq.clone());
+                                            } else {
+                                                clean_ab.add(abiq.clone());
+                                            }
+                                        }
+
+                                        let clean_is_empty = clean_ab.is_empty();
+                                        let dirty_is_empty = dirty_ab.is_empty();
+
+                                        if !silent {
+                                            if !clean_is_empty {
+                                                println!(" -- clean abox:");
+                                                pretty_string =
+                                                    onto.abox_to_string_quantum(&clean_ab);
+                                                println!("{}", &pretty_string);
+                                            } else {
+                                                println!(
+                                                    " -- all elements seems to be self conflicting"
+                                                );
+                                            }
+
+                                            if !dirty_is_empty {
+                                                println!(" -- dirty abox:");
+                                                pretty_string =
+                                                    onto.abox_to_string_quantum(&dirty_ab);
+                                                println!("{}", &pretty_string);
+                                            } else {
+                                                println!(" -- seems that no self conflicting facts where found");
+                                            }
+                                        }
+
+                                        // now write to file
+                                        let clean_name = format!("{}_{}", &ab_name, clean_name);
+                                        let dirty_name = format!("{}_{}", &ab_name, dirty_name);
+                                        dont_write_trivial = true;
+
+                                        // write to both files
+                                        if !clean_is_empty {
+                                            onto.abox_to_file(
+                                                &clean_name,
+                                                FileType::NATIVE,
+                                                dont_write_trivial,
+                                            );
+
+                                            if !silent {
+                                                println!(" -- wrote clean abox to {}", &clean_name);
+                                            }
+                                        } else {
+                                            if !silent {
+                                                println!(" -- no clean abox was written, as there is nothing to wrote");
+                                            }
+                                        }
+
+                                        if !dirty_is_empty {
+                                            onto.abox_to_file(
+                                                &dirty_name,
+                                                FileType::NATIVE,
+                                                dont_write_trivial,
+                                            );
+
+                                            if !silent {
+                                                println!(
+                                                    " -- wrote dirty elements to {}",
+                                                    &dirty_name
+                                                );
+                                            }
+                                        } else {
+                                            if !silent {
+                                                println!(
+                                                    " -- no dirty element found to be written"
+                                                );
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            Task::CAB => {
+                                let abox_completed_string =
+                                    onto.abox_to_string_quantum(&abox_completed);
+
+                                if !silent {
+                                    println!(" -- abox:\n");
+                                    println!("{}", &abox_completed_string);
+                                }
+
+                                match path_output_op {
+                                    Some(path_output) => {
+                                        let filename = path_output.to_str().unwrap().to_string();
+                                        dont_write_trivial = true;
+
+                                        // add the abis
+                                        onto.add_abis_from_abox(&abox_completed);
+                                        onto.abox_to_file(
+                                            &filename,
+                                            FileType::NATIVE,
+                                            dont_write_trivial,
+                                        );
+
+                                        if !silent {
+                                            println!(" -- abox written to {}", &filename);
+                                        }
+                                    }
+                                    Option::None => (),
+                                }
+                            }
                             Task::GENCONAB => {}
                             Task::RNKAB => {}
                             _ => {
@@ -300,11 +539,11 @@ pub fn main() {
                         }
                     }
                     Option::None => {
-                        println!("the completion output nothing, maybe try to run with '--verbose' to see the errors");
+                        println!("WARNING: could not create abox, maybe try to run with '--verbose' to see the errors");
                     }
                 }
             }
         }
-        _ => println!("not implemented for the moment"),
+        _ => println!("NOT IMPLEMENTED"),
     }
 }

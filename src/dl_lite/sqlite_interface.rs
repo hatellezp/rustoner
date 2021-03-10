@@ -1,13 +1,13 @@
-use std::collections::HashMap;
-
-use rusqlite::{Connection, NO_PARAMS, Result};
+use rusqlite::{Connection, Result, NO_PARAMS};
 
 use crate::dl_lite::abox::ABQ_DLlite;
 use crate::dl_lite::abox_item::ABI_DLlite;
 use crate::dl_lite::abox_item_quantum::ABIQ_DLlite;
 use crate::dl_lite::native_filetype_utilities::find_bound_of_symbols;
 use crate::dl_lite::node::Node_DLlite;
-use crate::dl_lite::sqlite_structs::{AboxQItemCDb, AboxQItemRDb, NodeDb, SymbolDb, TableDb, TboxItemDb};
+use crate::dl_lite::sqlite_structs::{
+    AboxQItemCDb, AboxQItemRDb, NodeDb, SymbolDb, TableDb, TboxItemDb,
+};
 use crate::dl_lite::string_formatter::{node_to_string, string_to_abiq, string_to_tbi};
 use crate::dl_lite::tbox::TB_DLlite;
 use crate::dl_lite::tbox_item::TBI_DLlite;
@@ -171,11 +171,7 @@ pub fn add_symbol_to_db(symbol: (&String, &(usize, DLType)), conn: &Connection, 
     }
 }
 
-pub fn add_symbols_to_db(
-    symbols: &SymbolDict,
-    conn: &Connection,
-    verbose: bool,
-) {
+pub fn add_symbols_to_db(symbols: &SymbolDict, conn: &Connection, verbose: bool) {
     for symbol in symbols {
         add_symbol_to_db(symbol, conn, verbose);
     }
@@ -192,12 +188,7 @@ pub fn add_nodes_to_db(
     }
 }
 
-pub fn add_node_to_db(
-    symbols: &SymbolDict,
-    node: &Node_DLlite,
-    conn: &Connection,
-    verbose: bool,
-) {
+pub fn add_node_to_db(symbols: &SymbolDict, node: &Node_DLlite, conn: &Connection, verbose: bool) {
     let node_string_op = node_to_string(node, symbols, String::from(""));
 
     match node_string_op {
@@ -277,12 +268,7 @@ pub fn get_node_from_db(
         }
     }
 }
-pub fn add_tbi_to_db(
-    symbols: &SymbolDict,
-    tbi: &TBI_DLlite,
-    conn: &Connection,
-    verbose: bool,
-) {
+pub fn add_tbi_to_db(symbols: &SymbolDict, tbi: &TBI_DLlite, conn: &Connection, verbose: bool) {
     add_node_to_db(symbols, tbi.lside(), conn, verbose);
     add_node_to_db(symbols, tbi.rside(), conn, verbose);
 
@@ -452,11 +438,7 @@ pub fn add_tbis_from_db(
 }
 
 // TODO: maybe more information in these functions that work with the database
-pub fn update_symbols_to_db(
-    symbols: &SymbolDict,
-    conn: &Connection,
-    verbose: bool,
-) {
+pub fn update_symbols_to_db(symbols: &SymbolDict, conn: &Connection, verbose: bool) {
     for symbol in symbols {
         add_symbol_to_db(symbol, conn, verbose);
     }

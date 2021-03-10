@@ -1,14 +1,14 @@
 use std::fmt;
 
 use crate::dl_lite::node::Node_DLlite;
-use crate::kb::knowledge_base::AbRule;
 use crate::dl_lite::tbox_item::TBI_DLlite;
+use crate::kb::knowledge_base::{AbRule, Implier, TBoxItem};
 
-use crate::dl_lite::abox_item::{Side, ABI_DLlite};
+use crate::dl_lite::abox_item::{ABI_DLlite, Side};
+use crate::kb::knowledge_base::ABoxItem;
 use crate::kb::types::DLType;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
-use crate::kb::knowledge_base::ABoxItem;
 
 /*
    remember that only base roles and base concepts are allowed here !!
@@ -18,6 +18,8 @@ pub struct ABIQ_DLlite {
     abi: ABI_DLlite, // role or concept assertion
     prevalue: f64,
     value: Option<f64>,
+    level: usize,
+    impliers: Vec<(Vec<TBI_DLlite>, Vec<ABIQ_DLlite>)>,
 }
 
 impl Eq for ABIQ_DLlite {}
@@ -47,13 +49,86 @@ impl Ord for ABIQ_DLlite {
     }
 }
 
+impl Implier for ABIQ_DLlite {
+    type Imp = (Vec<TBI_DLlite>, Vec<ABIQ_DLlite>);
+
+    fn implied_by(&self) -> &Vec<(Vec<TBI_DLlite>, Vec<ABIQ_DLlite>)> {
+        &self.impliers
+    }
+
+    fn add_to_implied_by(&mut self, implier: (Vec<TBI_DLlite>, Vec<ABIQ_DLlite>)) {
+        let mut tb = implier.0;
+        let mut ab = implier.1;
+
+        // sorting always needed
+        tb.sort();
+        ab.sort();
+        let implier = (tb, ab);
+
+        let contains = self.contains_implier(&implier);
+
+        match contains {
+            Option::Some(Ordering::Less) => {
+                let mut cmpd: Option<Ordering>;
+                let mut inner_implier: &(Vec<TBI_DLlite>, Vec<ABIQ_DLlite>);
+                let lenght: usize = self.impliers.len();
+
+                for index in 0..lenght {
+                    inner_implier = &self.impliers.get(index).unwrap();
+                    cmpd = Self::cmp_imp(&implier, inner_implier);
+
+                    match cmpd {
+                        Option::Some(Ordering::Less) => {
+                            self.impliers[index] = implier;
+                            break; // rust is very smart, told me that value was being used in future iteration, so I put a break right here
+                        }
+                        _ => (),
+                    }
+                }
+            }
+            Option::None => self.impliers.push(implier),
+            Option::Some(Ordering::Equal) | Option::Some(Ordering::Greater) => (),
+        }
+    }
+
+    fn cmp_imp(imp1: &Self::Imp, imp2: &Self::Imp) -> Option<Ordering> {
+        let tb1 = &imp1.0;
+        let tb2 = &imp2.0;
+        let ab1 = &imp1.1;
+        let ab2 = &imp2.1;
+
+        let tb_cmp = TBI_DLlite::cmp_imp(tb1, tb2);
+        let ab_cmp = ABIQ_DLlite::compare_two_vectors(ab1, ab2);
+
+        match (tb_cmp, ab_cmp) {
+            (Option::None, _) => Option::None,
+            (_, Option::None) => Option::None,
+            (Some(Ordering::Less), Some(Ordering::Less))
+            | (Some(Ordering::Less), Some(Ordering::Equal)) => Some(Ordering::Less),
+            (Some(Ordering::Greater), Some(Ordering::Greater))
+            | (Some(Ordering::Greater), Some(Ordering::Equal)) => Some(Ordering::Greater),
+            (Some(Ordering::Equal), Some(Ordering::Equal)) => Some(Ordering::Equal),
+            (Some(Ordering::Equal), Some(Ordering::Less)) => Some(Ordering::Less),
+            (Some(Ordering::Equal), Some(Ordering::Greater)) => Some(Ordering::Greater),
+            (Some(Ordering::Less), Some(Ordering::Greater))
+            | (Some(Ordering::Greater), Some(Ordering::Less)) => {
+                // this needs more analysis
+                // a theoretical one I mean
+                Option::None
+            }
+        }
+    }
+}
+
 impl ABoxItem for ABIQ_DLlite {
     type NodeItem = Node_DLlite;
+    type TBI = TBI_DLlite;
 
     fn negate(&self) -> Self {
         let abi_neg = self.abi.negate();
 
-        ABIQ_DLlite::new(abi_neg, Some(self.prevalue), self.value)
+        // really dangerous here
+        ABIQ_DLlite::new(abi_neg, Some(self.prevalue), self.value, self.level + 1)
     }
 
     fn t(&self) -> DLType {
@@ -75,16 +150,25 @@ this will allow for finding that 'a doesn't belong to A'
  */
 
 impl ABIQ_DLlite {
-    pub fn new(abi: ABI_DLlite, prevalue: Option<f64>, value: Option<f64>) -> ABIQ_DLlite {
+    pub fn new(
+        abi: ABI_DLlite,
+        prevalue: Option<f64>,
+        value: Option<f64>,
+        level: usize,
+    ) -> ABIQ_DLlite {
         let prevalue = match prevalue {
             Some(pv) => pv,
             _ => 1.0,
         };
 
+        let impliers: Vec<(Vec<TBI_DLlite>, Vec<ABIQ_DLlite>)> = Vec::new();
+
         ABIQ_DLlite {
             abi,
             prevalue,
             value,
+            level,
+            impliers,
         }
     }
 
@@ -100,12 +184,15 @@ impl ABIQ_DLlite {
         self.value
     }
 
+    pub fn level(&self) -> usize {
+        self.level
+    }
+
     pub fn is_trivial(&self) -> bool {
         self.abi.is_trivial()
     }
 
     // reference to the concept or role in the abox_item
-
 
     pub fn nominal(&self, position: usize) -> Option<&Node_DLlite> {
         self.abi.nominal(position)
@@ -126,10 +213,15 @@ impl ABIQ_DLlite {
     }
 
     // pub fn apply_two(one: &ABIQ, two: &ABIQ, tbox: &TB) -> Option<Vec<ABIQ>> {}
-    pub fn apply_rule(abiqs: Vec<&ABIQ_DLlite>, tbis: Vec<&TBI_DLlite>, rule: &AbRule<TBI_DLlite, ABIQ_DLlite>) -> Option<Vec<ABIQ_DLlite>> {
+    pub fn apply_rule(
+        abiqs: Vec<&ABIQ_DLlite>,
+        tbis: Vec<&TBI_DLlite>,
+        rule: &AbRule<TBI_DLlite, ABIQ_DLlite>,
+        deduction_tree: bool,
+    ) -> Option<Vec<ABIQ_DLlite>> {
         let prov_vec = match tbis.len() {
-            1 => rule(abiqs, tbis),
-            2 => rule(abiqs, tbis),
+            1 => rule(abiqs, tbis, deduction_tree),
+            2 => rule(abiqs, tbis, deduction_tree),
             _ => Option::None,
         };
 
@@ -147,5 +239,55 @@ impl ABIQ_DLlite {
 
             Some(final_vec)
         }
+    }
+
+    pub fn compare_two_vectors(v1: &Vec<ABIQ_DLlite>, v2: &Vec<ABIQ_DLlite>) -> Option<Ordering> {
+        let len1 = v1.len();
+        let len2 = v2.len();
+        let mut all_good = true;
+        let mut abiq1: &ABIQ_DLlite;
+        let mut abiq2: &ABIQ_DLlite;
+
+        let (lenght, ordering) = match len1.cmp(&len2) {
+            Ordering::Less => (len1, Ordering::Less),
+            Ordering::Equal => (len1, Ordering::Equal),
+            Ordering::Greater => (len2, Ordering::Greater),
+        };
+
+        for i in 0..lenght {
+            abiq1 = v1.get(i).unwrap();
+            abiq2 = v2.get(i).unwrap();
+
+            all_good = all_good && (abiq1 == abiq2);
+        }
+
+        match all_good {
+            true => Some(ordering),
+            false => Option::None,
+        }
+    }
+
+    // function utility for levels
+    pub fn get_extrema_level(v: Vec<&ABIQ_DLlite>, max_index: usize, get_max: bool) -> usize {
+        // for max or min
+        let mut extrema_level: usize = if get_max { 0 } else { usize::max_value() };
+
+        // this part is independent of max and min
+        let v_len = v.len();
+        let max_index = if (v_len - 1) >= max_index {
+            max_index
+        } else {
+            v_len
+        };
+
+        for i in 0..max_index {
+            if get_max {
+                extrema_level = extrema_level.max(v.get(i).unwrap().level);
+            } else {
+                extrema_level = extrema_level.min(v.get(i).unwrap().level);
+            }
+        }
+
+        extrema_level
     }
 }

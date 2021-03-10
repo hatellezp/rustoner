@@ -1,7 +1,7 @@
 use std::fmt;
 
 use crate::dl_lite::node::Node_DLlite;
-use crate::kb::knowledge_base::AbRule;
+
 use crate::dl_lite::tbox_item::TBI_DLlite;
 use crate::kb::types::DLType;
 use std::cmp::Ordering;
@@ -22,7 +22,7 @@ pub enum Side {
 #[derive(Eq, PartialEq, Debug, Clone, Hash)]
 pub enum ABI_DLlite {
     RA(Node_DLlite, Node_DLlite, Node_DLlite), // role assertion
-    CA(Node_DLlite, Node_DLlite),       // concept assertion
+    CA(Node_DLlite, Node_DLlite),              // concept assertion
 }
 
 impl fmt::Display for ABI_DLlite {
@@ -75,7 +75,12 @@ this will allow for finding that 'a doesn't belong to A'
  */
 
 impl ABI_DLlite {
-    pub fn new_ra(r: Node_DLlite, a: Node_DLlite, b: Node_DLlite, for_completion: bool) -> Option<ABI_DLlite> {
+    pub fn new_ra(
+        r: Node_DLlite,
+        a: Node_DLlite,
+        b: Node_DLlite,
+        for_completion: bool,
+    ) -> Option<ABI_DLlite> {
         let is_base_role = r.t() == DLType::BaseRole || for_completion;
         let all_nominals = DLType::all_nominals(a.t(), b.t());
 

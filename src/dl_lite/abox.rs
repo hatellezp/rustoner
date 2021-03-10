@@ -4,12 +4,11 @@ use std::sync::{Arc, Mutex};
 
 use crate::dl_lite::abox_item_quantum::ABIQ_DLlite;
 use crate::dl_lite::helpers_and_utilities::{
-    complete_helper_add_if_necessary_general, complete_helper_dump_from_mutex_temporal_to_current2,
+    complete_helper_add_if_necessary_general, complete_helper_dump_from_mutex_temporal_to_current,
 };
 use crate::dl_lite::node::Node_DLlite;
-use crate::dl_lite::rule::{
-    dl_lite_abox_rule_one, dl_lite_abox_rule_three, dl_lite_abox_rule_two,
-};
+use crate::dl_lite::rule::{dl_lite_abox_rule_one, dl_lite_abox_rule_three, dl_lite_abox_rule_two};
+use crate::dl_lite::string_formatter::abiq_in_vec_of_vec;
 use crate::dl_lite::tbox::TB_DLlite;
 use crate::dl_lite::tbox_item::TBI_DLlite;
 use crate::kb::knowledge_base::{ABox, ABoxItem, AbRule, TBox, TBoxItem};
@@ -136,7 +135,11 @@ impl ABQ_DLlite {
         }
     }
 
-    pub fn is_inconsistent_detailed(&self, tb: &TB_DLlite, verbose: bool) -> Vec<(TBI_DLlite, Vec<ABIQ_DLlite>)> {
+    pub fn is_inconsistent_detailed(
+        &self,
+        tb: &TB_DLlite,
+        verbose: bool,
+    ) -> Vec<(TBI_DLlite, Vec<ABIQ_DLlite>)> {
         let tbis = tb.items();
 
         // we can have a:A and A < (-A)
@@ -253,11 +256,22 @@ impl ABQ_DLlite {
             let right_keeper: Node_DLlite;
             let right_mod: &Node_DLlite;
 
-            if tbi.is_negative_inclusion() {
+            if tbi.is_negative_inclusion() && !tbi.is_trivial() {
                 if verbose {
                     println!(" -- ABQ::is_inconsistent: negative tbi, taking its child");
                 }
+                /*
+                let right_mod_op =  Node_DLlite::child_old(Some(right));
 
+                right_mod = match right_mod_op {
+                    Some(rm) => rm,
+                    Option::None => {
+                        println!("tbi: {:?}, righ_mod_op: {:?}", tbi, right_mod_op);
+                        panic!("see here")
+                    }
+                };
+
+                 */
                 right_mod = Node_DLlite::child_old(Some(right)).unwrap();
             } else {
                 if verbose {
@@ -317,7 +331,7 @@ impl ABQ_DLlite {
         false
     }
 
-    pub fn complete(&self, tbox: &TB_DLlite, verbose: bool) -> ABQ_DLlite {
+    pub fn complete(&self, tbox: &TB_DLlite, deduction_tree: bool, verbose: bool) -> ABQ_DLlite {
         type T = TBI_DLlite;
         type A = ABIQ_DLlite;
 
@@ -336,7 +350,8 @@ impl ABQ_DLlite {
 
             // keep the items
             let items: Arc<Mutex<VecDeque<ABIQ_DLlite>>> = Arc::new(Mutex::new(VecDeque::new()));
-            let items_temporal: Arc<Mutex<VecDeque<ABIQ_DLlite>>> = Arc::new(Mutex::new(VecDeque::new()));
+            let items_temporal: Arc<Mutex<VecDeque<ABIQ_DLlite>>> =
+                Arc::new(Mutex::new(VecDeque::new()));
 
             // keep the index to be treated
             let to_treat: Arc<Mutex<VecDeque<usize>>> = Arc::new(Mutex::new(VecDeque::new()));
@@ -504,8 +519,12 @@ impl ABQ_DLlite {
                                     println!(" -- ABQ::complete: comparing with tbi: {}", tbi);
                                 }
 
-                                let new_item_vec3 =
-                                    ABIQ_DLlite::apply_rule(vec![&current_item, &item], vec![tbi], rule);
+                                let new_item_vec3 = ABIQ_DLlite::apply_rule(
+                                    vec![&current_item, &item],
+                                    vec![tbi],
+                                    rule,
+                                    deduction_tree,
+                                );
 
                                 for optional_vec in vec![&new_item_vec3] {
                                     // if the rule succeeded
@@ -555,7 +574,7 @@ impl ABQ_DLlite {
                     let mut already_treated_temporal = already_treated_temporal.lock().unwrap();
 
                     // this is for the items
-                    length = complete_helper_dump_from_mutex_temporal_to_current2(
+                    length = complete_helper_dump_from_mutex_temporal_to_current(
                         &mut items,
                         &mut items_temporal,
                         length,
@@ -616,5 +635,51 @@ impl ABQ_DLlite {
             new_abq.completed = true;
             new_abq
         }
+    }
+
+    pub fn abiq_is_self_contradicting(abiq: &ABIQ_DLlite, tb: &TB_DLlite) -> bool {
+        let mut new_ab = ABQ_DLlite::new("temp");
+        new_ab.add(abiq.clone());
+
+        new_ab = new_ab.complete(tb, false, false);
+
+        new_ab.is_inconsistent(tb, false)
+    }
+
+    pub fn get_max_level(&self) -> usize {
+        let mut max_level: usize = 0;
+
+        for tbi in &self.items {
+            max_level = max_level.max(tbi.level());
+        }
+
+        max_level
+    }
+
+    pub fn get_abis_by_level(
+        &self,
+        _tb: &TB_DLlite,
+        only_conflicts: bool,
+        contradictions: &Vec<(TBI_DLlite, Vec<ABIQ_DLlite>)>,
+    ) -> Vec<usize> {
+        let max_level = self.get_max_level();
+        let mut levels: Vec<usize> = vec![0; max_level + 1];
+        let mut lev: usize;
+        let is_self_contradicting = false;
+
+        for abiq in self.items() {
+            lev = abiq.level();
+            // is_self_contradicting =  ABQ_DLlite::abiq_is_self_contradicting(abiq, tb);
+
+            // add only contradictions
+            if is_self_contradicting
+                || !only_conflicts
+                || (abiq_in_vec_of_vec(abiq, contradictions))
+            {
+                levels[lev] += 1;
+            }
+        }
+
+        levels
     }
 }

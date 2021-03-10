@@ -80,7 +80,7 @@ pub enum XmlTag {
 
 // test function to see how quick-xml works
 pub fn read_from_filename(p: &PathBuf) {
-    let mut reader_op = Reader::from_file(p);
+    let reader_op = Reader::from_file(p);
 
     // let mut txt = Vec::new();
     let mut buf = Vec::new();
@@ -156,11 +156,11 @@ pub fn read_from_filename(p: &PathBuf) {
                             println!(" -- it is text this time: {}", ee);
                         }
                     },
-                    Ok(Event::Comment(ref e)) => {},
-                    Ok(Event::CData(ref e)) => {},
-                    Ok(Event::Decl(ref e)) => {},
-                    Ok(Event::PI(ref e)) => {},
-                    Ok(Event::DocType(ref e)) => {},
+                    Ok(Event::Comment(_e)) => {},
+                    Ok(Event::CData(_e)) => {},
+                    Ok(Event::Decl(_e)) => {},
+                    Ok(Event::PI(_e)) => {},
+                    Ok(Event::DocType(_e)) => {},
                     Ok(Event::Eof) => {
                         println!(" -- end of the line (for you pal)");
                         break;

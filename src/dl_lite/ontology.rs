@@ -29,7 +29,7 @@ use crate::dl_lite::sqlite_interface::{
 use crate::interface::utilities::parse_name_from_filename;
 
 // import traits
-use crate::kb::knowledge_base::{ABoxItem, ABox, TBoxItem, TBox, SymbolDict};
+use crate::kb::knowledge_base::{ABox, ABoxItem, SymbolDict, TBox, TBoxItem};
 
 /*
 an ontology model
@@ -106,6 +106,10 @@ impl Ontology_DLlite {
         }
     }
 
+    pub fn tbox(&self) -> &TB_DLlite {
+        &self.tbox
+    }
+
     pub fn abox(&self) -> Option<&ABQ_DLlite> {
         match &self.current_abox {
             Option::None => Option::None,
@@ -128,6 +132,27 @@ impl Ontology_DLlite {
 
     pub fn sort(&mut self) {
         self.tbox.sort();
+    }
+
+    pub fn add_tbis_from_vec(&mut self, v: &Vec<TBI_DLlite>) {
+        for tbi in v {
+            if !self.tbox.contains(&tbi) {
+                self.tbox.add(tbi.clone());
+            }
+        }
+    }
+
+    pub fn add_abis_from_vec(&mut self, v: &Vec<ABIQ_DLlite>) {
+        match self.current_abox.as_mut() {
+            Option::None => (),
+            Some(ab) => {
+                for abi in v {
+                    if !ab.contains(&abi) {
+                        ab.add(abi.clone());
+                    }
+                }
+            }
+        }
     }
 
     // ----------------------------------------------------------------------------------------
@@ -297,13 +322,13 @@ impl Ontology_DLlite {
         self.tbox.remove_trivial();
 
         // the name of the abox changes
-        let ab_op = self.complete_abox(verbose);
+        let ab_op = self.complete_abox(deduction_tree, verbose);
         self.current_abox = ab_op;
     }
 
-    pub fn complete_abox(&self, verbose: bool) -> Option<ABQ_DLlite> {
+    pub fn complete_abox(&self, deduction_tree: bool, verbose: bool) -> Option<ABQ_DLlite> {
         match &self.current_abox {
-            Some(ab) => Some(ab.complete(self.tbox(), verbose)),
+            Some(ab) => Some(ab.complete(self.tbox(), deduction_tree, verbose)),
             _ => Option::None,
         }
     }
@@ -312,6 +337,7 @@ impl Ontology_DLlite {
     pub fn conflict_matrix(
         &self,
         abq: &ABQ_DLlite,
+        deduction_tree: bool,
         verbose: bool,
     ) -> (Vec<i8>, Vec<(usize, Option<usize>)>, Vec<(usize, usize)>) {
         /*
@@ -346,7 +372,7 @@ impl Ontology_DLlite {
                     );
                 }
 
-                let tmp_abq = tmp_abq.complete(self.tbox(), verbose);
+                let tmp_abq = tmp_abq.complete(self.tbox(), deduction_tree, verbose);
 
                 if tmp_abq.is_inconsistent(self.tbox(), verbose) {
                     if verbose {
@@ -418,7 +444,8 @@ impl Ontology_DLlite {
                             println!(" -- Ontology::conflict_matrix: comparing against {} and its negation {}", abiq_j, &abiq_j_neg);
                         }
 
-                        let abq_tmp = ABQ_DLlite::from_vec("tmp", vec![abiq_i.clone(), abiq_j.clone()]);
+                        let abq_tmp =
+                            ABQ_DLlite::from_vec("tmp", vec![abiq_i.clone(), abiq_j.clone()]);
                         let abq_tmp_neg =
                             ABQ_DLlite::from_vec("tmp_neg", vec![abiq_i.clone(), abiq_j_neg]);
 
@@ -428,8 +455,9 @@ impl Ontology_DLlite {
                             self.abox_to_string_quantum(&abq_tmp_neg)
                         );
 
-                        let abq_tmp = abq_tmp.complete(self.tbox(), verbose);
-                        let abq_tmp_neg = abq_tmp_neg.complete(self.tbox(), verbose);
+                        let abq_tmp = abq_tmp.complete(self.tbox(), deduction_tree, verbose);
+                        let abq_tmp_neg =
+                            abq_tmp_neg.complete(self.tbox(), deduction_tree, verbose);
 
                         println!(
                             "    -- abq_tmp: {}\n    --  abq_tmp_neg: {}",
@@ -504,10 +532,6 @@ impl Ontology_DLlite {
         &self.symbols
     }
 
-    pub fn tbox(&self) -> &TB_DLlite {
-        &self.tbox
-    }
-
     // this function returns two different sizes: symbol size and tbox size
     pub fn len(&self) -> (usize, usize) {
         (self.symbols.len(), self.tbox.len())
@@ -516,11 +540,7 @@ impl Ontology_DLlite {
     // ------------------------------------------------------------------------
     // private functions for the inner work of 'Ontology'
 
-    fn add_symbol(
-        &mut self,
-        new_symbols: &SymbolDict,
-        new_name: &String,
-    ) -> bool {
+    fn add_symbol(&mut self, new_symbols: &SymbolDict, new_name: &String) -> bool {
         if new_symbols.contains_key(new_name) {
             if !self.symbols.contains_key(new_name) {
                 let (_, t) = new_symbols[new_name];
@@ -552,9 +572,7 @@ impl Ontology_DLlite {
         }
     }
 
-    fn find_lower_and_highest_value_from_symbols(
-        symbols: &SymbolDict,
-    ) -> (usize, usize) {
+    fn find_lower_and_highest_value_from_symbols(symbols: &SymbolDict) -> (usize, usize) {
         let mut lowest: Option<usize> = Option::None;
         let mut highest: Option<usize> = Option::None;
 
@@ -610,7 +628,7 @@ impl Ontology_DLlite {
         mut right_current: String,
     ) -> String {
         match node {
-            Node_DLlite::T => String::from("Top"),    // format!("{}", node),
+            Node_DLlite::T => String::from("Top"), // format!("{}", node),
             Node_DLlite::B => String::from("Bottom"), // format!("{}", node),
             Node_DLlite::N(n) | Node_DLlite::R(n) | Node_DLlite::C(n) => {
                 // find the name

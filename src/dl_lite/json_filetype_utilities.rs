@@ -14,7 +14,7 @@ use crate::dl_lite::string_formatter::{node_to_string, string_to_node};
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 
-use crate::kb::knowledge_base::{TBoxItem, TBox, SymbolDict};
+use crate::kb::knowledge_base::{SymbolDict, TBox, TBoxItem};
 
 /*
 how this works:
@@ -248,8 +248,7 @@ pub fn parse_symbols_json(filename: &str) -> io::Result<SymbolDict> {
                                     let mut parsed_result: io::Result<(&str, usize, DLType)>;
                                     let _unwrapped_parsed: (&str, usize, DLType);
 
-                                    let mut symbols: SymbolDict =
-                                        HashMap::new();
+                                    let mut symbols: SymbolDict = HashMap::new();
 
                                     for value in vec_of_values {
                                         match value {

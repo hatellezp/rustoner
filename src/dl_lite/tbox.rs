@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 
 // internal imports
 use crate::dl_lite::helpers_and_utilities::{
-    complete_helper_add_if_necessary_general, complete_helper_dump_from_mutex_temporal_to_current2,
+    complete_helper_add_if_necessary_general, complete_helper_dump_from_mutex_temporal_to_current,
 };
 use crate::dl_lite::rule::{
     dl_lite_rule_eight, dl_lite_rule_five, dl_lite_rule_four, dl_lite_rule_one, dl_lite_rule_seven,
@@ -96,10 +96,9 @@ impl TB_DLlite {
         }
     }
 
-
     pub fn new_from_iter<I>(it: I) -> TB_DLlite
     where
-        I: Iterator<Item =TBI_DLlite>,
+        I: Iterator<Item = TBI_DLlite>,
     {
         let mut tb = TB_DLlite::new();
 
@@ -111,7 +110,7 @@ impl TB_DLlite {
     }
 
     pub fn levels(&self) -> Vec<usize> {
-        let levels: Vec<usize> = self.items.iter().map(|x| x.level()).collect();
+        let levels: Vec<usize> = self.items.iter().map(|x| (&x).level()).collect();
 
         levels
     }
@@ -172,7 +171,8 @@ impl TB_DLlite {
 
             // keep the items
             let items: Arc<Mutex<VecDeque<TBI_DLlite>>> = Arc::new(Mutex::new(VecDeque::new()));
-            let items_temporal: Arc<Mutex<VecDeque<TBI_DLlite>>> = Arc::new(Mutex::new(VecDeque::new()));
+            let items_temporal: Arc<Mutex<VecDeque<TBI_DLlite>>> =
+                Arc::new(Mutex::new(VecDeque::new()));
 
             // keep the index to be treated
             let to_treat: Arc<Mutex<VecDeque<usize>>> = Arc::new(Mutex::new(VecDeque::new()));
@@ -260,7 +260,8 @@ impl TB_DLlite {
                         let item = &items[index];
 
                         // here we add the deduction tree switch
-                        let new_item_vec = TBI_DLlite::apply_rule(vec![item], &rule_zero, deduction_tree);
+                        let new_item_vec =
+                            TBI_DLlite::apply_rule(vec![item], &rule_zero, deduction_tree);
 
                         // here there is some unnecessary clone stuff
                         if new_item_vec.is_some() {
@@ -284,7 +285,7 @@ impl TB_DLlite {
                     let mut items = items.lock().unwrap();
                     let mut items_temporal = items_temporal.lock().unwrap();
 
-                    length = complete_helper_dump_from_mutex_temporal_to_current2(
+                    length = complete_helper_dump_from_mutex_temporal_to_current(
                         &mut items,
                         &mut items_temporal,
                         length,
@@ -309,7 +310,8 @@ impl TB_DLlite {
                         let item = &items[index];
 
                         // added deduction tree here
-                        let new_item_vec = TBI_DLlite::apply_rule(vec![item], &rule_one, deduction_tree);
+                        let new_item_vec =
+                            TBI_DLlite::apply_rule(vec![item], &rule_one, deduction_tree);
 
                         // here there is some unnecessary clone stuff
                         if new_item_vec.is_some() {
@@ -331,7 +333,7 @@ impl TB_DLlite {
                     let mut items = items.lock().unwrap();
                     let mut items_temporal = items_temporal.lock().unwrap();
 
-                    length = complete_helper_dump_from_mutex_temporal_to_current2(
+                    length = complete_helper_dump_from_mutex_temporal_to_current(
                         &mut items,
                         &mut items_temporal,
                         length,
@@ -451,8 +453,11 @@ impl TB_DLlite {
 
                             // three different vectors
                             // added deduction tree
-                            let new_item_vec3 =
-                                TBI_DLlite::apply_rule(vec![&current_item, &item], rule, deduction_tree);
+                            let new_item_vec3 = TBI_DLlite::apply_rule(
+                                vec![&current_item, &item],
+                                rule,
+                                deduction_tree,
+                            );
 
                             for optional_vec in vec![&new_item_vec3] {
                                 // if the rule succeeded
@@ -463,10 +468,16 @@ impl TB_DLlite {
                                     // try to apply rule zero and one
                                     for tbi in iterator {
                                         // added deduction tree
-                                        let zero_tbi =
-                                            TBI_DLlite::apply_rule(vec![tbi], &rule_zero, deduction_tree);
-                                        let one_tbi =
-                                            TBI_DLlite::apply_rule(vec![tbi], &rule_one, deduction_tree);
+                                        let zero_tbi = TBI_DLlite::apply_rule(
+                                            vec![tbi],
+                                            &rule_zero,
+                                            deduction_tree,
+                                        );
+                                        let one_tbi = TBI_DLlite::apply_rule(
+                                            vec![tbi],
+                                            &rule_one,
+                                            deduction_tree,
+                                        );
 
                                         tbis_to_add.push(tbi.clone());
 
@@ -509,7 +520,7 @@ impl TB_DLlite {
                     let mut already_treated_temporal = already_treated_temporal.lock().unwrap();
 
                     // this is for the items
-                    length = complete_helper_dump_from_mutex_temporal_to_current2(
+                    length = complete_helper_dump_from_mutex_temporal_to_current(
                         &mut items,
                         &mut items_temporal,
                         length,
@@ -577,6 +588,23 @@ impl TB_DLlite {
         }
 
         return true;
+    }
+
+    pub fn get_tbis_by_level(&self, only_conflicts: bool) -> Vec<usize> {
+        let max_level = self.get_max_level();
+        let mut levels: Vec<usize> = vec![0; max_level + 1];
+        let mut lev: usize;
+
+        for tbi in self.items() {
+            lev = tbi.level();
+
+            // add only contradictions
+            if tbi.is_contradiction() || !only_conflicts {
+                levels[lev] += 1;
+            }
+        }
+
+        levels
     }
 
     pub fn get_max_level(&self) -> usize {

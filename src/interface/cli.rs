@@ -9,6 +9,7 @@ pub enum Task {
     GENCONTB, // generate consequence tree tbox
     CTB,      // complete tbox
     VERAB,    // verify abox
+    CLEANAB,  // clean from self conflicts
     GENCONAB, // generate consequence tree abox
     CAB,      // complete abox
     RNKAB,    // rank assertions on abox
@@ -27,6 +28,7 @@ impl FromStr for Task {
             "gencontb" => Ok(Task::GENCONTB),
             "ctb" => Ok(Task::CTB),
             "verab" => Ok(Task::VERAB),
+            "cleanab" => Ok(Task::CLEANAB),
             "genconab" => Ok(Task::GENCONAB),
             "cab" => Ok(Task::CAB),
             "rankab" => Ok(Task::RNKAB),
@@ -47,6 +49,9 @@ pub struct Cli {
 
     #[structopt(long = "verbose")]
     pub verbose: bool,
+
+    #[structopt(long = "silent")]
+    pub silent: bool,
 
     #[structopt(
         long = "ephemere",

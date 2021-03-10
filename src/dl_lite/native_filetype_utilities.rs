@@ -3,19 +3,16 @@ use crate::dl_lite::string_formatter::{
     abiq_to_string, string_to_abiq, string_to_symbol, string_to_tbi, tbi_to_string, PS,
 };
 use crate::dl_lite::tbox::TB_DLlite;
-use crate::kb::types::DLType;
 use crate::interface::utilities::parse_name_from_filename;
+use crate::kb::types::DLType;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader, Error, ErrorKind};
 
-use crate::kb::knowledge_base::{ABoxItem, ABox, TBoxItem, TBox, SymbolDict};
+use crate::kb::knowledge_base::{ABox, ABoxItem, SymbolDict, TBox, TBoxItem};
 
-pub fn parse_symbols_native(
-    filename: &str,
-    verbose: bool,
-) -> io::Result<SymbolDict> {
+pub fn parse_symbols_native(filename: &str, verbose: bool) -> io::Result<SymbolDict> {
     let file_result = File::open(filename);
 
     match file_result {
@@ -514,6 +511,7 @@ pub fn abox_to_native_string_quantum(
     let mut res = String::new();
 
     // I should define a header for this files
+    let to_native = true;
     let header = "";
     res.push_str(header);
 
@@ -521,7 +519,7 @@ pub fn abox_to_native_string_quantum(
 
     for abi in abox.items() {
         if !(abi.is_trivial() && dont_write_trivial) {
-            let abi_str_op = abiq_to_string(abi, symbols);
+            let abi_str_op = abiq_to_string(abi, symbols, to_native);
 
             match abi_str_op {
                 Some(abi_str) => {

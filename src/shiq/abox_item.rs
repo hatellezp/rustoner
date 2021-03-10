@@ -1,7 +1,7 @@
 use std::fmt;
 
 use crate::shiq::node::Node_SHIQ;
-use crate::kb::knowledge_base::AbRule;
+
 use crate::shiq::tbox_item::TBI_SHIQ;
 use crate::kb::types::DLType;
 use std::cmp::Ordering;

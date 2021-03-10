@@ -5,7 +5,7 @@ use crate::shiq::node::{Mod, Node_SHIQ};
 use crate::shiq::tbox_item::TBI_SHIQ;
 use crate::kb::types::DLType;
 use std::cmp::Ordering;
-use std::collections::HashMap;
+
 use std::hash::Hash;
 use std::io;
 use std::io::{Error, ErrorKind};
@@ -846,6 +846,6 @@ pub fn create_string_for_gencontb(tb: &TB_SHIQ, symbols: &SymbolDict, _verbose: 
 }
 
 
-pub fn create_string_for_unravel_conflict_tbox(tb: TB_SHIQ, symbols: &SymbolDict) -> String {
+pub fn create_string_for_unravel_conflict_tbox(_tb: TB_SHIQ, _symbols: &SymbolDict) -> String {
     String::from("nope")
 }

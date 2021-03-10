@@ -1,9 +1,9 @@
 use std::fmt;
 
 use crate::dl_lite::node::Node_DLlite;
-use crate::kb::knowledge_base::TbRule;
+use crate::kb::knowledge_base::{ABox, ABoxItem, Item, TBox, TBoxItem};
+use crate::kb::knowledge_base::{Implier, TbRule};
 use crate::kb::types::DLType;
-use crate::kb::knowledge_base::{Item, ABoxItem, ABox, TBoxItem, TBox};
 use std::cmp::Ordering;
 
 #[derive(Debug, Hash, Clone)]
@@ -11,7 +11,7 @@ pub struct TBI_DLlite {
     lside: Node_DLlite,
     rside: Node_DLlite,
     level: usize,
-    implied_by: Vec<Vec<TBI_DLlite>>,
+    impliers: Vec<Vec<TBI_DLlite>>,
 }
 
 impl PartialEq for TBI_DLlite {
@@ -46,6 +46,71 @@ impl Ord for TBI_DLlite {
     }
 }
 
+impl Implier for TBI_DLlite {
+    type Imp = Vec<TBI_DLlite>;
+
+    fn implied_by(&self) -> &Vec<Vec<TBI_DLlite>> {
+        &(self.impliers)
+    }
+
+    fn cmp_imp(imp1: &Vec<TBI_DLlite>, imp2: &Vec<TBI_DLlite>) -> Option<Ordering> {
+        let len1 = imp1.len();
+        let len2 = imp2.len();
+        let mut all_good = true;
+        let mut tbi1: &TBI_DLlite;
+        let mut tbi2: &TBI_DLlite;
+        let (lenght, ordering) = match len1.cmp(&len2) {
+            Ordering::Less => (len1, Ordering::Less),
+            Ordering::Equal => (len1, Ordering::Equal),
+            Ordering::Greater => (len2, Ordering::Greater),
+        };
+
+        for i in 0..lenght {
+            tbi1 = imp1.get(i).unwrap();
+            tbi2 = imp2.get(i).unwrap();
+
+            all_good = all_good && (tbi1 == tbi2);
+        }
+
+        match all_good {
+            true => Some(ordering),
+            false => Option::None,
+        }
+    }
+
+    fn add_to_implied_by(&mut self, mut implier: Vec<TBI_DLlite>) {
+        // before everything, here in DLlite we can negation implies reverse negation
+        // we must avoid to add an element as self implier
+        if !&implier.contains(&self) {
+            implier.sort();
+            let contains = self.contains_implier(&implier);
+
+            match contains {
+                Option::Some(Ordering::Less) => {
+                    let mut cmpd: Option<Ordering>;
+                    let mut inner_implier: &Vec<TBI_DLlite>;
+                    let lenght: usize = self.impliers.len();
+
+                    for index in 0..lenght {
+                        inner_implier = &self.impliers.get(index).unwrap();
+                        cmpd = Self::cmp_imp(&implier, inner_implier);
+
+                        match cmpd {
+                            Option::Some(Ordering::Less) => {
+                                self.impliers[index] = implier;
+                                break; // rust is very smart, told me that value was being used in future iteration, so I put a break right here
+                            }
+                            _ => (),
+                        }
+                    }
+                }
+                Option::None => self.impliers.push(implier),
+                Option::Some(Ordering::Equal) | Option::Some(Ordering::Greater) => (),
+            }
+        }
+    }
+}
+
 impl TBoxItem for TBI_DLlite {
     type NodeItem = Node_DLlite;
 
@@ -64,16 +129,6 @@ impl TBoxItem for TBI_DLlite {
     fn is_negative_inclusion(&self) -> bool {
         self.rside.is_negated()
     }
-
-
-    fn implied_by(&self) -> &Vec<Vec<TBI_DLlite>> {
-        &(self.implied_by)
-    }
-
-    fn add_to_implied_by(&mut self, impliers: Vec<TBI_DLlite>) {
-        self.implied_by.push(impliers);
-    }
-
 }
 
 impl TBI_DLlite {
@@ -89,7 +144,7 @@ impl TBI_DLlite {
                 lside,
                 rside,
                 level,
-                implied_by,
+                impliers: implied_by,
             })
         }
     }
@@ -122,7 +177,11 @@ impl TBI_DLlite {
         }
     }
 
-    pub fn apply_rule(tbis: Vec<&TBI_DLlite>, rule: &TbRule<TBI_DLlite>, deduction_tree: bool) -> Option<Vec<TBI_DLlite>> {
+    pub fn apply_rule(
+        tbis: Vec<&TBI_DLlite>,
+        rule: &TbRule<TBI_DLlite>,
+        deduction_tree: bool,
+    ) -> Option<Vec<TBI_DLlite>> {
         /*
         put a switch here to add consequences when needed
         every vector in the answer get the vectors that created it in the implied_by field

@@ -2,10 +2,8 @@ use std::collections::HashMap;
 use std::fmt::{Debug, Display};
 use std::hash::Hash;
 
-
-use crate::dl_lite::abox_item::ABI_DLlite;
-use crate::dl_lite::tbox_item::TBI_DLlite;
 use crate::kb::types::DLType;
+use std::cmp::Ordering;
 
 pub trait Item: PartialOrd + Ord + PartialEq + Eq + Debug + Hash + Display + Sized {
     fn t(&self) -> DLType;
@@ -14,12 +12,38 @@ pub trait Item: PartialOrd + Ord + PartialEq + Eq + Debug + Hash + Display + Siz
     fn is_negated(&self) -> bool;
 }
 
-pub trait ABoxItem: PartialOrd + Ord + PartialEq + Eq + Debug + Hash + Display + Sized {
+// trait to allow for impliers to be for everyone
+pub trait Implier {
+    type Imp: Clone + PartialOrd + Ord + PartialEq + Eq;
+
+    fn implied_by(&self) -> &Vec<Self::Imp>;
+    fn cmp_imp(imp1: &Self::Imp, imp2: &Self::Imp) -> Option<Ordering>;
+    fn add_to_implied_by(&mut self, implier: Self::Imp);
+
+    fn contains_implier(&self, implier: &Self::Imp) -> Option<Ordering> {
+        for inner_implier in self.implied_by() {
+            let cpmd = Self::cmp_imp(implier, inner_implier);
+
+            if cpmd.is_some() {
+                return cpmd;
+            }
+        }
+
+        Option::None
+    }
+}
+
+pub trait ABoxItem:
+    PartialOrd + Ord + PartialEq + Eq + Debug + Hash + Display + Sized + Implier
+{
     type NodeItem: Item;
+    type TBI: TBoxItem;
 
     fn item(&self) -> &Self::NodeItem;
     fn negate(&self) -> Self;
     fn t(&self) -> DLType;
+    // fn implied_by(&self) -> &Vec<(Vec<Self::TBI>, Vec<Self>)>;
+    // fn add_to_implied_by(&mut self, impliers: (Vec<Self::TBI>, Vec<Self>)); // where Self: Sized;
 }
 
 pub trait ABox: PartialEq + Debug + Display {
@@ -31,19 +55,23 @@ pub trait ABox: PartialEq + Debug + Display {
     fn items(&self) -> &Vec<Self::AbiItem>;
     fn get(&self, index: usize) -> Option<&Self::AbiItem>;
     fn sort(&mut self);
-    fn is_empty(&self) -> bool;
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
     fn contains(&self, abi: &Self::AbiItem) -> bool;
 }
 
-pub trait TBoxItem: PartialEq + Eq + PartialOrd + Ord + Debug + Hash + Display + Sized{
+pub trait TBoxItem:
+    PartialEq + Eq + PartialOrd + Ord + Debug + Hash + Display + Sized + Implier
+{
     type NodeItem: Item;
 
     fn lside(&self) -> &Self::NodeItem;
     fn rside(&self) -> &Self::NodeItem;
     fn is_trivial(&self) -> bool;
     fn is_negative_inclusion(&self) -> bool;
-    fn implied_by(&self) -> &Vec<Vec<Self>>; // where Self: Sized;
-    fn add_to_implied_by(&mut self, impliers: Vec<Self>); // where Self: Sized;
+    // fn implied_by(&self) -> &Vec<Vec<Self>>; // where Self: Sized;
+    // fn add_to_implied_by(&mut self, impliers: Vec<Self>); // where Self: Sized;
 
     // test if i can implement here some behaviour
     fn is_positive_inclusion(&self) -> bool {
@@ -67,10 +95,9 @@ pub trait TBox: PartialEq + Debug + Display {
     fn contains(&self, tbi: &Self::TbiItem) -> bool;
 }
 
-
 // TESTING: does this work ?
 pub type SymbolDict = HashMap<String, (usize, DLType)>;
 
-pub type TbRule<T: TBoxItem> = fn(Vec<&T>, bool) -> Option<Vec<T>>;
+pub type TbRule<T> = fn(Vec<&T>, bool) -> Option<Vec<T>>;
 
-pub type AbRule<T: TBoxItem, A: ABoxItem> = fn(Vec<&A>, Vec<&T>) -> Option<Vec<A>>;
+pub type AbRule<T, A> = fn(Vec<&A>, Vec<&T>, bool) -> Option<Vec<A>>;

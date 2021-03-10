@@ -5,10 +5,10 @@ TODO: I'm making a big choice here, top will be the negated one, that way we res
 
 use std::fmt;
 
+use crate::kb::knowledge_base::Item;
 use crate::kb::types::DLType;
 use std::cmp::Ordering;
 use std::ops::Deref;
-use crate::kb::knowledge_base::Item;
 
 #[derive(PartialEq, Eq, Debug, Hash, Copy, Clone)]
 pub enum Mod {
@@ -78,9 +78,10 @@ impl PartialOrd for Node_DLlite {
                             DLType::BaseConcept => Some(Ordering::Greater),
                             DLType::NegatedConcept => Some(Ordering::Less),
                             DLType::ExistsConcept => match (self, other) {
-                                (Node_DLlite::X(Mod::E, bnself), Node_DLlite::X(Mod::E, bnother)) => {
-                                    bnself.partial_cmp(bnother)
-                                }
+                                (
+                                    Node_DLlite::X(Mod::E, bnself),
+                                    Node_DLlite::X(Mod::E, bnother),
+                                ) => bnself.partial_cmp(bnother),
                                 (_, _) => Option::None,
                             },
                             _ => Option::None,
@@ -88,9 +89,10 @@ impl PartialOrd for Node_DLlite {
                         DLType::NegatedConcept => match other.t() {
                             DLType::BaseConcept | DLType::ExistsConcept => Some(Ordering::Greater),
                             DLType::NegatedConcept => match (self, other) {
-                                (Node_DLlite::X(Mod::N, bnself), Node_DLlite::X(Mod::N, bnother)) => {
-                                    bnself.partial_cmp(bnother)
-                                }
+                                (
+                                    Node_DLlite::X(Mod::N, bnself),
+                                    Node_DLlite::X(Mod::N, bnother),
+                                ) => bnself.partial_cmp(bnother),
                                 (_, _) => Option::None,
                             },
                             _ => Option::None,
@@ -154,10 +156,16 @@ impl Item for Node_DLlite {
             Node_DLlite::R(_) => DLType::BaseRole,
             Node_DLlite::N(_) => DLType::Nominal,
             Node_DLlite::X(t, bn) => match (t, bn.deref()) {
-                (Mod::N, Node_DLlite::R(_)) | (Mod::N, Node_DLlite::X(Mod::I, _)) => DLType::NegatedRole,
-                (Mod::N, Node_DLlite::C(_)) | (Mod::N, Node_DLlite::X(Mod::E, _)) => DLType::NegatedConcept,
+                (Mod::N, Node_DLlite::R(_)) | (Mod::N, Node_DLlite::X(Mod::I, _)) => {
+                    DLType::NegatedRole
+                }
+                (Mod::N, Node_DLlite::C(_)) | (Mod::N, Node_DLlite::X(Mod::E, _)) => {
+                    DLType::NegatedConcept
+                }
                 (Mod::I, Node_DLlite::R(_)) => DLType::InverseRole,
-                (Mod::E, Node_DLlite::R(_)) | (Mod::E, Node_DLlite::X(Mod::I, _)) => DLType::ExistsConcept,
+                (Mod::E, Node_DLlite::R(_)) | (Mod::E, Node_DLlite::X(Mod::I, _)) => {
+                    DLType::ExistsConcept
+                }
                 (_, _) => panic!("incorrect format for node"),
             },
         }
@@ -226,7 +234,11 @@ impl Node_DLlite {
         match node {
             Option::None => Option::None,
             Some(n) => match n {
-                Node_DLlite::B | Node_DLlite::T | Node_DLlite::C(_) | Node_DLlite::R(_) | Node_DLlite::N(_) => Option::None,
+                Node_DLlite::B
+                | Node_DLlite::T
+                | Node_DLlite::C(_)
+                | Node_DLlite::R(_)
+                | Node_DLlite::N(_) => Option::None,
                 Node_DLlite::X(_, bn) => Some(&bn),
             },
         }
@@ -247,8 +259,6 @@ impl Node_DLlite {
             _ => Node_DLlite::X(Mod::N, Box::new(self)),
         }
     }
-
-
 
     pub fn is_negation(&self, other: &Node_DLlite) -> bool {
         match (self, other) {
@@ -287,7 +297,7 @@ impl Node_DLlite {
 
     pub fn print_iter<I>(it: I) -> String
     where
-        I: Iterator<Item =Node_DLlite>,
+        I: Iterator<Item = Node_DLlite>,
     {
         let mut s_accumulator = String::new();
         let mut waiting_s: String;

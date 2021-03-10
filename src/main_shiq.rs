@@ -1,8 +1,4 @@
-mod dl_lite;
-mod interface;
-mod kb;
-mod shiq;
-
+// mod shiq;
 
 fn main() {
     println!("hello there!");

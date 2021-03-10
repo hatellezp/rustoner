@@ -198,4 +198,3 @@ pub enum FileType {
     JSON,
     NATIVE,
 }
-

@@ -5,13 +5,14 @@ use crate::dl_lite::node::{Mod, Node_DLlite};
 use crate::dl_lite::tbox_item::TBI_DLlite;
 use crate::kb::types::DLType;
 use std::cmp::Ordering;
-use std::collections::HashMap;
+
+use crate::dl_lite::tbox::TB_DLlite;
 use std::hash::Hash;
 use std::io;
 use std::io::{Error, ErrorKind};
-use crate::dl_lite::tbox::TB_DLlite;
 
-use crate::kb::knowledge_base::{TBoxItem, TBox, SymbolDict};
+use crate::dl_lite::abox::ABQ_DLlite;
+use crate::kb::knowledge_base::{ABox, Implier, SymbolDict, TBox, TBoxItem};
 
 //--------------------------------------------------------------------------------------------------
 
@@ -262,7 +263,10 @@ pub fn string_to_abi(
     symbols: &mut SymbolDict,
     mut current_id: usize,
     for_completion: bool,
-) -> (io::Result<(ABI_DLlite, Vec<(String, (usize, DLType))>)>, usize) {
+) -> (
+    io::Result<(ABI_DLlite, Vec<(String, (usize, DLType))>)>,
+    usize,
+) {
     let splitted = s.trim();
     let splitted: Vec<&str> = splitted.split(":").collect();
 
@@ -299,7 +303,8 @@ pub fn string_to_abi(
 
                             // each nominal
                             if !symbols.contains_key(a1) {
-                                node1 = Node_DLlite::new(Some(current_id), DLType::Nominal).unwrap();
+                                node1 =
+                                    Node_DLlite::new(Some(current_id), DLType::Nominal).unwrap();
 
                                 to_be_added.push((a1.to_string(), (current_id, DLType::Nominal)));
                                 current_id += 1;
@@ -316,7 +321,8 @@ pub fn string_to_abi(
 
                             // then a2
                             if !symbols.contains_key(a2) {
-                                node2 = Node_DLlite::new(Some(current_id), DLType::Nominal).unwrap();
+                                node2 =
+                                    Node_DLlite::new(Some(current_id), DLType::Nominal).unwrap();
 
                                 to_be_added.push((a2.to_string(), (current_id, DLType::Nominal)));
                                 current_id += 1;
@@ -325,8 +331,13 @@ pub fn string_to_abi(
                                 node2 = Node_DLlite::new(Some(id2), DLType::Nominal).unwrap();
                             }
 
-                            let abi = ABI_DLlite::new_ra(abi_symbol.clone(), node1, node2, for_completion)
-                                .unwrap();
+                            let abi = ABI_DLlite::new_ra(
+                                abi_symbol.clone(),
+                                node1,
+                                node2,
+                                for_completion,
+                            )
+                            .unwrap();
 
                             (Ok((abi, to_be_added)), current_id)
                         }
@@ -339,7 +350,8 @@ pub fn string_to_abi(
 
                             // each nominal
                             if !symbols.contains_key(a1) {
-                                node1 = Node_DLlite::new(Some(current_id), DLType::Nominal).unwrap();
+                                node1 =
+                                    Node_DLlite::new(Some(current_id), DLType::Nominal).unwrap();
 
                                 to_be_added.push((a1.to_string(), (current_id, DLType::Nominal)));
                                 current_id += 1;
@@ -348,8 +360,8 @@ pub fn string_to_abi(
                                 node1 = Node_DLlite::new(Some(id1), DLType::Nominal).unwrap();
                             }
 
-                            let abi =
-                                ABI_DLlite::new_ca(abi_symbol.clone(), node1, for_completion).unwrap();
+                            let abi = ABI_DLlite::new_ca(abi_symbol.clone(), node1, for_completion)
+                                .unwrap();
 
                             (Ok((abi, to_be_added)), current_id)
                         }
@@ -623,7 +635,10 @@ pub fn string_to_abiq(
     symbols: &mut SymbolDict,
     current_id: usize,
     for_completion: bool,
-) -> (io::Result<(ABIQ_DLlite, Vec<(String, (usize, DLType))>)>, usize) {
+) -> (
+    io::Result<(ABIQ_DLlite, Vec<(String, (usize, DLType))>)>,
+    usize,
+) {
     let splitted = s.trim();
 
     // a normal abi is splitted by ':', here we split by ';' first
@@ -700,14 +715,16 @@ pub fn string_to_abiq(
     match abi_res {
         Err(e) => (Err(e), cid),
         Ok((abi, v)) => {
-            let abiq = ABIQ_DLlite::new(abi, Some(pvalue), value);
+            // if we are parsing then the level is forcefully 0
+            let level = 0;
+            let abiq = ABIQ_DLlite::new(abi, Some(pvalue), value, level);
 
             (Ok((abiq, v)), cid)
         }
     }
 }
 
-pub fn abiq_to_string(abiq: &ABIQ_DLlite, symbols: &SymbolDict) -> Option<String> {
+pub fn abiq_to_string(abiq: &ABIQ_DLlite, symbols: &SymbolDict, to_native: bool) -> Option<String> {
     let abi_to_string = abi_to_string(abiq.abi(), symbols);
 
     let pv_to_string = format!("{}", abiq.prevalue());
@@ -719,8 +736,16 @@ pub fn abiq_to_string(abiq: &ABIQ_DLlite, symbols: &SymbolDict) -> Option<String
     match abi_to_string {
         Option::None => Option::None,
         Some(s) => {
-            let res = format!("{}, (pv: {}, v: {})", s, pv_to_string, v_to_string);
+            let res: String;
 
+            if !to_native {
+                res = format!("{}, (pv: {}, v: {})", s, pv_to_string, v_to_string);
+            } else {
+                res = match abiq.value() {
+                    Option::None => format!("{}, {}", s, pv_to_string),
+                    Some(v) => format!("{}, {}, {}", s, pv_to_string, v),
+                };
+            }
             Some(res)
         }
     }
@@ -741,6 +766,7 @@ pub fn pretty_print_abiq_conflict(
      */
 
     let mut s = String::from("  {\n");
+    let to_native = false;
 
     let tbi = conflict_tuple.0;
     let v_abiq = conflict_tuple.1;
@@ -752,14 +778,14 @@ pub fn pretty_print_abiq_conflict(
     s.push_str(&tbi_string);
     s.push_str("\n");
 
-    let abiq_zero_string = abiq_to_string(v_abiq.get(0).unwrap(), symbols).unwrap();
+    let abiq_zero_string = abiq_to_string(v_abiq.get(0).unwrap(), symbols, to_native).unwrap();
 
     s.push_str("      abis: ");
     s.push_str(&abiq_zero_string);
     s.push_str("\n");
 
     for i in 1..v_abiq_len {
-        let abiq_string = abiq_to_string(v_abiq.get(i).unwrap(), symbols).unwrap();
+        let abiq_string = abiq_to_string(v_abiq.get(i).unwrap(), symbols, to_native).unwrap();
 
         s.push_str("            ");
         s.push_str(&abiq_string);
@@ -791,9 +817,33 @@ pub fn pretty_vector_tbi_to_string(vec: &Vec<TBI_DLlite>, symbols: &SymbolDict) 
     s
 }
 
+pub fn pretty_vector_abiq_to_string(vec: &Vec<ABIQ_DLlite>, symbols: &SymbolDict) -> String {
+    let mut s = String::from("[");
+    let to_native = false;
+    let vec_len = vec.len();
+    let mut tbi_string_op: Option<String>;
+    let mut tbi_string: String;
 
-pub fn create_string_for_gencontb(tb: &TB_DLlite, symbols: &SymbolDict, _verbose: bool) -> String {
+    for i in 0..vec_len {
+        tbi_string_op = abiq_to_string(vec.get(i).unwrap(), symbols, to_native);
 
+        if tbi_string_op.is_some() {
+            tbi_string = tbi_string_op.unwrap();
+            s.push_str(&tbi_string);
+            s.push_str(", ");
+        }
+    }
+
+    s.push_str("]");
+    s
+}
+
+pub fn create_string_for_gencontb(
+    tb: &TB_DLlite,
+    symbols: &SymbolDict,
+    dont_write_trivial: bool,
+    _verbose: bool,
+) -> String {
     let mut s = String::new();
     let mut temp_s: String;
     let new_tb = tb;
@@ -804,37 +854,40 @@ pub fn create_string_for_gencontb(tb: &TB_DLlite, symbols: &SymbolDict, _verbose
 
     s.push_str("[\n");
 
-    for level in 0..(max_level  + 1) {
+    for level in 0..(max_level + 1) {
         temp_s = format!("  level {}: {{\n", level);
         s.push_str(&temp_s);
 
         for tbi in new_tb.items() {
-            if tbi.level() == level {
-                s.push_str("    {\n");
+            if !tbi.is_trivial() || !dont_write_trivial {
+                if tbi.level() == level {
+                    s.push_str("    {\n");
 
-                let tbi_to_string = tbi_to_string(tbi, symbols).unwrap();
+                    let tbi_to_string = tbi_to_string(tbi, symbols).unwrap();
 
-                temp_s = format!("      tbi: {}\n", &tbi_to_string);
-                s.push_str(&temp_s);
-
-                if level > 0 {
-                    let impliers = tbi.implied_by();
-                    let len_impliers = impliers.len();
-
-                    let mut implier_string = pretty_vector_tbi_to_string(impliers.get(0).unwrap(), symbols);
-
-                    temp_s = format!("      impliers: {}\n", &implier_string);
+                    temp_s = format!("      tbi: {}\n", &tbi_to_string);
                     s.push_str(&temp_s);
 
-                    for i in 1..len_impliers {
-                        implier_string =  pretty_vector_tbi_to_string(impliers.get(i).unwrap(), symbols);
+                    if level > 0 {
+                        let impliers = tbi.implied_by();
+                        let len_impliers = impliers.len();
 
-                        temp_s = format!("                {}\n", &implier_string);
+                        let mut implier_string =
+                            pretty_vector_tbi_to_string(impliers.get(0).unwrap(), symbols);
+
+                        temp_s = format!("      impliers: {}\n", &implier_string);
                         s.push_str(&temp_s);
-                    }
-                }
 
-                s.push_str("    },\n");
+                        for i in 1..len_impliers {
+                            implier_string =
+                                pretty_vector_tbi_to_string(impliers.get(i).unwrap(), symbols);
+
+                            temp_s = format!("                {}\n", &implier_string);
+                            s.push_str(&temp_s);
+                        }
+                    }
+                    s.push_str("    },\n");
+                }
             }
         }
 
@@ -845,7 +898,236 @@ pub fn create_string_for_gencontb(tb: &TB_DLlite, symbols: &SymbolDict, _verbose
     s
 }
 
+pub fn create_string_for_unravel_conflict_tbi(
+    tbi: &TBI_DLlite,
+    symbols: &SymbolDict,
+    pad: usize,
+) -> String {
+    let mut s = format!("{}{}", space_string(pad + 4), "{\n"); // String::from("    {\n");
+    let mut temp_s: String;
 
-pub fn create_string_for_unravel_conflict_tbox(tb: TB_DLlite, symbols: &SymbolDict) -> String {
-    String::from("nope")
+    let tbi_to_string = tbi_to_string(tbi, symbols).unwrap();
+
+    temp_s = format!("{}tbi: {}\n", space_string(pad + 6), &tbi_to_string,);
+    s.push_str(&temp_s);
+
+    let impliers = tbi.implied_by();
+    let len_impliers = impliers.len();
+
+    if len_impliers > 0 {
+        let mut implier_string = pretty_vector_tbi_to_string(impliers.get(0).unwrap(), symbols);
+
+        temp_s = format!("{}impliers: {}\n", space_string(pad + 6), &implier_string);
+        s.push_str(&temp_s);
+
+        for i in 1..len_impliers {
+            implier_string = pretty_vector_tbi_to_string(impliers.get(i).unwrap(), symbols);
+
+            temp_s = format!("{}{}\n", space_string(pad + 16), &implier_string);
+            s.push_str(&temp_s);
+        }
+
+        for i in 0..len_impliers {
+            // here this is bad, we must first create the string to put in
+            let mut implier_s = String::from("");
+            let this_impliers = impliers.get(i).unwrap();
+            for implier in this_impliers {
+                if implier.level() > 0 {
+                    // if not, no need to unravel a grounded axiom
+                    temp_s = create_string_for_unravel_conflict_tbi(implier, symbols, pad + 4);
+                    implier_s.push_str(&temp_s)
+                }
+            }
+
+            if implier_s.len() > 0 && implier_s.as_str() != "\n" {
+                temp_s = format!("{}impliers {}\n", space_string(pad + 6), i + 1);
+                s.push_str(&temp_s);
+                s.push_str(&implier_s);
+            }
+        }
+    }
+
+    temp_s = format!("{}}}\n", space_string(pad + 4));
+    s.push_str(&temp_s);
+    s
+}
+
+pub fn create_string_for_unravel_conflict_tbox(
+    tb: &TB_DLlite,
+    symbols: &SymbolDict,
+    only_conflicts: bool,
+) -> String {
+    let max_level = tb.get_max_level();
+    let mut s = String::from("");
+    let mut temp_s: String;
+    let mut actual_level: usize;
+    let tbis_by_level = tb.get_tbis_by_level(only_conflicts);
+    let pad: usize = 0;
+
+    s.push_str("[\n");
+
+    for lev in 0..(max_level + 1) {
+        actual_level = max_level - lev;
+
+        if tbis_by_level[actual_level] > 0 {
+            temp_s = format!("  level {}: {{\n", actual_level);
+            s.push_str(&temp_s);
+
+            for tbi in tb.items() {
+                if (tbi.level() == actual_level)
+                    && (tbi.is_contradiction() || !only_conflicts)
+                    && !tbi.is_trivial()
+                {
+                    temp_s = create_string_for_unravel_conflict_tbi(tbi, symbols, pad);
+                    s.push_str(&temp_s);
+                }
+            }
+            s.push_str("  },\n");
+        }
+    }
+
+    s.push_str("]");
+    s
+}
+pub fn create_string_for_unravel_conflict_abiq(
+    abiq: &ABIQ_DLlite,
+    symbols: &SymbolDict,
+    pad: usize,
+) -> String {
+    let mut s = format!("{}{}", space_string(pad + 4), "{\n"); // String::from("    {\n");
+    let mut temp_s: String;
+    let to_native = false;
+
+    let abiq_to_string = abiq_to_string(abiq, symbols, to_native).unwrap();
+
+    temp_s = format!("{}abi: {}\n", space_string(pad + 6), &abiq_to_string,);
+    s.push_str(&temp_s);
+
+    let impliers = abiq.implied_by();
+    let len_impliers = impliers.len();
+
+    if len_impliers > 0 {
+        let mut current_implier = impliers.get(0).unwrap();
+        let mut tbis = &current_implier.0;
+        let mut abis = &current_implier.1;
+
+        let mut tbis_string = pretty_vector_tbi_to_string(tbis, symbols);
+        let mut abis_string = pretty_vector_abiq_to_string(abis, symbols);
+
+        temp_s = format!(
+            "{}impliers:\n{}{}: tbis: {}\n{}{}: abis: {}\n",
+            space_string(pad + 6),
+            space_string(pad + 12),
+            1,
+            &tbis_string,
+            space_string(pad + 12),
+            1,
+            &abis_string
+        );
+        s.push_str(&temp_s);
+
+        for i in 1..len_impliers {
+            current_implier = impliers.get(i).unwrap();
+            tbis = &current_implier.0;
+            abis = &current_implier.1;
+            tbis_string = pretty_vector_tbi_to_string(tbis, symbols);
+            abis_string = pretty_vector_abiq_to_string(abis, symbols);
+
+            temp_s = format!(
+                "{}{}: tbis: {}\n{}{}: abis: {}\n",
+                space_string(pad + 12),
+                i + 1,
+                &tbis_string,
+                space_string(pad + 12),
+                i + 1,
+                &abis_string
+            );
+            s.push_str(&temp_s);
+        }
+
+        for i in 0..len_impliers {
+            // here this is bad, we must first create the string to put in
+            let mut implier_s = String::from("");
+            let this_impliers = impliers.get(i).unwrap();
+            let abis = &this_impliers.1;
+            for implier in abis {
+                if implier.level() > 0 {
+                    // if not, no need to unravel a grounded axiom
+                    temp_s = create_string_for_unravel_conflict_abiq(implier, symbols, pad + 4);
+                    implier_s.push_str(&temp_s)
+                }
+            }
+
+            if implier_s.len() > 0 && implier_s.as_str() != "\n" {
+                temp_s = format!("{}impliers {}\n", space_string(pad + 6), i + 1);
+                s.push_str(&temp_s);
+                s.push_str(&implier_s);
+            }
+        }
+    }
+
+    temp_s = format!("{}}}\n", space_string(pad + 4));
+    s.push_str(&temp_s);
+    s
+}
+
+pub fn create_string_for_unravel_conflict_abox(
+    tb: &TB_DLlite,
+    ab: &ABQ_DLlite,
+    symbols: &SymbolDict,
+    only_conflicts: bool,
+    contradictions: &Vec<(TBI_DLlite, Vec<ABIQ_DLlite>)>,
+) -> String {
+    // we only consider abis_contradictions if only_conflicts is present
+
+    let max_level = ab.get_max_level();
+    let mut s = String::from("");
+    let mut temp_s: String;
+    let mut actual_level: usize;
+    let abis_by_level = ab.get_abis_by_level(tb, only_conflicts, contradictions);
+    let pad: usize = 0;
+
+    s.push_str("[\n");
+
+    for lev in 0..(max_level + 1) {
+        actual_level = max_level - lev;
+
+        if abis_by_level[actual_level] > 0 {
+            temp_s = format!("  level {}: {{\n", actual_level);
+            s.push_str(&temp_s);
+
+            for abi in ab.items() {
+                if (abi.level() == actual_level)
+                    && !abi.is_trivial()
+                    && (!only_conflicts || abiq_in_vec_of_vec(abi, contradictions))
+                {
+                    temp_s = create_string_for_unravel_conflict_abiq(abi, symbols, pad);
+                    s.push_str(&temp_s);
+                }
+            }
+            s.push_str("  },\n");
+        }
+    }
+
+    s.push_str("]");
+    s
+}
+
+pub fn abiq_in_vec_of_vec(abiq: &ABIQ_DLlite, v: &Vec<(TBI_DLlite, Vec<ABIQ_DLlite>)>) -> bool {
+    let mut abiq_vec: &Vec<ABIQ_DLlite>;
+
+    for inner_v in v {
+        abiq_vec = &inner_v.1;
+
+        if abiq_vec.contains(abiq) {
+            return true;
+        }
+    }
+    false
+}
+
+fn space_string(l: usize) -> String {
+    let v = vec![""; l];
+    let v = v.join(" ");
+    v
 }

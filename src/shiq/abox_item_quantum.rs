@@ -49,6 +49,7 @@ impl Ord for ABIQ_SHIQ {
 
 impl ABoxItem for ABIQ_SHIQ {
     type NodeItem = Node_SHIQ;
+    type TBI = TBI_SHIQ;
 
     fn negate(&self) -> Self {
         let abi_neg = self.abi.negate();
@@ -65,6 +66,14 @@ impl ABoxItem for ABIQ_SHIQ {
         returns a reference to the role or concept symbol of the  abox item
          */
         self.abi.symbol()
+    }
+
+    fn implied_by(&self) -> &Vec<(Vec<TBI_SHIQ>, Vec<Self>)> {
+        unimplemented!()
+    }
+
+    fn add_to_implied_by(&mut self, impliers: (Vec<TBI_SHIQ>, Vec<Self>)) {
+        unimplemented!()
     }
 }
 
