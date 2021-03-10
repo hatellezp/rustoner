@@ -342,10 +342,10 @@ impl Ontology_DLlite {
     ) -> (Vec<i8>, Vec<(usize, Option<usize>)>, Vec<(usize, usize)>) {
         /*
         so the idea here is to first detect self conflicting nodes and not include them in
-        the afore computation, the second vector helps to keep track of wich abi is mapped to
+        the afore computation, the second vector helps to keep track of which abi is mapped to
         which abi
 
-        WARNING: if the order of elements is changed the matrix is worthless
+        WARNING: if the order of elements is changed this matrix is worthless
          */
         let abq_length = abq.len();
         let matrix: Vec<i8> = Vec::new();

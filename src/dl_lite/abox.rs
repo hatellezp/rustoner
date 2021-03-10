@@ -237,97 +237,34 @@ impl ABQ_DLlite {
 
     pub fn is_inconsistent(&self, tb: &TB_DLlite, verbose: bool) -> bool {
         let tbis = tb.items();
-        let _tb_length = tbis.len();
 
         // we can have a:A and A < (-A)
         // also a:A a:B and A < (-B) the first case is an special case, so we test for the second
         // only
 
-        let self_length = self.length;
+        let self_lenght = self.len();
+        let mut abiq_i: &ABIQ_DLlite;
+        let mut abiq_j: &ABIQ_DLlite;
 
-        for tbi in tbis {
-            if verbose {
-                println!(" -- ABQ::is_inconsistent: comparing against {}", &tbi);
-            }
+        for tbi in tb.items() {
+            let lside = tbi.lside();
+            let rside = tbi.rside();
+            for i in 0..self_lenght {
+                abiq_i = self.items.get(i).unwrap();
 
-            let left = tbi.lside();
-            let right = tbi.rside();
+                // you can begin at i
+                for j in i..self_lenght {
+                    abiq_j = self.items.get(j).unwrap();
 
-            let right_keeper: Node_DLlite;
-            let right_mod: &Node_DLlite;
+                    if abiq_i.same_nominal(abiq_j) && abiq_i.item().is_negation(abiq_j.item()) {
 
-            if tbi.is_negative_inclusion() && !tbi.is_trivial() {
-                if verbose {
-                    println!(" -- ABQ::is_inconsistent: negative tbi, taking its child");
-                }
-                /*
-                let right_mod_op =  Node_DLlite::child_old(Some(right));
 
-                right_mod = match right_mod_op {
-                    Some(rm) => rm,
-                    Option::None => {
-                        println!("tbi: {:?}, righ_mod_op: {:?}", tbi, right_mod_op);
-                        panic!("see here")
-                    }
-                };
-
-                 */
-                right_mod = Node_DLlite::child_old(Some(right)).unwrap();
-            } else {
-                if verbose {
-                    println!(" -- ABQ::is_inconsistent: positive tbi, negating");
-                }
-
-                right_keeper = right.clone().negate();
-                right_mod = &right_keeper;
-            }
-
-            for i in 0..self_length {
-                let abq_i = self.items.get(i).unwrap();
-                let node_i = abq_i.abi().symbol();
-
-                if verbose {
-                    println!(
-                        " -- ABQ::is_inconsistent: analysing {} with index {}",
-                        abq_i, i
-                    );
-                }
-
-                if node_i == left {
-                    if verbose {
-                        println!(" -- ABQ::is_inconsistent: found match for left side, continuing analysis");
-                    }
-
-                    for j in 0..self_length {
-                        if j != i {
-                            let abq_j = self.items.get(j).unwrap();
-                            let node_j = abq_j.abi().symbol();
-
-                            if verbose {
-                                println!(
-                                    " -- ABQ::is_inconsistent: analysing against {} with index {}",
-                                    abq_j, j
-                                );
-                            }
-
-                            if node_j == right_mod {
-                                if verbose {
-                                    println!(
-                                        " -- ABQ::is_inconsistent: found conflict, returning true"
-                                    );
-                                }
-
-                                return true;
-                            }
-                        }
+                        return true
                     }
                 }
             }
         }
 
-        if verbose {
-            println!(" -- ABQ::is_inconsistent: no conflict found, returning false");
-        }
         false
     }
 
