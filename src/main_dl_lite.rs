@@ -22,6 +22,8 @@ use crate::dl_lite::string_formatter::{
 use crate::dl_lite::tbox::TB_DLlite;
 use crate::dl_lite::tbox_item::TBI_DLlite;
 
+use crate::kb::aggr_functions::{aggr_sum, aggr_count, aggr_max, aggr_mean};
+
 // from the interface module
 use crate::interface::cli::{Cli, Task};
 
@@ -532,7 +534,21 @@ pub fn main() {
                                 }
                             }
                             Task::GENCONAB => {}
-                            Task::RNKAB => {}
+                            Task::RNKAB => {
+                                // the current abox is not the completed one
+                                let abox = onto.abox().unwrap();
+                                deduction_tree = false;
+
+                                let matrix_detailed = onto.conflict_matrix(abox, deduction_tree, verbose);
+
+                                println!("{:?}\n", matrix_detailed);
+                                println!("{:?}", onto.symbols());
+
+                                let (m, rtv, vtr) = matrix_detailed;
+
+                                let matrixA = Ontology_DLlite::compute_A_matrix(abox, &m, &rtv, &vtr, aggr_sum, verbose);
+                                println!("{:?}", &matrixA);
+                            }
                             _ => {
                                 println!("not sure how you arrived here...");
                             }

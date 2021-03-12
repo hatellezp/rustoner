@@ -101,3 +101,5 @@ pub type SymbolDict = HashMap<String, (usize, DLType)>;
 pub type TbRule<T> = fn(Vec<&T>, bool) -> Option<Vec<T>>;
 
 pub type AbRule<T, A> = fn(Vec<&A>, Vec<&T>, bool) -> Option<Vec<A>>;
+
+pub type AggrFn = fn(Vec<f64>) -> f64;

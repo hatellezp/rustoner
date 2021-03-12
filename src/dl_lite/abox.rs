@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::collections::{VecDeque, HashMap};
 use std::fmt;
 use std::sync::{Arc, Mutex};
 
@@ -11,7 +11,7 @@ use crate::dl_lite::rule::{dl_lite_abox_rule_one, dl_lite_abox_rule_three, dl_li
 use crate::dl_lite::string_formatter::abiq_in_vec_of_vec;
 use crate::dl_lite::tbox::TB_DLlite;
 use crate::dl_lite::tbox_item::TBI_DLlite;
-use crate::kb::knowledge_base::{ABox, ABoxItem, AbRule, TBox, TBoxItem};
+use crate::kb::knowledge_base::{ABox, ABoxItem, AbRule, TBox, TBoxItem, AggrFn};
 use crate::kb::types::CR;
 
 #[derive(PartialEq, Debug, Clone)]
@@ -124,8 +124,7 @@ impl ABQ_DLlite {
 
         for i in index {
             if i < self.length {
-                let abi = (&self.items[i]).clone();
-                sub_abox.add(abi);
+                sub_abox.add(self.items[i].clone());
             }
         }
 
@@ -236,7 +235,8 @@ impl ABQ_DLlite {
     }
 
     pub fn is_inconsistent(&self, tb: &TB_DLlite, verbose: bool) -> bool {
-        let tbis = tb.items();
+        let take_trivial = false;
+        let tbis = tb.negative_inclusions(take_trivial);
 
         // we can have a:A and A < (-A)
         // also a:A a:B and A < (-B) the first case is an special case, so we test for the second
@@ -245,10 +245,13 @@ impl ABQ_DLlite {
         let self_lenght = self.len();
         let mut abiq_i: &ABIQ_DLlite;
         let mut abiq_j: &ABIQ_DLlite;
+        let mut is_match: bool;
 
-        for tbi in tb.items() {
+        for tbi in tbis {
+            // this are only negative inclusions
             let lside = tbi.lside();
             let rside = tbi.rside();
+
             for i in 0..self_lenght {
                 abiq_i = self.items.get(i).unwrap();
 
@@ -256,10 +259,12 @@ impl ABQ_DLlite {
                 for j in i..self_lenght {
                     abiq_j = self.items.get(j).unwrap();
 
-                    if abiq_i.same_nominal(abiq_j) && abiq_i.item().is_negation(abiq_j.item()) {
+                    if abiq_i.same_nominal(abiq_j) {
+                        is_match = (abiq_i.item() == lside && abiq_j.item().is_negation(rside)) || (abiq_i.item() == rside && abiq_j.item().is_negation(lside));
 
-
-                        return true
+                        if is_match {
+                            return true;
+                        }
                     }
                 }
             }
@@ -619,4 +624,6 @@ impl ABQ_DLlite {
 
         levels
     }
+
+
 }

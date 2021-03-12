@@ -29,7 +29,7 @@ use crate::dl_lite::sqlite_interface::{
 use crate::interface::utilities::parse_name_from_filename;
 
 // import traits
-use crate::kb::knowledge_base::{ABox, ABoxItem, SymbolDict, TBox, TBoxItem};
+use crate::kb::knowledge_base::{ABox, ABoxItem, SymbolDict, TBox, TBoxItem, AggrFn};
 
 /*
 an ontology model
@@ -339,7 +339,7 @@ impl Ontology_DLlite {
         abq: &ABQ_DLlite,
         deduction_tree: bool,
         verbose: bool,
-    ) -> (Vec<i8>, Vec<(usize, Option<usize>)>, Vec<(usize, usize)>) {
+    ) -> (Vec<i8>, HashMap<usize, Option<usize>>, HashMap<usize, usize>) {
         /*
         so the idea here is to first detect self conflicting nodes and not include them in
         the afore computation, the second vector helps to keep track of which abi is mapped to
@@ -349,8 +349,14 @@ impl Ontology_DLlite {
          */
         let abq_length = abq.len();
         let matrix: Vec<i8> = Vec::new();
-        let mut real_to_virtual: Vec<(usize, Option<usize>)> = Vec::new();
-        let mut virtual_to_real: Vec<(usize, usize)> = Vec::new();
+
+        // map to both sides
+        let mut real_to_virtual: HashMap<usize, Option<usize>> = HashMap::new();
+        let mut virtual_to_real: HashMap<usize, usize> = HashMap::new();
+
+        // let inner_verbose = false;
+        let inner_verbose = verbose;
+        let mut already_computed: HashMap<(usize, usize), i8> = HashMap::new();
 
         if abq_length == 0 {
             if verbose {
@@ -372,7 +378,7 @@ impl Ontology_DLlite {
                     );
                 }
 
-                let tmp_abq = tmp_abq.complete(self.tbox(), deduction_tree, verbose);
+                let tmp_abq = tmp_abq.complete(self.tbox(), deduction_tree, inner_verbose);
 
                 if tmp_abq.is_inconsistent(self.tbox(), verbose) {
                     if verbose {
@@ -380,6 +386,7 @@ impl Ontology_DLlite {
                             " -- Ontology::conflict_matrix: {:?} found to be self conflicting",
                             abq.get(index)
                         );
+                        // println!("\n{} \n {}\n", self.tbox_to_string(self.tbox(), false), self.abox_to_string_quantum(&tmp_abq));
                     }
 
                     self_conflicting.push(index);
@@ -396,15 +403,19 @@ impl Ontology_DLlite {
 
             // before the matrix create a vector pointing to the good values
             let mut current_length: usize = 0;
+
             for index in 0..abq_length {
                 if !self_conflicting.contains(&index) {
-                    real_to_virtual.push((index, Some(current_length)));
-                    virtual_to_real.push((current_length, index));
+                    real_to_virtual.insert(index, Some(current_length));
+                    virtual_to_real.insert(current_length, index);
                     current_length += 1;
                 } else {
-                    real_to_virtual.push((index, Option::None));
+                    real_to_virtual.insert(index, Option::None);
                 }
             }
+
+            // TESTING: I'm here
+
             // now we have two mappers:
             // real_to_virtual: given a real index of abq it will output the index of the item in the virtual list
             // virtual_to_real: given a virtual index it outputs the real index
@@ -422,7 +433,7 @@ impl Ontology_DLlite {
             normally we can't have both, we weed out the self conflicting nodes...
              */
             for i in 0..virtual_length {
-                let (_virtual_index_i, real_index_i) = virtual_to_real.get(i).unwrap();
+                let real_index_i = virtual_to_real.get(&i).unwrap();
 
                 let abiq_i = abq.get(*real_index_i).unwrap();
 
@@ -434,62 +445,80 @@ impl Ontology_DLlite {
                 }
 
                 for j in 0..virtual_length {
+                    // no need of same element analysis
                     if i != j {
-                        let (_virtual_index_j, real_index_j) = virtual_to_real.get(j).unwrap();
+                        let ee = already_computed.get(&(i,j));
+                        if already_computed.contains_key(&(i,j)) && already_computed.get(&(i,j)).unwrap() == &(-1) {
+                            matrix[virtual_length * i + j] = -1;
+                            already_computed.insert((j,i), -1);
 
-                        let abiq_j = abq.get(*real_index_j).unwrap();
-                        let abiq_j_neg = abiq_j.negate();
-
-                        if verbose {
-                            println!(" -- Ontology::conflict_matrix: comparing against {} and its negation {}", abiq_j, &abiq_j_neg);
-                        }
-
-                        let abq_tmp =
-                            ABQ_DLlite::from_vec("tmp", vec![abiq_i.clone(), abiq_j.clone()]);
-                        let abq_tmp_neg =
-                            ABQ_DLlite::from_vec("tmp_neg", vec![abiq_i.clone(), abiq_j_neg]);
-
-                        println!(
-                            "    --  abq_tmp: {}\n    --  abq_tmp_neg: {}",
-                            self.abox_to_string_quantum(&abq_tmp),
-                            self.abox_to_string_quantum(&abq_tmp_neg)
-                        );
-
-                        let abq_tmp = abq_tmp.complete(self.tbox(), deduction_tree, verbose);
-                        let abq_tmp_neg =
-                            abq_tmp_neg.complete(self.tbox(), deduction_tree, verbose);
-
-                        println!(
-                            "    -- abq_tmp: {}\n    --  abq_tmp_neg: {}",
-                            self.abox_to_string_quantum(&abq_tmp),
-                            self.abox_to_string_quantum(&abq_tmp_neg)
-                        );
-
-                        let i_implies_not_j = abq_tmp.is_inconsistent(self.tbox(), verbose);
-                        let i_implies_j = abq_tmp_neg.is_inconsistent(self.tbox(), verbose);
-
-                        if verbose {
-                            println!(" -- Ontology::conflict_matrix: found that {} with index {} implies {} with index {} to be {}", abiq_i, i, abiq_j, j, i_implies_j);
-                            println!(" -- Ontology::conflict_matrix: found that {} with index {} implies the negation of {} with index {} to be {}", abiq_i, i, abiq_j, j, i_implies_not_j);
-                        }
-
-                        if i_implies_not_j {
                             if verbose {
-                                println!(" -- Ontology::conflict_matrix: setting position ({}, {}) to -1", j, i);
+                                println!(" -- Ontology::conflict_matrix: already found negative coefficient for index: ({}, {}), passing", i, j);
+                            }
+                        } else {
+                            let real_index_j = virtual_to_real.get(&j).unwrap();
+
+                            let abiq_j = abq.get(*real_index_j).unwrap();
+                            let abiq_j_neg = abiq_j.negate();
+
+                            if verbose {
+                                println!(" -- Ontology::conflict_matrix: comparing against {} and its negation {}", abiq_j, &abiq_j_neg);
                             }
 
-                            matrix[virtual_length * j + i] = -1;
-                        }
+                            let abq_tmp =
+                                ABQ_DLlite::from_vec("tmp", vec![abiq_i.clone(), abiq_j.clone()]);
+                            let abq_tmp_neg =
+                                ABQ_DLlite::from_vec("tmp_neg", vec![abiq_i.clone(), abiq_j_neg]);
 
-                        if i_implies_j {
                             if verbose {
                                 println!(
-                                    " -- Ontology::conflict_matrix: setting position ({}, {}) to 1",
-                                    j, i
+                                    "    --  abq_tmp: {}\n    --  abq_tmp_neg: {}",
+                                    self.abox_to_string_quantum(&abq_tmp),
+                                    self.abox_to_string_quantum(&abq_tmp_neg)
                                 );
                             }
 
-                            matrix[virtual_length * j + 1] = 1;
+                            let abq_tmp = abq_tmp.complete(self.tbox(), deduction_tree, inner_verbose);
+                            let abq_tmp_neg =
+                                abq_tmp_neg.complete(self.tbox(), deduction_tree, inner_verbose);
+
+                            if verbose {
+                                println!(
+                                    "    -- (after completion)\n    -- abq_tmp: {}\n    --  abq_tmp_neg: {}",
+                                    self.abox_to_string_quantum(&abq_tmp),
+                                    self.abox_to_string_quantum(&abq_tmp_neg)
+                                );
+
+                            }
+
+                            let i_implies_not_j = abq_tmp.is_inconsistent(self.tbox(), verbose);
+                            let i_implies_j = abq_tmp_neg.is_inconsistent(self.tbox(), verbose);
+
+                            if verbose {
+                                println!(" -- Ontology::conflict_matrix: found that {} with index {} implies {} with index {} to be {}", abiq_i, i, abiq_j, j, i_implies_j);
+                                println!(" -- Ontology::conflict_matrix: found that {} with index {} implies the negation of {} with index {} to be {}", abiq_i, i, abiq_j, j, i_implies_not_j);
+                            }
+
+                            if i_implies_not_j {
+                                if verbose {
+                                    println!(" -- Ontology::conflict_matrix: setting position ({}, {}) to -1", j, i);
+                                }
+
+                                matrix[virtual_length * j + i] = -1;
+                                already_computed.insert((i,j), -1);
+                            }
+
+                            if i_implies_j {
+                                if verbose {
+                                    println!(
+                                        " -- Ontology::conflict_matrix: setting position ({}, {}) to 1",
+                                        j, i
+                                    );
+                                }
+
+                                matrix[virtual_length * j + i] = 1;
+                                already_computed.insert((i,j), 1);
+                            }
                         }
                     }
                 }
@@ -497,6 +526,59 @@ impl Ontology_DLlite {
 
             (matrix, real_to_virtual, virtual_to_real)
         }
+    }
+
+    // here we compute the A matrix
+    // remember: a*1 - b*A = c*(1,...,1)
+    // (Vec<i8>, HashMap<usize, Option<usize>>, HashMap<usize, usize>)
+    pub fn compute_A_matrix(abq: &ABQ_DLlite, matrix: &Vec<i8>, real_to_virtual: &HashMap<usize, Option<usize>>, virtual_to_real: &HashMap<usize, usize>, aggr: AggrFn, verbose: bool) -> Vec<f64> {
+        let matrix_len = matrix.len();
+        let mut v: Vec<f64> = vec![0 as f64; matrix_len];
+        let mut real_index_op: Option<&usize>;
+        let mut abiq_op: Option<&ABIQ_DLlite>;
+        let mut aggr_v: f64;
+        let mut i: usize;
+        let mut j: usize;
+        let root = (matrix_len as f64).sqrt() as usize;
+
+        for index in 0..matrix_len {
+
+            i = index / root;
+            j = index - i*root;
+
+            if verbose {
+                println!(" -- Ontology::compute_A_matrix: for lenght {} found index i: {} and index j: {} with original index: {}", matrix_len, i, j, index);
+            }
+
+            // TODO: verify that this should be j
+            // real_index_op = virtual_to_real.get(&i);
+            real_index_op = virtual_to_real.get(&j);
+
+            match real_index_op {
+                Option::None => {
+                    if verbose {
+                        println!(" -- Ontology::compute_A_matrix: real index gave nothing for index: {}", j);
+                    }
+                }, // simply pass
+                Some(real_index) => {
+                    abiq_op = abq.get(*real_index);
+
+                    match abiq_op {
+                        Option::None => {
+                            if verbose {
+                                println!(" -- Ontology::compute_A_matrix: index {} gave real index {} that gave nothing!", i, real_index);
+                            }
+                        }, // pass again
+                        Some(abiq) => {
+                            aggr_v = aggr(vec![abiq.prevalue()]);
+                            v[index] = aggr_v * (matrix[index] as f64);
+                        },
+                    }
+                },
+            }
+        }
+
+        v
     }
 
     pub fn contains_contradiction(&self) -> bool {

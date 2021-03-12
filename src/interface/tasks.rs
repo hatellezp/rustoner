@@ -4,7 +4,7 @@ use crate::dl_lite::tbox::TB_DLlite;
 use crate::dl_lite::tbox_item::TBI_DLlite;
 use std::io;
 
-use crate::kb::knowledge_base::{ABox};
+use crate::kb::knowledge_base::ABox;
 
 /*------------------------------------------------------------------------------------------------*/
 // tbox tasks

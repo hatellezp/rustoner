@@ -14,6 +14,7 @@ use crate::dl_lite::rule::{
 use crate::dl_lite::tbox_item::TBI_DLlite;
 use crate::kb::knowledge_base::{TBox, TBoxItem, TbRule};
 use crate::kb::types::CR;
+use std::mem::take;
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct TB_DLlite {
@@ -140,12 +141,12 @@ impl TB_DLlite {
     }
 
     // get a list to negative inclusions
-    pub fn negative_inclusions(&self) -> Vec<&TBI_DLlite> {
+    pub fn negative_inclusions(&self, take_trivial: bool) -> Vec<&TBI_DLlite> {
         let mut neg_tbi: Vec<&TBI_DLlite> = Vec::new();
 
         for tbi in &self.items {
-            if tbi.is_negative_inclusion() {
-                neg_tbi.push(tbi)
+            if tbi.is_negative_inclusion() && (!tbi.is_trivial() || take_trivial){
+                neg_tbi.push(tbi);
             }
         }
 
