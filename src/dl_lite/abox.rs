@@ -1,4 +1,4 @@
-use std::collections::{VecDeque, HashMap};
+use std::collections::VecDeque;
 use std::fmt;
 use std::sync::{Arc, Mutex};
 
@@ -6,12 +6,12 @@ use crate::dl_lite::abox_item_quantum::ABIQ_DLlite;
 use crate::dl_lite::helpers_and_utilities::{
     complete_helper_add_if_necessary_general, complete_helper_dump_from_mutex_temporal_to_current,
 };
-use crate::dl_lite::node::Node_DLlite;
+
 use crate::dl_lite::rule::{dl_lite_abox_rule_one, dl_lite_abox_rule_three, dl_lite_abox_rule_two};
 use crate::dl_lite::string_formatter::abiq_in_vec_of_vec;
 use crate::dl_lite::tbox::TB_DLlite;
 use crate::dl_lite::tbox_item::TBI_DLlite;
-use crate::kb::knowledge_base::{ABox, ABoxItem, AbRule, TBox, TBoxItem, AggrFn};
+use crate::kb::knowledge_base::{ABox, ABoxItem, AbRule, TBox, TBoxItem};
 use crate::kb::types::CR;
 
 #[derive(PartialEq, Debug, Clone)]
@@ -234,7 +234,7 @@ impl ABQ_DLlite {
         contradictions
     }
 
-    pub fn is_inconsistent(&self, tb: &TB_DLlite, verbose: bool) -> bool {
+    pub fn is_inconsistent(&self, tb: &TB_DLlite, _verbose: bool) -> bool {
         let take_trivial = false;
         let tbis = tb.negative_inclusions(take_trivial);
 
@@ -260,7 +260,8 @@ impl ABQ_DLlite {
                     abiq_j = self.items.get(j).unwrap();
 
                     if abiq_i.same_nominal(abiq_j) {
-                        is_match = (abiq_i.item() == lside && abiq_j.item().is_negation(rside)) || (abiq_i.item() == rside && abiq_j.item().is_negation(lside));
+                        is_match = (abiq_i.item() == lside && abiq_j.item().is_negation(rside))
+                            || (abiq_i.item() == rside && abiq_j.item().is_negation(lside));
 
                         if is_match {
                             return true;
@@ -624,6 +625,4 @@ impl ABQ_DLlite {
 
         levels
     }
-
-
 }

@@ -1,7 +1,7 @@
 extern crate itertools;
 
-use itertools::fold;
 use crate::kb::knowledge_base::AggrFn;
+use itertools::fold;
 
 fn sum(v: Vec<f64>) -> f64 {
     match v.len() {
@@ -28,7 +28,7 @@ fn count(v: Vec<f64>) -> f64 {
     v.len() as f64
 }
 
-pub const aggr_sum: AggrFn = sum;
-pub const aggr_max: AggrFn = max;
-pub const aggr_mean: AggrFn = arith_mean;
-pub const aggr_count: AggrFn = count;
+pub const AGGR_SUM: AggrFn = sum;
+pub const AGGR_MAX: AggrFn = max;
+pub const AGGR_MEAN: AggrFn = arith_mean;
+pub const AGGR_COUNT: AggrFn = count;

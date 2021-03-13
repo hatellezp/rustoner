@@ -29,7 +29,7 @@ use crate::dl_lite::sqlite_interface::{
 use crate::interface::utilities::parse_name_from_filename;
 
 // import traits
-use crate::kb::knowledge_base::{ABox, ABoxItem, SymbolDict, TBox, TBoxItem, AggrFn};
+use crate::kb::knowledge_base::{ABox, ABoxItem, AggrFn, SymbolDict, TBox, TBoxItem};
 
 /*
 an ontology model
@@ -339,7 +339,11 @@ impl Ontology_DLlite {
         abq: &ABQ_DLlite,
         deduction_tree: bool,
         verbose: bool,
-    ) -> (Vec<i8>, HashMap<usize, Option<usize>>, HashMap<usize, usize>) {
+    ) -> (
+        Vec<i8>,
+        HashMap<usize, Option<usize>>,
+        HashMap<usize, usize>,
+    ) {
         /*
         so the idea here is to first detect self conflicting nodes and not include them in
         the afore computation, the second vector helps to keep track of which abi is mapped to
@@ -447,10 +451,12 @@ impl Ontology_DLlite {
                 for j in 0..virtual_length {
                     // no need of same element analysis
                     if i != j {
-                        let ee = already_computed.get(&(i,j));
-                        if already_computed.contains_key(&(i,j)) && already_computed.get(&(i,j)).unwrap() == &(-1) {
+                        let _ee = already_computed.get(&(i, j));
+                        if already_computed.contains_key(&(i, j))
+                            && already_computed.get(&(i, j)).unwrap() == &(-1)
+                        {
                             matrix[virtual_length * i + j] = -1;
-                            already_computed.insert((j,i), -1);
+                            already_computed.insert((j, i), -1);
 
                             if verbose {
                                 println!(" -- Ontology::conflict_matrix: already found negative coefficient for index: ({}, {}), passing", i, j);
@@ -478,7 +484,8 @@ impl Ontology_DLlite {
                                 );
                             }
 
-                            let abq_tmp = abq_tmp.complete(self.tbox(), deduction_tree, inner_verbose);
+                            let abq_tmp =
+                                abq_tmp.complete(self.tbox(), deduction_tree, inner_verbose);
                             let abq_tmp_neg =
                                 abq_tmp_neg.complete(self.tbox(), deduction_tree, inner_verbose);
 
@@ -488,7 +495,6 @@ impl Ontology_DLlite {
                                     self.abox_to_string_quantum(&abq_tmp),
                                     self.abox_to_string_quantum(&abq_tmp_neg)
                                 );
-
                             }
 
                             let i_implies_not_j = abq_tmp.is_inconsistent(self.tbox(), verbose);
@@ -505,7 +511,7 @@ impl Ontology_DLlite {
                                 }
 
                                 matrix[virtual_length * j + i] = -1;
-                                already_computed.insert((i,j), -1);
+                                already_computed.insert((i, j), -1);
                             }
 
                             if i_implies_j {
@@ -517,7 +523,7 @@ impl Ontology_DLlite {
                                 }
 
                                 matrix[virtual_length * j + i] = 1;
-                                already_computed.insert((i,j), 1);
+                                already_computed.insert((i, j), 1);
                             }
                         }
                     }
@@ -531,7 +537,14 @@ impl Ontology_DLlite {
     // here we compute the A matrix
     // remember: a*1 - b*A = c*(1,...,1)
     // (Vec<i8>, HashMap<usize, Option<usize>>, HashMap<usize, usize>)
-    pub fn compute_A_matrix(abq: &ABQ_DLlite, matrix: &Vec<i8>, real_to_virtual: &HashMap<usize, Option<usize>>, virtual_to_real: &HashMap<usize, usize>, aggr: AggrFn, verbose: bool) -> Vec<f64> {
+    pub fn compute_A_matrix(
+        abq: &ABQ_DLlite,
+        matrix: &Vec<i8>,
+        _real_to_virtual: &HashMap<usize, Option<usize>>,
+        virtual_to_real: &HashMap<usize, usize>,
+        aggr: AggrFn,
+        verbose: bool,
+    ) -> Vec<f64> {
         let matrix_len = matrix.len();
         let mut v: Vec<f64> = vec![0 as f64; matrix_len];
         let mut real_index_op: Option<&usize>;
@@ -542,9 +555,8 @@ impl Ontology_DLlite {
         let root = (matrix_len as f64).sqrt() as usize;
 
         for index in 0..matrix_len {
-
             i = index / root;
-            j = index - i*root;
+            j = index - i * root;
 
             if verbose {
                 println!(" -- Ontology::compute_A_matrix: for lenght {} found index i: {} and index j: {} with original index: {}", matrix_len, i, j, index);
@@ -557,9 +569,12 @@ impl Ontology_DLlite {
             match real_index_op {
                 Option::None => {
                     if verbose {
-                        println!(" -- Ontology::compute_A_matrix: real index gave nothing for index: {}", j);
+                        println!(
+                            " -- Ontology::compute_A_matrix: real index gave nothing for index: {}",
+                            j
+                        );
                     }
-                }, // simply pass
+                } // simply pass
                 Some(real_index) => {
                     abiq_op = abq.get(*real_index);
 
@@ -568,13 +583,13 @@ impl Ontology_DLlite {
                             if verbose {
                                 println!(" -- Ontology::compute_A_matrix: index {} gave real index {} that gave nothing!", i, real_index);
                             }
-                        }, // pass again
+                        } // pass again
                         Some(abiq) => {
                             aggr_v = aggr(vec![abiq.prevalue()]);
                             v[index] = aggr_v * (matrix[index] as f64);
-                        },
+                        }
                     }
-                },
+                }
             }
         }
 

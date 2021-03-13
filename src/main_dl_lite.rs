@@ -1,9 +1,14 @@
+mod alg_math;
 mod dl_lite;
 mod interface;
 mod kb;
 
 // for cli interface
 use structopt::StructOpt;
+
+// from alg_math
+use crate::alg_math::bounds::find_bound_complex_wrapper;
+use crate::alg_math::utilities::solve_system_wrapper;
 
 // from kb
 use crate::kb::knowledge_base::{ABox, SymbolDict, TBox, TBoxItem};
@@ -22,7 +27,7 @@ use crate::dl_lite::string_formatter::{
 use crate::dl_lite::tbox::TB_DLlite;
 use crate::dl_lite::tbox_item::TBI_DLlite;
 
-use crate::kb::aggr_functions::{aggr_sum, aggr_count, aggr_max, aggr_mean};
+use crate::kb::aggr_functions::AGGR_SUM;
 
 // from the interface module
 use crate::interface::cli::{Cli, Task};
@@ -31,6 +36,11 @@ use crate::interface::utilities::{get_filetype, parse_name_from_filename, write_
 
 // to ask basic questions
 use question::{Answer, Question};
+
+// constants for the bound computing
+const TOLERANCE: f64 = 0.000001;
+const M_SCALER: f64 = 1.1;
+const B_TRANSLATE: f64 = 1.;
 
 // the main function
 pub fn main() {
@@ -539,15 +549,33 @@ pub fn main() {
                                 let abox = onto.abox().unwrap();
                                 deduction_tree = false;
 
-                                let matrix_detailed = onto.conflict_matrix(abox, deduction_tree, verbose);
+                                let matrix_detailed =
+                                    onto.conflict_matrix(abox, deduction_tree, verbose);
 
                                 println!("{:?}\n", matrix_detailed);
                                 println!("{:?}", onto.symbols());
 
                                 let (m, rtv, vtr) = matrix_detailed;
 
-                                let matrixA = Ontology_DLlite::compute_A_matrix(abox, &m, &rtv, &vtr, aggr_sum, verbose);
+                                let matrixA = Ontology_DLlite::compute_A_matrix(
+                                    abox, &m, &rtv, &vtr, AGGR_SUM, verbose,
+                                );
                                 println!("{:?}", &matrixA);
+
+                                let bound_op = find_bound_complex_wrapper(
+                                    matrixA.clone(),
+                                    TOLERANCE,
+                                    M_SCALER,
+                                    B_TRANSLATE,
+                                );
+
+                                println!("{:?}", &bound_op);
+
+                                let rank_len = (matrixA.len() as f64).sqrt() as usize;
+
+                                let mut rank: Vec<f64> = vec![0.; rank_len];
+                                solve_system_wrapper(matrixA, &mut rank, bound_op.unwrap(), 1., 1.);
+                                println!("{:?}", &rank);
                             }
                             _ => {
                                 println!("not sure how you arrived here...");
