@@ -2,7 +2,7 @@ use crate::dl_lite::abox::AbqDllite;
 use crate::dl_lite::string_formatter::{
     abiq_to_string, string_to_abiq, string_to_symbol, string_to_tbi, tbi_to_string, PS,
 };
-use crate::dl_lite::tbox::TB_DLlite;
+use crate::dl_lite::tbox::TBDllite;
 use crate::interface::utilities::parse_name_from_filename;
 use crate::kb::types::DLType;
 use std::collections::HashMap;
@@ -174,7 +174,7 @@ pub fn parse_tbox_native(
     filename: &str,
     symbols: &SymbolDict,
     verbose: bool,
-) -> io::Result<TB_DLlite> {
+) -> io::Result<TBDllite> {
     let file_result = File::open(filename);
 
     match file_result {
@@ -194,7 +194,7 @@ pub fn parse_tbox_native(
             let mut begin_tbox_encountered = false;
             let mut end_tbox_encountered = false;
 
-            let mut tb = TB_DLlite::new();
+            let mut tb = TBDllite::new();
 
             for line_result in reader.lines() {
                 match line_result {
@@ -312,7 +312,7 @@ pub fn parse_tbox_native(
 }
 
 pub fn tbox_to_native_string(
-    tbox: &TB_DLlite,
+    tbox: &TBDllite,
     symbols: &SymbolDict,
     dont_write_trivial: bool,
 ) -> Option<String> {

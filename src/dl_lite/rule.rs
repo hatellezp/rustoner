@@ -1,6 +1,6 @@
 use crate::dl_lite::abox_item::AbiDllite;
 use crate::dl_lite::abox_item_quantum::AbiqDllite;
-use crate::dl_lite::node::Node_DLlite;
+use crate::dl_lite::node::NodeDllite;
 use crate::dl_lite::tbox_item::TBI_DLlite;
 use crate::kb::knowledge_base::{ABox, ABoxItem, Implier, Item, TBox, TBoxItem};
 use crate::kb::types::DLType;
@@ -33,8 +33,8 @@ pub fn dl_lite_rule_zero(vec: Vec<&TBI_DLlite>, deduction_tree: bool) -> Option<
         let tbi = vec[0]; // we only take the first
 
         if DLType::all_concepts(tbi.lside().t(), tbi.rside().t()) {
-            let bottom = Node_DLlite::new(Option::None, DLType::Bottom);
-            let top = Node_DLlite::new(Option::None, DLType::Top);
+            let bottom = NodeDllite::new(Option::None, DLType::Bottom);
+            let top = NodeDllite::new(Option::None, DLType::Top);
 
             if bottom.is_none() || top.is_none() {
                 Option::None
@@ -179,12 +179,12 @@ pub fn dl_lite_rule_three(vec: Vec<&TBI_DLlite>, deduction_tree: bool) -> Option
             // two time because is second child we want
 
             // I will use recursive child
-            let tbi2_rside_second_child = Node_DLlite::child(Some(tbi2.lside()), 2);
+            let tbi2_rside_second_child = NodeDllite::child(Some(tbi2.lside()), 2);
 
             if (&tbi2_rside_second_child).is_some() {
                 // this big ass condition verfies that rside of tbi2 is of the correct form
                 if tbi2.rside().t() == DLType::NegatedConcept
-                    && (Node_DLlite::child_old(Some(tbi2.rside())).unwrap().t()
+                    && (NodeDllite::child_old(Some(tbi2.rside())).unwrap().t()
                         == DLType::ExistsConcept)
                 {
                     if tbi2_rside_second_child.unwrap().get(0).unwrap() == &tbi1.rside() {
@@ -241,19 +241,19 @@ pub fn dl_lite_rule_four(vec: Vec<&TBI_DLlite>, deduction_tree: bool) -> Option<
             Option::None
         } else {
             // two time because is second child we want
-            let tbi2_rside_third_child = Node_DLlite::child(Some(tbi2.lside()), 3);
+            let tbi2_rside_third_child = NodeDllite::child(Some(tbi2.lside()), 3);
 
             if (&tbi2_rside_third_child).is_some() {
                 let tbi2_rside = tbi2.rside();
                 // this big ass condition verfies that rside to tbi2 is of the correct form
                 if tbi2_rside.t() == DLType::NegatedConcept
-                    && Node_DLlite::child(Some(tbi2_rside), 1)
+                    && NodeDllite::child(Some(tbi2_rside), 1)
                         .unwrap()
                         .get(0)
                         .unwrap()
                         .t()
                         == DLType::ExistsConcept
-                    && Node_DLlite::child(Some(tbi2_rside), 2)
+                    && NodeDllite::child(Some(tbi2_rside), 2)
                         .unwrap()
                         .get(0)
                         .unwrap()
@@ -295,13 +295,13 @@ pub fn dl_lite_rule_five(vec: Vec<&TBI_DLlite>, deduction_tree: bool) -> Option<
         Option::None
     } else {
         let tbi = vec[0];
-        let tbi_rside_child = Node_DLlite::child(Some(&tbi.rside()), 1);
+        let tbi_rside_child = NodeDllite::child(Some(&tbi.rside()), 1);
 
         let big_level = tbi.level();
 
         if tbi.lside().t() == DLType::ExistsConcept && tbi_rside_child.is_some() {
             if &tbi.lside() == tbi_rside_child.unwrap().get(0).unwrap() {
-                let role = Node_DLlite::child(Some(tbi.lside()), 1)
+                let role = NodeDllite::child(Some(tbi.lside()), 1)
                     .unwrap()
                     .get(0)
                     .unwrap()
@@ -353,7 +353,7 @@ pub fn dl_lite_rule_seven(vec: Vec<&TBI_DLlite>, deduction_tree: bool) -> Option
                 let maybe_not_r = tbi.rside();
 
                 if &r
-                    == *Node_DLlite::child(Some(maybe_not_r), 1)
+                    == *NodeDllite::child(Some(maybe_not_r), 1)
                         .unwrap()
                         .get(0)
                         .unwrap()

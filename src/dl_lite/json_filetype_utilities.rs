@@ -3,18 +3,18 @@ use std::{fs, io};
 use serde_json::{Result, Value};
 
 // use crate::dl_lite::abox::AB;
-use crate::dl_lite::abox_item::AbiDllite;
-use crate::dl_lite::node::Node_DLlite;
+
+
 // use crate::dl_lite::node::Mod;
-use crate::dl_lite::tbox::TB_DLlite;
+use crate::dl_lite::tbox::TBDllite;
 use crate::dl_lite::tbox_item::TBI_DLlite;
 use crate::kb::types::DLType;
 // use serde::Deserializer;
-use crate::dl_lite::string_formatter::{node_to_string, string_to_node};
+use crate::dl_lite::string_formatter::{string_to_node};
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 
-use crate::kb::knowledge_base::{SymbolDict, TBox, TBoxItem};
+use crate::kb::knowledge_base::{SymbolDict, TBox};
 
 /*
 how this works:
@@ -309,7 +309,7 @@ pub fn parse_tbox_json(
     filename: &str,
     symbols: &SymbolDict,
     verbose: bool,
-) -> io::Result<TB_DLlite> {
+) -> io::Result<TBDllite> {
     let data = fs::read_to_string(filename);
 
     // here I have to precise from where the 'Result' enum comes from
@@ -344,7 +344,7 @@ pub fn parse_tbox_json(
 
                                 match value_array {
                                     Value::Array(vec_of_values) => {
-                                        let mut tb = TB_DLlite::new();
+                                        let mut tb = TBDllite::new();
                                         let mut tbi_result: io::Result<TBI_DLlite>;
 
                                         for v in vec_of_values {

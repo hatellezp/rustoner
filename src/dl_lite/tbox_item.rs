@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::dl_lite::node::Node_DLlite;
+use crate::dl_lite::node::NodeDllite;
 use crate::kb::knowledge_base::{ABox, ABoxItem, Item, TBox, TBoxItem};
 use crate::kb::knowledge_base::{Implier, TbRule};
 use crate::kb::types::DLType;
@@ -8,8 +8,8 @@ use std::cmp::Ordering;
 
 #[derive(Debug, Hash, Clone)]
 pub struct TBI_DLlite {
-    lside: Node_DLlite,
-    rside: Node_DLlite,
+    lside: NodeDllite,
+    rside: NodeDllite,
     level: usize,
     impliers: Vec<Vec<TBI_DLlite>>,
 }
@@ -112,13 +112,13 @@ impl Implier for TBI_DLlite {
 }
 
 impl TBoxItem for TBI_DLlite {
-    type NodeItem = Node_DLlite;
+    type NodeItem = NodeDllite;
 
-    fn lside(&self) -> &Node_DLlite {
+    fn lside(&self) -> &NodeDllite {
         &(self.lside)
     }
 
-    fn rside(&self) -> &Node_DLlite {
+    fn rside(&self) -> &NodeDllite {
         &(self.rside)
     }
 
@@ -132,7 +132,7 @@ impl TBoxItem for TBI_DLlite {
 }
 
 impl TBI_DLlite {
-    pub fn new(lside: Node_DLlite, rside: Node_DLlite, level: usize) -> Option<TBI_DLlite> {
+    pub fn new(lside: NodeDllite, rside: NodeDllite, level: usize) -> Option<TBI_DLlite> {
         if lside.t() == DLType::Nominal || rside.t() == DLType::Nominal {
             Option::None
         } else if lside.is_negated() || !DLType::same_type(lside.t(), rside.t()) {

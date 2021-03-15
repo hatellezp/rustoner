@@ -1,5 +1,5 @@
 use crate::dl_lite::abox::AbqDllite;
-use crate::dl_lite::ontology::Ontology_DLlite;
+use crate::dl_lite::ontology::OntologyDllite;
 
 use crate::kb::knowledge_base::{ABox, AggrFn};
 use crate::kb::types::ConflictType;
@@ -12,7 +12,7 @@ use petgraph::Graph;
 use std::collections::HashMap;
 
 pub fn rank_abox(
-    onto: &Ontology_DLlite,
+    onto: &OntologyDllite,
     abq: &mut AbqDllite,
     deduction_tree: bool,
     aggr: AggrFn,
@@ -25,7 +25,7 @@ pub fn rank_abox(
         onto.conflict_matrix(abq, deduction_tree, verbose);
 
     let (done_matrix, before_to_done_matrix, _done_to_before_matrix, clean_index_tuple_op) =
-        Ontology_DLlite::from_conflict_to_clean_matrix(&before_matrix, verbose).unwrap();
+        OntologyDllite::from_conflict_to_clean_matrix(&before_matrix, verbose).unwrap();
 
     let mut conflict_type: HashMap<usize, ConflictType> = HashMap::new();
 
@@ -67,7 +67,7 @@ pub fn rank_abox(
         (before_matrix, virtual_to_real, conflict_type)
     } else {
         // the rank can be done on done matrix without differentiating cases
-        let aggr_matrix = Ontology_DLlite::compute_aggregation_matrix(
+        let aggr_matrix = OntologyDllite::compute_aggregation_matrix(
             abq,
             &done_matrix,
             &virtual_to_real,

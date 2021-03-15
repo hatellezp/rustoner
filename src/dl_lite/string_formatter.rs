@@ -1,12 +1,12 @@
 use crate::dl_lite::abox_item::AbiDllite;
 use crate::dl_lite::abox_item_quantum::AbiqDllite;
 use crate::dl_lite::json_filetype_utilities::{invalid_data_result, result_from_error};
-use crate::dl_lite::node::{Mod, Node_DLlite};
+use crate::dl_lite::node::{Mod, NodeDllite};
 use crate::dl_lite::tbox_item::TBI_DLlite;
 use crate::kb::types::DLType;
 use std::cmp::Ordering;
 
-use crate::dl_lite::tbox::TB_DLlite;
+use crate::dl_lite::tbox::TBDllite;
 use std::hash::Hash;
 use std::io;
 use std::io::{Error, ErrorKind};
@@ -50,7 +50,7 @@ pub fn string_to_symbol(string: &str) -> io::Result<(&str, DLType)> {
     }
 }
 
-pub fn string_to_node(s: &str, symbols: &SymbolDict) -> io::Result<Node_DLlite> {
+pub fn string_to_node(s: &str, symbols: &SymbolDict) -> io::Result<NodeDllite> {
     /*
     this function need a symbols dictionary reference to function
      */
@@ -61,14 +61,14 @@ pub fn string_to_node(s: &str, symbols: &SymbolDict) -> io::Result<Node_DLlite> 
 }
 
 pub fn node_to_string(
-    node: &Node_DLlite,
+    node: &NodeDllite,
     symbols: &SymbolDict,
     mut current: String,
 ) -> Option<String> {
     match node {
-        Node_DLlite::B => Some(String::from("Bottom")),
-        Node_DLlite::T => Some(String::from("Top")),
-        Node_DLlite::N(n) => {
+        NodeDllite::B => Some(String::from("Bottom")),
+        NodeDllite::T => Some(String::from("Top")),
+        NodeDllite::N(n) => {
             let vec_of_s = find_keys_for_value(symbols, *n);
 
             if vec_of_s.len() > 0 {
@@ -78,7 +78,7 @@ pub fn node_to_string(
                 Option::None
             }
         }
-        Node_DLlite::R(n) | Node_DLlite::C(n) => {
+        NodeDllite::R(n) | NodeDllite::C(n) => {
             let vec_of_s = find_keys_for_value(symbols, *n);
 
             if vec_of_s.len() > 0 {
@@ -88,7 +88,7 @@ pub fn node_to_string(
                 Option::None
             }
         }
-        Node_DLlite::X(m, bn) => {
+        NodeDllite::X(m, bn) => {
             match m {
                 Mod::I => {
                     current.push_str("INV "); // space here
@@ -136,7 +136,7 @@ pub fn string_to_tbi(s: &str, symbols: &SymbolDict) -> io::Result<Vec<TBI_DLlite
             let mut rside_result2 = invalid_data_result("not done yet");
 
             let splitted: Vec<&str>;
-            let mut tuples: Vec<(io::Result<Node_DLlite>, io::Result<Node_DLlite>)>;
+            let mut tuples: Vec<(io::Result<NodeDllite>, io::Result<NodeDllite>)>;
             let mut tbis: Vec<TBI_DLlite> = Vec::new();
 
             if sub {
@@ -298,19 +298,19 @@ pub fn string_to_abi(
 
                             // before augmenting current_id we need to know that the elements are not in symbols
                             to_be_added = Vec::new();
-                            let node1: Node_DLlite;
-                            let node2: Node_DLlite;
+                            let node1: NodeDllite;
+                            let node2: NodeDllite;
 
                             // each nominal
                             if !symbols.contains_key(a1) {
                                 node1 =
-                                    Node_DLlite::new(Some(current_id), DLType::Nominal).unwrap();
+                                    NodeDllite::new(Some(current_id), DLType::Nominal).unwrap();
 
                                 to_be_added.push((a1.to_string(), (current_id, DLType::Nominal)));
                                 current_id += 1;
                             } else {
                                 let (id1, _) = symbols[a1];
-                                node1 = Node_DLlite::new(Some(id1), DLType::Nominal).unwrap();
+                                node1 = NodeDllite::new(Some(id1), DLType::Nominal).unwrap();
                             }
 
                             // adding symbols whenever you can
@@ -322,13 +322,13 @@ pub fn string_to_abi(
                             // then a2
                             if !symbols.contains_key(a2) {
                                 node2 =
-                                    Node_DLlite::new(Some(current_id), DLType::Nominal).unwrap();
+                                    NodeDllite::new(Some(current_id), DLType::Nominal).unwrap();
 
                                 to_be_added.push((a2.to_string(), (current_id, DLType::Nominal)));
                                 current_id += 1;
                             } else {
                                 let (id2, _) = symbols[a2];
-                                node2 = Node_DLlite::new(Some(id2), DLType::Nominal).unwrap();
+                                node2 = NodeDllite::new(Some(id2), DLType::Nominal).unwrap();
                             }
 
                             let abi =
@@ -342,18 +342,18 @@ pub fn string_to_abi(
 
                             // before augmenting current_id we need to know that the elements are not in symbols
                             to_be_added = Vec::new();
-                            let node1: Node_DLlite;
+                            let node1: NodeDllite;
 
                             // each nominal
                             if !symbols.contains_key(a1) {
                                 node1 =
-                                    Node_DLlite::new(Some(current_id), DLType::Nominal).unwrap();
+                                    NodeDllite::new(Some(current_id), DLType::Nominal).unwrap();
 
                                 to_be_added.push((a1.to_string(), (current_id, DLType::Nominal)));
                                 current_id += 1;
                             } else {
                                 let (id1, _) = symbols[a1];
-                                node1 = Node_DLlite::new(Some(id1), DLType::Nominal).unwrap();
+                                node1 = NodeDllite::new(Some(id1), DLType::Nominal).unwrap();
                             }
 
                             let abi = AbiDllite::new_ca(abi_symbol.clone(), node1, for_completion)
@@ -431,12 +431,12 @@ pub fn abi_to_string(abi: &AbiDllite, symbols: &SymbolDict) -> Option<String> {
 fn __parse_string_to_node_helper(
     splitted: Vec<&str>,
     symbols: &SymbolDict,
-) -> io::Result<Node_DLlite> {
+) -> io::Result<NodeDllite> {
     // two auxiliary functions to do everything more tidy
-    fn option_negate(n: Node_DLlite) -> Option<Node_DLlite> {
+    fn option_negate(n: NodeDllite) -> Option<NodeDllite> {
         Some(n.negate())
     }
-    fn none_default(_: Node_DLlite) -> Option<Node_DLlite> {
+    fn none_default(_: NodeDllite) -> Option<NodeDllite> {
         Option::None
     }
 
@@ -448,7 +448,7 @@ fn __parse_string_to_node_helper(
 
             if symbols.contains_key(splitted[0]) {
                 let value = symbols[splitted[0]];
-                let new_node = Node_DLlite::new(Some(value.0), value.1).unwrap();
+                let new_node = NodeDllite::new(Some(value.0), value.1).unwrap();
 
                 Ok(new_node)
             } else {
@@ -469,8 +469,8 @@ fn __parse_string_to_node_helper(
              */
             let function_to_call = match splitted[0] {
                 "NOT" => option_negate,
-                "INV" => Node_DLlite::inverse,
-                "EXISTS" => Node_DLlite::exists,
+                "INV" => NodeDllite::inverse,
+                "EXISTS" => NodeDllite::exists,
                 _ => none_default,
             };
 
@@ -505,7 +505,7 @@ fn __parse_string_to_node_helper(
              */
             let function_to_call = match splitted[0] {
                 "NOT" => option_negate,
-                "EXISTS" => Node_DLlite::exists,
+                "EXISTS" => NodeDllite::exists,
                 _ => none_default,
             };
             let base_node_result =
@@ -835,7 +835,7 @@ pub fn pretty_vector_abiq_to_string(vec: &Vec<AbiqDllite>, symbols: &SymbolDict)
 }
 
 pub fn create_string_for_gencontb(
-    tb: &TB_DLlite,
+    tb: &TBDllite,
     symbols: &SymbolDict,
     dont_write_trivial: bool,
     _verbose: bool,
@@ -949,7 +949,7 @@ pub fn create_string_for_unravel_conflict_tbi(
 }
 
 pub fn create_string_for_unravel_conflict_tbox(
-    tb: &TB_DLlite,
+    tb: &TBDllite,
     symbols: &SymbolDict,
     only_conflicts: bool,
 ) -> String {
@@ -1068,7 +1068,7 @@ pub fn create_string_for_unravel_conflict_abiq(
 }
 
 pub fn create_string_for_unravel_conflict_abox(
-    tb: &TB_DLlite,
+    tb: &TBDllite,
     ab: &AbqDllite,
     symbols: &SymbolDict,
     only_conflicts: bool,

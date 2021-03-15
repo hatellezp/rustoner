@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::dl_lite::node::Node_DLlite;
+use crate::dl_lite::node::NodeDllite;
 
 use crate::dl_lite::tbox_item::TBI_DLlite;
 use crate::kb::types::DLType;
@@ -21,8 +21,8 @@ pub enum Side {
 */
 #[derive(Eq, PartialEq, Debug, Clone, Hash)]
 pub enum AbiDllite {
-    RA(Node_DLlite, Node_DLlite, Node_DLlite), // role assertion
-    CA(Node_DLlite, Node_DLlite),              // concept assertion
+    RA(NodeDllite, NodeDllite, NodeDllite), // role assertion
+    CA(NodeDllite, NodeDllite),              // concept assertion
 }
 
 impl fmt::Display for AbiDllite {
@@ -76,9 +76,9 @@ this will allow for finding that 'a doesn't belong to A'
 
 impl AbiDllite {
     pub fn new_ra(
-        r: Node_DLlite,
-        a: Node_DLlite,
-        b: Node_DLlite,
+        r: NodeDllite,
+        a: NodeDllite,
+        b: NodeDllite,
         for_completion: bool,
     ) -> Option<AbiDllite> {
         let is_base_role = r.t() == DLType::BaseRole || for_completion;
@@ -91,7 +91,7 @@ impl AbiDllite {
         }
     }
 
-    pub fn new_ca(c: Node_DLlite, a: Node_DLlite, for_completion: bool) -> Option<AbiDllite> {
+    pub fn new_ca(c: NodeDllite, a: NodeDllite, for_completion: bool) -> Option<AbiDllite> {
         let is_base_concept = c.t() == DLType::BaseConcept || for_completion;
         let is_nominal = a.t() == DLType::Nominal;
         if !is_base_concept || !is_nominal {
@@ -131,7 +131,7 @@ impl AbiDllite {
     }
 
     // reference to the concept or role in the abox_item
-    pub fn symbol(&self) -> &Node_DLlite {
+    pub fn symbol(&self) -> &NodeDllite {
         /*
         returns a reference to the role or concept symbol of the  abox item
          */
@@ -149,7 +149,7 @@ impl AbiDllite {
         }
     }
 
-    pub fn nominal(&self, position: usize) -> Option<&Node_DLlite> {
+    pub fn nominal(&self, position: usize) -> Option<&NodeDllite> {
         /*
         will return a reference (wrapped in an Option) to the wanted nominal:
         if first position:
@@ -176,14 +176,14 @@ impl AbiDllite {
         }
     }
 
-    pub fn decompact(self) -> (Node_DLlite, Node_DLlite, Option<Node_DLlite>) {
+    pub fn decompact(self) -> (NodeDllite, NodeDllite, Option<NodeDllite>) {
         match self {
             AbiDllite::RA(r, a, b) => (r, a, Some(b)),
             AbiDllite::CA(c, a) => (c, a, Option::None),
         }
     }
 
-    pub fn decompact_with_clone(&self) -> (Node_DLlite, Node_DLlite, Option<Node_DLlite>) {
+    pub fn decompact_with_clone(&self) -> (NodeDllite, NodeDllite, Option<NodeDllite>) {
         let new_self = self.clone();
         new_self.decompact()
     }

@@ -18,24 +18,24 @@ pub enum Mod {
 }
 
 #[derive(PartialEq, Eq, Debug, Hash, Clone)]
-pub enum Node_DLlite {
+pub enum NodeDllite {
     B,
     T,
     R(usize),
     C(usize),
     N(usize),
-    X(Mod, Box<Node_DLlite>),
+    X(Mod, Box<NodeDllite>),
 }
 
-impl fmt::Display for Node_DLlite {
+impl fmt::Display for NodeDllite {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Node_DLlite::B => write!(f, "<B>"),
-            Node_DLlite::T => write!(f, "<T>"),
-            Node_DLlite::R(n) => write!(f, "r({})", n),
-            Node_DLlite::C(n) => write!(f, "c({})", n),
-            Node_DLlite::N(n) => write!(f, "n({})", n),
-            Node_DLlite::X(m, bn) => match m {
+            NodeDllite::B => write!(f, "<B>"),
+            NodeDllite::T => write!(f, "<T>"),
+            NodeDllite::R(n) => write!(f, "r({})", n),
+            NodeDllite::C(n) => write!(f, "c({})", n),
+            NodeDllite::N(n) => write!(f, "n({})", n),
+            NodeDllite::X(m, bn) => match m {
                 Mod::N => write!(f, "-{}", *((*bn).deref())),
                 Mod::I => write!(f, "{}^-", *((*bn).deref())),
                 Mod::E => write!(f, "E{}", *((*bn).deref())),
@@ -44,7 +44,7 @@ impl fmt::Display for Node_DLlite {
     }
 }
 
-impl PartialOrd for Node_DLlite {
+impl PartialOrd for NodeDllite {
     /*
     concepts before roles before nominals
     in concepts: bottom before base before exists before not before top
@@ -79,8 +79,8 @@ impl PartialOrd for Node_DLlite {
                             DLType::NegatedConcept => Some(Ordering::Less),
                             DLType::ExistsConcept => match (self, other) {
                                 (
-                                    Node_DLlite::X(Mod::E, bnself),
-                                    Node_DLlite::X(Mod::E, bnother),
+                                    NodeDllite::X(Mod::E, bnself),
+                                    NodeDllite::X(Mod::E, bnother),
                                 ) => bnself.partial_cmp(bnother),
                                 (_, _) => Option::None,
                             },
@@ -90,8 +90,8 @@ impl PartialOrd for Node_DLlite {
                             DLType::BaseConcept | DLType::ExistsConcept => Some(Ordering::Greater),
                             DLType::NegatedConcept => match (self, other) {
                                 (
-                                    Node_DLlite::X(Mod::N, bnself),
-                                    Node_DLlite::X(Mod::N, bnother),
+                                    NodeDllite::X(Mod::N, bnself),
+                                    NodeDllite::X(Mod::N, bnother),
                                 ) => bnself.partial_cmp(bnother),
                                 (_, _) => Option::None,
                             },
@@ -111,7 +111,7 @@ impl PartialOrd for Node_DLlite {
                         DLType::BaseRole => Some(Ordering::Greater),
                         DLType::NegatedRole => Some(Ordering::Less),
                         DLType::InverseRole => match (self, other) {
-                            (Node_DLlite::X(Mod::I, bnself), Node_DLlite::X(Mod::I, bnother)) => {
+                            (NodeDllite::X(Mod::I, bnself), NodeDllite::X(Mod::I, bnother)) => {
                                 bnself.partial_cmp(bnother)
                             }
                             (_, _) => Option::None,
@@ -121,7 +121,7 @@ impl PartialOrd for Node_DLlite {
                     DLType::NegatedRole => match other.t() {
                         DLType::BaseRole | DLType::InverseRole => Some(Ordering::Greater),
                         DLType::NegatedRole => match (self, other) {
-                            (Node_DLlite::X(Mod::N, bnself), Node_DLlite::X(Mod::N, bnother)) => {
+                            (NodeDllite::X(Mod::N, bnself), NodeDllite::X(Mod::N, bnother)) => {
                                 bnself.partial_cmp(bnother)
                             }
                             (_, _) => Option::None,
@@ -140,30 +140,30 @@ impl PartialOrd for Node_DLlite {
     }
 }
 
-impl Ord for Node_DLlite {
+impl Ord for NodeDllite {
     fn cmp(&self, other: &Self) -> Ordering {
         self.partial_cmp(other).unwrap()
     }
 }
 
-impl Item for Node_DLlite {
+impl Item for NodeDllite {
     fn t(&self) -> DLType {
         // they have to be well formed !
         match self {
-            Node_DLlite::B => DLType::Bottom,
-            Node_DLlite::T => DLType::Top,
-            Node_DLlite::C(_) => DLType::BaseConcept,
-            Node_DLlite::R(_) => DLType::BaseRole,
-            Node_DLlite::N(_) => DLType::Nominal,
-            Node_DLlite::X(t, bn) => match (t, bn.deref()) {
-                (Mod::N, Node_DLlite::R(_)) | (Mod::N, Node_DLlite::X(Mod::I, _)) => {
+            NodeDllite::B => DLType::Bottom,
+            NodeDllite::T => DLType::Top,
+            NodeDllite::C(_) => DLType::BaseConcept,
+            NodeDllite::R(_) => DLType::BaseRole,
+            NodeDllite::N(_) => DLType::Nominal,
+            NodeDllite::X(t, bn) => match (t, bn.deref()) {
+                (Mod::N, NodeDllite::R(_)) | (Mod::N, NodeDllite::X(Mod::I, _)) => {
                     DLType::NegatedRole
                 }
-                (Mod::N, Node_DLlite::C(_)) | (Mod::N, Node_DLlite::X(Mod::E, _)) => {
+                (Mod::N, NodeDllite::C(_)) | (Mod::N, NodeDllite::X(Mod::E, _)) => {
                     DLType::NegatedConcept
                 }
-                (Mod::I, Node_DLlite::R(_)) => DLType::InverseRole,
-                (Mod::E, Node_DLlite::R(_)) | (Mod::E, Node_DLlite::X(Mod::I, _)) => {
+                (Mod::I, NodeDllite::R(_)) => DLType::InverseRole,
+                (Mod::E, NodeDllite::R(_)) | (Mod::E, NodeDllite::X(Mod::I, _)) => {
                     DLType::ExistsConcept
                 }
                 (_, _) => panic!("incorrect format for node"),
@@ -171,49 +171,49 @@ impl Item for Node_DLlite {
         }
     }
 
-    fn base(node: &Node_DLlite) -> &Self {
+    fn base(node: &NodeDllite) -> &Self {
         match node {
-            Node_DLlite::B => &Node_DLlite::B,
-            Node_DLlite::T => &Node_DLlite::T,
-            Node_DLlite::C(_) => node,
-            Node_DLlite::R(_) => node,
-            Node_DLlite::N(_) => node,
-            Node_DLlite::X(_, bn) => Node_DLlite::base(bn),
+            NodeDllite::B => &NodeDllite::B,
+            NodeDllite::T => &NodeDllite::T,
+            NodeDllite::C(_) => node,
+            NodeDllite::R(_) => node,
+            NodeDllite::N(_) => node,
+            NodeDllite::X(_, bn) => NodeDllite::base(bn),
         }
     }
 
     // recursive version
-    fn child(node: Option<&Node_DLlite>, depth: usize) -> Option<Vec<&Self>> {
+    fn child(node: Option<&NodeDllite>, depth: usize) -> Option<Vec<&Self>> {
         match node {
             Option::None => Option::None,
             Some(n) => match (n, depth) {
                 (_, 0) => Some(vec![node.unwrap()]),
-                (Node_DLlite::B, _)
-                | (Node_DLlite::T, _)
-                | (Node_DLlite::C(_), _)
-                | (Node_DLlite::R(_), _)
-                | (Node_DLlite::N(_), _) => Option::None,
-                (Node_DLlite::X(_, bn), _) => Node_DLlite::child(Some(&bn), depth - 1),
+                (NodeDllite::B, _)
+                | (NodeDllite::T, _)
+                | (NodeDllite::C(_), _)
+                | (NodeDllite::R(_), _)
+                | (NodeDllite::N(_), _) => Option::None,
+                (NodeDllite::X(_, bn), _) => NodeDllite::child(Some(&bn), depth - 1),
             },
         }
     }
 
     fn is_negated(&self) -> bool {
         match self {
-            Node_DLlite::T | Node_DLlite::X(Mod::N, _) => true, // it is BOTTOM which is negated ! UPDATE: is Top which is negated now...
+            NodeDllite::T | NodeDllite::X(Mod::N, _) => true, // it is BOTTOM which is negated ! UPDATE: is Top which is negated now...
             _ => false,
         }
     }
 }
 
-impl Node_DLlite {
-    pub fn new(n: Option<usize>, t: DLType) -> Option<Node_DLlite> {
+impl NodeDllite {
+    pub fn new(n: Option<usize>, t: DLType) -> Option<NodeDllite> {
         match (n, t) {
-            (_, DLType::Bottom) => Some(Node_DLlite::B),
-            (_, DLType::Top) => Some(Node_DLlite::T),
-            (Option::Some(n), DLType::BaseConcept) => Some(Node_DLlite::C(n)),
-            (Option::Some(n), DLType::BaseRole) => Some(Node_DLlite::R(n)),
-            (Option::Some(n), DLType::Nominal) => Some(Node_DLlite::N(n)),
+            (_, DLType::Bottom) => Some(NodeDllite::B),
+            (_, DLType::Top) => Some(NodeDllite::T),
+            (Option::Some(n), DLType::BaseConcept) => Some(NodeDllite::C(n)),
+            (Option::Some(n), DLType::BaseRole) => Some(NodeDllite::R(n)),
+            (Option::Some(n), DLType::Nominal) => Some(NodeDllite::N(n)),
             (_, _) => Option::None,
         }
     }
@@ -223,52 +223,52 @@ impl Node_DLlite {
         0 and 1 are reserved values
          */
         match self {
-            Node_DLlite::T => 1,
-            Node_DLlite::B => 0,
-            Node_DLlite::C(n) | Node_DLlite::R(n) | Node_DLlite::N(n) => *n,
-            Node_DLlite::X(_, bn) => (*bn).n(),
+            NodeDllite::T => 1,
+            NodeDllite::B => 0,
+            NodeDllite::C(n) | NodeDllite::R(n) | NodeDllite::N(n) => *n,
+            NodeDllite::X(_, bn) => (*bn).n(),
         }
     }
 
-    pub fn child_old(node: Option<&Node_DLlite>) -> Option<&Self> {
+    pub fn child_old(node: Option<&NodeDllite>) -> Option<&Self> {
         match node {
             Option::None => Option::None,
             Some(n) => match n {
-                Node_DLlite::B
-                | Node_DLlite::T
-                | Node_DLlite::C(_)
-                | Node_DLlite::R(_)
-                | Node_DLlite::N(_) => Option::None,
-                Node_DLlite::X(_, bn) => Some(&bn),
+                NodeDllite::B
+                | NodeDllite::T
+                | NodeDllite::C(_)
+                | NodeDllite::R(_)
+                | NodeDllite::N(_) => Option::None,
+                NodeDllite::X(_, bn) => Some(&bn),
             },
         }
     }
 
     pub fn exists(self) -> Option<Self> {
         match (&self).t() {
-            DLType::BaseRole | DLType::InverseRole => Some(Node_DLlite::X(Mod::E, Box::new(self))),
+            DLType::BaseRole | DLType::InverseRole => Some(NodeDllite::X(Mod::E, Box::new(self))),
             _ => Option::None,
         }
     }
 
     pub fn negate(self) -> Self {
         match self {
-            Node_DLlite::X(Mod::N, bn) => *bn,
-            Node_DLlite::B => Node_DLlite::T,
-            Node_DLlite::T => Node_DLlite::B,
-            _ => Node_DLlite::X(Mod::N, Box::new(self)),
+            NodeDllite::X(Mod::N, bn) => *bn,
+            NodeDllite::B => NodeDllite::T,
+            NodeDllite::T => NodeDllite::B,
+            _ => NodeDllite::X(Mod::N, Box::new(self)),
         }
     }
 
-    pub fn is_negation(&self, other: &Node_DLlite) -> bool {
+    pub fn is_negation(&self, other: &NodeDllite) -> bool {
         match (self, other) {
             // bottom and top
-            (Node_DLlite::B, Node_DLlite::T) | (Node_DLlite::T, Node_DLlite::B) => true,
+            (NodeDllite::B, NodeDllite::T) | (NodeDllite::T, NodeDllite::B) => true,
             // if both are negated return false
-            (Node_DLlite::X(Mod::N, _), Node_DLlite::X(Mod::N, _)) => false,
+            (NodeDllite::X(Mod::N, _), NodeDllite::X(Mod::N, _)) => false,
             // if one is negated compare its child with the other
-            (Node_DLlite::X(Mod::N, bn), _) => bn.deref() == other,
-            (_, Node_DLlite::X(Mod::N, bn)) => self == bn.deref(),
+            (NodeDllite::X(Mod::N, bn), _) => bn.deref() == other,
+            (_, NodeDllite::X(Mod::N, bn)) => self == bn.deref(),
             // anything else is false
             (_, _) => false,
         }
@@ -276,8 +276,8 @@ impl Node_DLlite {
 
     pub fn inverse(self) -> Option<Self> {
         match self {
-            Node_DLlite::R(_) => Some(Node_DLlite::X(Mod::I, Box::new(self))),
-            Node_DLlite::X(Mod::I, bn) => Some(*bn),
+            NodeDllite::R(_) => Some(NodeDllite::X(Mod::I, Box::new(self))),
+            NodeDllite::X(Mod::I, bn) => Some(*bn),
             _ => Option::None,
         }
     }

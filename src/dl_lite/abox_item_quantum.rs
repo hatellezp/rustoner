@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::dl_lite::node::Node_DLlite;
+use crate::dl_lite::node::NodeDllite;
 use crate::dl_lite::tbox_item::TBI_DLlite;
 use crate::kb::knowledge_base::{AbRule, Implier, TBoxItem};
 
@@ -121,7 +121,7 @@ impl Implier for AbiqDllite {
 }
 
 impl ABoxItem for AbiqDllite {
-    type NodeItem = Node_DLlite;
+    type NodeItem = NodeDllite;
     type TBI = TBI_DLlite;
 
     fn negate(&self) -> Self {
@@ -135,7 +135,7 @@ impl ABoxItem for AbiqDllite {
         self.abi.t()
     }
 
-    fn item(&self) -> &Node_DLlite {
+    fn item(&self) -> &NodeDllite {
         /*
         returns a reference to the role or concept symbol of the  abox item
          */
@@ -198,7 +198,7 @@ impl AbiqDllite {
 
     // reference to the concept or role in the abox_item
 
-    pub fn nominal(&self, position: usize) -> Option<&Node_DLlite> {
+    pub fn nominal(&self, position: usize) -> Option<&NodeDllite> {
         self.abi.nominal(position)
     }
 
@@ -271,6 +271,7 @@ impl AbiqDllite {
         }
     }
 
+    /*
     // function utility for levels
     pub fn get_extrema_level(v: Vec<&AbiqDllite>, max_index: usize, get_max: bool) -> usize {
         // for max or min
@@ -294,4 +295,6 @@ impl AbiqDllite {
 
         extrema_level
     }
+
+     */
 }

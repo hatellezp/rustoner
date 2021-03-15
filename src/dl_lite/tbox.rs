@@ -16,13 +16,13 @@ use crate::kb::knowledge_base::{TBox, TBoxItem, TbRule};
 use crate::kb::types::CR;
 
 #[derive(PartialEq, Debug, Clone)]
-pub struct TB_DLlite {
+pub struct TBDllite {
     items: Vec<TBI_DLlite>,
     length: usize,
     completed: bool,
 }
 
-impl TBox for TB_DLlite {
+impl TBox for TBDllite {
     type TbiItem = TBI_DLlite;
 
     fn len(&self) -> usize {
@@ -67,7 +67,7 @@ impl TBox for TB_DLlite {
 for the moment it is empty, but after I have to add functionality here
  */
 
-impl fmt::Display for TB_DLlite {
+impl fmt::Display for TBDllite {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.length == 0 {
             write!(f, "<TB>[]")
@@ -86,10 +86,10 @@ impl fmt::Display for TB_DLlite {
     }
 }
 
-impl TB_DLlite {
-    pub fn new() -> TB_DLlite {
+impl TBDllite {
+    pub fn new() -> TBDllite {
         let items: Vec<TBI_DLlite> = Vec::new();
-        TB_DLlite {
+        TBDllite {
             items,
             length: 0,
             completed: false,
@@ -158,16 +158,16 @@ impl TB_DLlite {
         neg_tbi
     }
 
-    pub fn complete(&self, deduction_tree: bool, verbose: bool) -> TB_DLlite {
+    pub fn complete(&self, deduction_tree: bool, verbose: bool) -> TBDllite {
         // TESTING: for type constriction
         type T = TBI_DLlite;
 
         if self.items.len() == 0 {
             if verbose {
                 println!("the tbox is empty, nothing to complete");
-                TB_DLlite::new()
+                TBDllite::new()
             } else {
-                TB_DLlite::new()
+                TBDllite::new()
             }
         } else {
             /*
@@ -570,7 +570,7 @@ impl TB_DLlite {
                 iterations += 1;
             }
 
-            let mut new_tb = TB_DLlite::new();
+            let mut new_tb = TBDllite::new();
             {
                 let mut items = items.lock().unwrap();
                 while !items.is_empty() {

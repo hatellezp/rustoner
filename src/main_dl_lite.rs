@@ -14,7 +14,7 @@ use crate::kb::knowledge_base::{ABox, SymbolDict, TBox, TBoxItem};
 use crate::kb::types::FileType;
 
 // from the dl_lite module
-use crate::dl_lite::ontology::Ontology_DLlite;
+use crate::dl_lite::ontology::OntologyDllite;
 
 use crate::dl_lite::abox::AbqDllite;
 use crate::dl_lite::abox_item_quantum::AbiqDllite;
@@ -23,7 +23,7 @@ use crate::dl_lite::string_formatter::{
     create_string_for_gencontb, create_string_for_unravel_conflict_abox,
     create_string_for_unravel_conflict_tbox, pretty_print_abiq_conflict, tbi_to_string,
 };
-use crate::dl_lite::tbox::TB_DLlite;
+use crate::dl_lite::tbox::TBDllite;
 use crate::dl_lite::tbox_item::TBI_DLlite;
 
 use crate::kb::aggr_functions::{AGGR_COUNT, AGGR_MAX, AGGR_MEAN, AGGR_MIN, AGGR_SUM};
@@ -75,7 +75,7 @@ pub fn main() {
     let mut pretty_string: String;
 
     // moving tb
-    let mut new_tb: TB_DLlite;
+    let mut new_tb: TBDllite;
 
     // symbols:
     let symbols: &SymbolDict;
@@ -86,7 +86,7 @@ pub fn main() {
     let path_tbox: String;
     let tb_ft: FileType;
     let tb_name: &str;
-    let mut onto: Ontology_DLlite;
+    let mut onto: OntologyDllite;
     let symbols_ft: FileType;
     let only_conflicts: bool;
     let dont_write_trivial: bool;
@@ -104,7 +104,7 @@ pub fn main() {
                 tb_name = parse_name_from_filename(&path_tbox);
 
                 // create a temporal ontology
-                onto = Ontology_DLlite::new(String::from(tb_name));
+                onto = OntologyDllite::new(String::from(tb_name));
 
                 // get symbols from this file if possible
                 match path_symbols_op {
@@ -300,7 +300,7 @@ pub fn main() {
                 let onto_name = parse_name_from_filename(&path_tbox);
                 let tb_filetype = get_filetype(&path_tbox);
 
-                let mut onto = Ontology_DLlite::new(onto_name.to_string());
+                let mut onto = OntologyDllite::new(onto_name.to_string());
 
                 // add symbols from where you can
                 if path_symbols_op.is_some() {

@@ -1,7 +1,7 @@
 use crate::dl_lite::abox_item::AbiDllite;
 use crate::dl_lite::json_filetype_utilities::{parse_symbols_json, parse_tbox_json};
-use crate::dl_lite::node::{Mod, Node_DLlite};
-use crate::dl_lite::tbox::TB_DLlite;
+use crate::dl_lite::node::{Mod, NodeDllite};
+use crate::dl_lite::tbox::TBDllite;
 use crate::dl_lite::tbox_item::TBI_DLlite;
 use crate::kb::types::DLType;
 use crate::kb::types::FileType;
@@ -43,14 +43,14 @@ an ontology model
     - latest_id is higher number present in the symbols dictionary
  */
 #[derive(PartialEq, Clone, Debug)]
-pub struct Ontology_DLlite {
+pub struct OntologyDllite {
     name: String,
     symbols: SymbolDict,
-    tbox: TB_DLlite,
+    tbox: TBDllite,
     current_abox: Option<AbqDllite>,
 }
 
-impl fmt::Display for Ontology_DLlite {
+impl fmt::Display for OntologyDllite {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut s = String::new();
         let mut formatted: String;
@@ -62,7 +62,7 @@ impl fmt::Display for Ontology_DLlite {
         // add the symbols
         formatted = format!(
             "--<Symbols>\n{}\n",
-            Ontology_DLlite::symbols_to_string(&self.symbols)
+            OntologyDllite::symbols_to_string(&self.symbols)
         );
         s.push_str(formatted.as_str());
 
@@ -87,11 +87,11 @@ impl fmt::Display for Ontology_DLlite {
     }
 }
 
-impl Ontology_DLlite {
+impl OntologyDllite {
     //-------------------------------------------------------------------------
     // public functions for the interface
 
-    pub fn new(s: String) -> Ontology_DLlite {
+    pub fn new(s: String) -> OntologyDllite {
         let mut symbols: SymbolDict = HashMap::new();
 
         /*
@@ -100,15 +100,15 @@ impl Ontology_DLlite {
         symbols.insert(String::from("Top"), (1, DLType::Top));
         symbols.insert(String::from("Bottom"), (0, DLType::Bottom));
 
-        Ontology_DLlite {
+        OntologyDllite {
             name: s,
             symbols,
-            tbox: TB_DLlite::new(),
+            tbox: TBDllite::new(),
             current_abox: Option::None,
         }
     }
 
-    pub fn tbox(&self) -> &TB_DLlite {
+    pub fn tbox(&self) -> &TBDllite {
         &self.tbox
     }
 
@@ -332,7 +332,7 @@ impl Ontology_DLlite {
     // here I define a very important method, it will find conflicts in a abox with
     // respect to a tbox and store them in a matrix
 
-    pub fn complete_tbox(&self, deduction_tree: bool, verbose: bool) -> TB_DLlite {
+    pub fn complete_tbox(&self, deduction_tree: bool, verbose: bool) -> TBDllite {
         let tb = self.tbox.complete(deduction_tree, verbose);
 
         tb
@@ -600,7 +600,7 @@ impl Ontology_DLlite {
         HashMap<usize, usize>,
         Option<(usize, usize)>,
     )> {
-        let res_op = Ontology_DLlite::clean_index_matrix(matrix);
+        let res_op = OntologyDllite::clean_index_matrix(matrix);
 
         let mut chosen_index: Option<(usize, usize)> = Option::None;
 
@@ -816,7 +816,7 @@ impl Ontology_DLlite {
 
                 // we need to update the id to avoid conflict with the current numbers
                 let (_low, high) =
-                    Ontology_DLlite::find_lower_and_highest_value_from_symbols(self.symbols());
+                    OntologyDllite::find_lower_and_highest_value_from_symbols(self.symbols());
 
                 self.symbols.insert(new_name.clone(), (high + 1, t));
                 // self.number_of_symbols += 1;
@@ -883,7 +883,7 @@ impl Ontology_DLlite {
     // ------------------------------------------------------------------------
     // pretty print functions
 
-    fn node_to_string(&self, node: &Node_DLlite) -> String {
+    fn node_to_string(&self, node: &NodeDllite) -> String {
         let left_current = String::new();
         let right_current = String::new();
 
@@ -892,14 +892,14 @@ impl Ontology_DLlite {
 
     fn node_to_string_helper(
         &self,
-        node: &Node_DLlite,
+        node: &NodeDllite,
         mut left_current: String,
         mut right_current: String,
     ) -> String {
         match node {
-            Node_DLlite::T => String::from("Top"), // format!("{}", node),
-            Node_DLlite::B => String::from("Bottom"), // format!("{}", node),
-            Node_DLlite::N(n) | Node_DLlite::R(n) | Node_DLlite::C(n) => {
+            NodeDllite::T => String::from("Top"), // format!("{}", node),
+            NodeDllite::B => String::from("Bottom"), // format!("{}", node),
+            NodeDllite::N(n) | NodeDllite::R(n) | NodeDllite::C(n) => {
                 // find the name
                 let mut name_found = false;
                 let mut name: String = String::new();
@@ -918,13 +918,13 @@ impl Ontology_DLlite {
                 }
 
                 match node {
-                    Node_DLlite::N(_) => format!("{}{}{}", left_current, name, right_current),
-                    Node_DLlite::R(_) => format!("{}{}{}", left_current, name, right_current),
-                    Node_DLlite::C(_) => format!("{}{}{}", left_current, name, right_current),
+                    NodeDllite::N(_) => format!("{}{}{}", left_current, name, right_current),
+                    NodeDllite::R(_) => format!("{}{}{}", left_current, name, right_current),
+                    NodeDllite::C(_) => format!("{}{}{}", left_current, name, right_current),
                     _ => String::from("you shouldn't be here"),
                 }
             }
-            Node_DLlite::X(m, bn) => {
+            NodeDllite::X(m, bn) => {
                 let left_addition = match m {
                     Mod::N => "-",
                     Mod::I => "(",
@@ -961,7 +961,7 @@ impl Ontology_DLlite {
         s
     }
 
-    pub fn tbox_to_string(&self, tb: &TB_DLlite, dont_write_trivial: bool) -> String {
+    pub fn tbox_to_string(&self, tb: &TBDllite, dont_write_trivial: bool) -> String {
         let mut s = String::from("    {\n");
 
         for tbi in tb.items() {

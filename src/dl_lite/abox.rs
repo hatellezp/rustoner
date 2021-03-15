@@ -7,10 +7,10 @@ use crate::dl_lite::helpers_and_utilities::{
     complete_helper_add_if_necessary_general, complete_helper_dump_from_mutex_temporal_to_current,
 };
 
-use crate::dl_lite::node::Node_DLlite;
+use crate::dl_lite::node::NodeDllite;
 use crate::dl_lite::rule::{dl_lite_abox_rule_one, dl_lite_abox_rule_three, dl_lite_abox_rule_two};
 use crate::dl_lite::string_formatter::{abi_to_string, abiq_in_vec_of_vec};
-use crate::dl_lite::tbox::TB_DLlite;
+use crate::dl_lite::tbox::TBDllite;
 use crate::dl_lite::tbox_item::TBI_DLlite;
 use crate::kb::knowledge_base::{ABox, ABoxItem, AbRule, Item, SymbolDict, TBox, TBoxItem};
 use crate::kb::types::{ConflictType, DLType, CR};
@@ -145,7 +145,7 @@ impl AbqDllite {
 
     pub fn is_inconsistent_detailed(
         &self,
-        tb: &TB_DLlite,
+        tb: &TBDllite,
         verbose: bool,
     ) -> Vec<(TBI_DLlite, Vec<AbiqDllite>)> {
         let tbis = tb.items();
@@ -243,7 +243,7 @@ impl AbqDllite {
         contradictions
     }
 
-    pub fn is_inconsistent(&self, tb: &TB_DLlite, _verbose: bool) -> bool {
+    pub fn is_inconsistent(&self, tb: &TBDllite, _verbose: bool) -> bool {
         let take_trivial = false;
         let tbis = tb.negative_inclusions(take_trivial);
 
@@ -255,8 +255,8 @@ impl AbqDllite {
         let mut abiq_i: &AbiqDllite;
         let mut abiq_j: &AbiqDllite;
         let mut is_match: bool;
-        let mut lside: &Node_DLlite;
-        let mut rside: &Node_DLlite;
+        let mut lside: &NodeDllite;
+        let mut rside: &NodeDllite;
 
         for tbi in tbis {
             // this are only negative inclusions
@@ -336,7 +336,7 @@ impl AbqDllite {
         }
     }
 
-    pub fn complete(&self, tbox: &TB_DLlite, deduction_tree: bool, verbose: bool) -> AbqDllite {
+    pub fn complete(&self, tbox: &TBDllite, deduction_tree: bool, verbose: bool) -> AbqDllite {
         type T = TBI_DLlite;
         type A = AbiqDllite;
 
@@ -643,7 +643,7 @@ impl AbqDllite {
         }
     }
 
-    pub fn abiq_is_self_contradicting(abiq: &AbiqDllite, tb: &TB_DLlite) -> bool {
+    pub fn abiq_is_self_contradicting(abiq: &AbiqDllite, tb: &TBDllite) -> bool {
         let mut new_ab = AbqDllite::new("temp");
         new_ab.add(abiq.clone());
 
@@ -664,7 +664,7 @@ impl AbqDllite {
 
     pub fn get_abis_by_level(
         &self,
-        _tb: &TB_DLlite,
+        _tb: &TBDllite,
         only_conflicts: bool,
         contradictions: &Vec<(TBI_DLlite, Vec<AbiqDllite>)>,
     ) -> Vec<usize> {

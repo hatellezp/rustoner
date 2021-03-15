@@ -155,6 +155,7 @@ pub fn complete_helper_add_if_necessary_general<T: Display + PartialEq + Eq + Cl
     mu_length
 }
 
+/*
 fn print_vector_of_tbi<T: Display + PartialEq + Eq>(vec: &Vec<T>) -> String {
     let mut s = String::from("[");
 
@@ -166,6 +167,8 @@ fn print_vector_of_tbi<T: Display + PartialEq + Eq>(vec: &Vec<T>) -> String {
 
     s
 }
+
+ */
 
 fn print_vector_of_tbi_references<T: Display + PartialEq + Eq>(vec: &Vec<&T>) -> String {
     let mut s = String::from("[");
@@ -179,6 +182,7 @@ fn print_vector_of_tbi_references<T: Display + PartialEq + Eq>(vec: &Vec<&T>) ->
     s
 }
 
+/*
 pub fn print_matrix<T: Display>(v: Vec<T>) {
     let mlength = v.len();
     let msize = (mlength as f64).sqrt() as usize;
@@ -204,3 +208,5 @@ pub fn print_matrix<T: Display>(v: Vec<T>) {
 
     println!("{}", s);
 }
+
+ */
