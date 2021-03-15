@@ -4,13 +4,12 @@ use serde_json::{Result, Value};
 
 // use crate::dl_lite::abox::AB;
 
-
 // use crate::dl_lite::node::Mod;
 use crate::dl_lite::tbox::TBDllite;
-use crate::dl_lite::tbox_item::TBI_DLlite;
+use crate::dl_lite::tbox_item::TbiDllite;
 use crate::kb::types::DLType;
 // use serde::Deserializer;
-use crate::dl_lite::string_formatter::{string_to_node};
+use crate::dl_lite::string_formatter::string_to_node;
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 
@@ -131,7 +130,7 @@ pub fn parse_value_to_tbi(
     value: &Value,
     symbols: &SymbolDict,
     _verbose: bool,
-) -> io::Result<TBI_DLlite> {
+) -> io::Result<TbiDllite> {
     match value {
         Value::Array(vec_of_values) => {
             if vec_of_values.len() != 2 {
@@ -187,7 +186,7 @@ pub fn parse_value_to_tbi(
                             (_, Err(e2)) => Err(Error::new(ErrorKind::InvalidData, e2.to_string())),
                             (Ok(ls), Ok(rs)) => {
                                 let level: usize = 0;
-                                let new_tbi_op = TBI_DLlite::new(ls.clone(), rs.clone(), level);
+                                let new_tbi_op = TbiDllite::new(ls.clone(), rs.clone(), level);
 
                                 match new_tbi_op {
                                     Some(new_tbi) => Ok(new_tbi),
@@ -345,7 +344,7 @@ pub fn parse_tbox_json(
                                 match value_array {
                                     Value::Array(vec_of_values) => {
                                         let mut tb = TBDllite::new();
-                                        let mut tbi_result: io::Result<TBI_DLlite>;
+                                        let mut tbi_result: io::Result<TbiDllite>;
 
                                         for v in vec_of_values {
                                             tbi_result = parse_value_to_tbi(v, symbols, verbose);

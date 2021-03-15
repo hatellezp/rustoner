@@ -2,7 +2,7 @@ use crate::dl_lite::abox_item::AbiDllite;
 use crate::dl_lite::json_filetype_utilities::{parse_symbols_json, parse_tbox_json};
 use crate::dl_lite::node::{Mod, NodeDllite};
 use crate::dl_lite::tbox::TBDllite;
-use crate::dl_lite::tbox_item::TBI_DLlite;
+use crate::dl_lite::tbox_item::TbiDllite;
 use crate::kb::types::DLType;
 use crate::kb::types::FileType;
 
@@ -147,7 +147,7 @@ impl OntologyDllite {
 
      */
 
-    pub fn add_tbis_from_vec(&mut self, v: &Vec<TBI_DLlite>) {
+    pub fn add_tbis_from_vec(&mut self, v: &Vec<TbiDllite>) {
         for tbi in v {
             if !self.tbox.contains(&tbi) {
                 self.tbox.add(tbi.clone());
@@ -830,7 +830,7 @@ impl OntologyDllite {
         }
     }
 
-    fn add_tbi(&mut self, tbi: &TBI_DLlite) -> bool {
+    fn add_tbi(&mut self, tbi: &TbiDllite) -> bool {
         if self.tbox.contains(&tbi) {
             false
         } else {
@@ -897,7 +897,7 @@ impl OntologyDllite {
         mut right_current: String,
     ) -> String {
         match node {
-            NodeDllite::T => String::from("Top"), // format!("{}", node),
+            NodeDllite::T => String::from("Top"),    // format!("{}", node),
             NodeDllite::B => String::from("Bottom"), // format!("{}", node),
             NodeDllite::N(n) | NodeDllite::R(n) | NodeDllite::C(n) => {
                 // find the name
@@ -995,7 +995,7 @@ impl OntologyDllite {
     }
 
     // I suppose that the tbi is in the self.tbox
-    fn tbi_to_string(&self, tbi: &TBI_DLlite) -> String {
+    fn tbi_to_string(&self, tbi: &TbiDllite) -> String {
         let lside = self.node_to_string(tbi.lside());
         let rside = self.node_to_string(tbi.rside());
 

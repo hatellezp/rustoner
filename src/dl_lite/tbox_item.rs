@@ -1,34 +1,34 @@
 use std::fmt;
 
 use crate::dl_lite::node::NodeDllite;
-use crate::kb::knowledge_base::{ABox, ABoxItem, Item, TBox, TBoxItem};
 use crate::kb::knowledge_base::{Implier, TbRule};
+use crate::kb::knowledge_base::{Item, TBoxItem};
 use crate::kb::types::DLType;
 use std::cmp::Ordering;
 
 #[derive(Debug, Hash, Clone)]
-pub struct TBI_DLlite {
+pub struct TbiDllite {
     lside: NodeDllite,
     rside: NodeDllite,
     level: usize,
-    impliers: Vec<Vec<TBI_DLlite>>,
+    impliers: Vec<Vec<TbiDllite>>,
 }
 
-impl PartialEq for TBI_DLlite {
+impl PartialEq for TbiDllite {
     fn eq(&self, other: &Self) -> bool {
         self.lside == other.lside && self.rside == other.rside
     }
 }
 
-impl Eq for TBI_DLlite {}
+impl Eq for TbiDllite {}
 
-impl fmt::Display for TBI_DLlite {
+impl fmt::Display for TbiDllite {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} < {}", self.lside, self.rside)
     }
 }
 
-impl PartialOrd for TBI_DLlite {
+impl PartialOrd for TbiDllite {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         if self.lside().cmp(other.lside()) == Ordering::Less {
             Some(Ordering::Less)
@@ -40,25 +40,25 @@ impl PartialOrd for TBI_DLlite {
     }
 }
 
-impl Ord for TBI_DLlite {
+impl Ord for TbiDllite {
     fn cmp(&self, other: &Self) -> Ordering {
         self.partial_cmp(other).unwrap()
     }
 }
 
-impl Implier for TBI_DLlite {
-    type Imp = Vec<TBI_DLlite>;
+impl Implier for TbiDllite {
+    type Imp = Vec<TbiDllite>;
 
-    fn implied_by(&self) -> &Vec<Vec<TBI_DLlite>> {
+    fn implied_by(&self) -> &Vec<Vec<TbiDllite>> {
         &(self.impliers)
     }
 
-    fn cmp_imp(imp1: &Vec<TBI_DLlite>, imp2: &Vec<TBI_DLlite>) -> Option<Ordering> {
+    fn cmp_imp(imp1: &Vec<TbiDllite>, imp2: &Vec<TbiDllite>) -> Option<Ordering> {
         let len1 = imp1.len();
         let len2 = imp2.len();
         let mut all_good = true;
-        let mut tbi1: &TBI_DLlite;
-        let mut tbi2: &TBI_DLlite;
+        let mut tbi1: &TbiDllite;
+        let mut tbi2: &TbiDllite;
         let (lenght, ordering) = match len1.cmp(&len2) {
             Ordering::Less => (len1, Ordering::Less),
             Ordering::Equal => (len1, Ordering::Equal),
@@ -78,7 +78,7 @@ impl Implier for TBI_DLlite {
         }
     }
 
-    fn add_to_implied_by(&mut self, mut implier: Vec<TBI_DLlite>) {
+    fn add_to_implied_by(&mut self, mut implier: Vec<TbiDllite>) {
         // before everything, here in DLlite we can negation implies reverse negation
         // we must avoid to add an element as self implier
         if !&implier.contains(&self) {
@@ -88,7 +88,7 @@ impl Implier for TBI_DLlite {
             match contains {
                 Option::Some(Ordering::Less) => {
                     let mut cmpd: Option<Ordering>;
-                    let mut inner_implier: &Vec<TBI_DLlite>;
+                    let mut inner_implier: &Vec<TbiDllite>;
                     let lenght: usize = self.impliers.len();
 
                     for index in 0..lenght {
@@ -111,7 +111,7 @@ impl Implier for TBI_DLlite {
     }
 }
 
-impl TBoxItem for TBI_DLlite {
+impl TBoxItem for TbiDllite {
     type NodeItem = NodeDllite;
 
     fn lside(&self) -> &NodeDllite {
@@ -131,16 +131,16 @@ impl TBoxItem for TBI_DLlite {
     }
 }
 
-impl TBI_DLlite {
-    pub fn new(lside: NodeDllite, rside: NodeDllite, level: usize) -> Option<TBI_DLlite> {
+impl TbiDllite {
+    pub fn new(lside: NodeDllite, rside: NodeDllite, level: usize) -> Option<TbiDllite> {
         if lside.t() == DLType::Nominal || rside.t() == DLType::Nominal {
             Option::None
         } else if lside.is_negated() || !DLType::same_type(lside.t(), rside.t()) {
             Option::None
         } else {
-            let implied_by: Vec<Vec<TBI_DLlite>> = Vec::new();
+            let implied_by: Vec<Vec<TbiDllite>> = Vec::new();
 
-            Some(TBI_DLlite {
+            Some(TbiDllite {
                 lside,
                 rside,
                 level,
@@ -157,7 +157,7 @@ impl TBI_DLlite {
         self.lside.is_negation(&self.rside)
     }
 
-    pub fn reverse_negation(&self, add_level: bool) -> Option<TBI_DLlite> {
+    pub fn reverse_negation(&self, add_level: bool) -> Option<TbiDllite> {
         /*
         this method creates a new item
          */
@@ -171,17 +171,17 @@ impl TBI_DLlite {
                 self.level + 1
             };
 
-            TBI_DLlite::new(rside.negate(), lside.negate(), level)
+            TbiDllite::new(rside.negate(), lside.negate(), level)
         } else {
             Option::None
         }
     }
 
     pub fn apply_rule(
-        tbis: Vec<&TBI_DLlite>,
-        rule: &TbRule<TBI_DLlite>,
+        tbis: Vec<&TbiDllite>,
+        rule: &TbRule<TbiDllite>,
         deduction_tree: bool,
-    ) -> Option<Vec<TBI_DLlite>> {
+    ) -> Option<Vec<TbiDllite>> {
         /*
         put a switch here to add consequences when needed
         every vector in the answer get the vectors that created it in the implied_by field
@@ -197,7 +197,7 @@ impl TBI_DLlite {
             Option::None
         } else {
             let prov_vec = prov_vec.unwrap();
-            let mut final_vec: Vec<TBI_DLlite> = Vec::new();
+            let mut final_vec: Vec<TbiDllite> = Vec::new();
 
             for item in &prov_vec {
                 if !item.is_redundant() {
@@ -210,7 +210,7 @@ impl TBI_DLlite {
     }
 
     // function utility for levels
-    pub fn get_extrema_level(v: Vec<&TBI_DLlite>, max_index: usize, get_max: bool) -> usize {
+    pub fn get_extrema_level(v: Vec<&TbiDllite>, max_index: usize, get_max: bool) -> usize {
         // for max or min
         let mut extrema_level: usize = if get_max { 0 } else { usize::max_value() };
 

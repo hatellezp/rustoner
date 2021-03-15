@@ -7,7 +7,7 @@ use crate::alg_math::utilities::{
     multiply_vector_complex,
 };
 use nalgebra::Complex;
-use nalgebra::{ArrayStorage, DMatrix, DVector, Dynamic, Matrix};
+use nalgebra::{DMatrix, DVector};
 
 fn find_bound_complex(
     mut matrix: DMatrix<Complex<f64>>,

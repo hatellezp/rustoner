@@ -11,25 +11,25 @@ use crate::dl_lite::rule::{
     dl_lite_rule_eight, dl_lite_rule_five, dl_lite_rule_four, dl_lite_rule_one, dl_lite_rule_seven,
     dl_lite_rule_six, dl_lite_rule_three, dl_lite_rule_two, dl_lite_rule_zero,
 };
-use crate::dl_lite::tbox_item::TBI_DLlite;
+use crate::dl_lite::tbox_item::TbiDllite;
 use crate::kb::knowledge_base::{TBox, TBoxItem, TbRule};
 use crate::kb::types::CR;
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct TBDllite {
-    items: Vec<TBI_DLlite>,
+    items: Vec<TbiDllite>,
     length: usize,
     completed: bool,
 }
 
 impl TBox for TBDllite {
-    type TbiItem = TBI_DLlite;
+    type TbiItem = TbiDllite;
 
     fn len(&self) -> usize {
         self.length
     }
 
-    fn add(&mut self, tbi: TBI_DLlite) -> bool {
+    fn add(&mut self, tbi: TbiDllite) -> bool {
         /*
         returns true if the item was successfully inserted, false otherwise
          */
@@ -42,11 +42,11 @@ impl TBox for TBDllite {
         }
     }
 
-    fn items(&self) -> &Vec<TBI_DLlite> {
+    fn items(&self) -> &Vec<TbiDllite> {
         &(self.items)
     }
 
-    fn get(&self, index: usize) -> Option<&TBI_DLlite> {
+    fn get(&self, index: usize) -> Option<&TbiDllite> {
         self.items.get(index)
     }
 
@@ -58,7 +58,7 @@ impl TBox for TBDllite {
         self.len() == 0
     }
 
-    fn contains(&self, tbi: &TBI_DLlite) -> bool {
+    fn contains(&self, tbi: &TbiDllite) -> bool {
         self.items.contains(tbi)
     }
 }
@@ -88,7 +88,7 @@ impl fmt::Display for TBDllite {
 
 impl TBDllite {
     pub fn new() -> TBDllite {
-        let items: Vec<TBI_DLlite> = Vec::new();
+        let items: Vec<TbiDllite> = Vec::new();
         TBDllite {
             items,
             length: 0,
@@ -146,8 +146,8 @@ impl TBDllite {
      */
 
     // get a list to negative inclusions
-    pub fn negative_inclusions(&self, take_trivial: bool) -> Vec<&TBI_DLlite> {
-        let mut neg_tbi: Vec<&TBI_DLlite> = Vec::new();
+    pub fn negative_inclusions(&self, take_trivial: bool) -> Vec<&TbiDllite> {
+        let mut neg_tbi: Vec<&TbiDllite> = Vec::new();
 
         for tbi in &self.items {
             if tbi.is_negative_inclusion() && (!tbi.is_trivial() || take_trivial) {
@@ -160,7 +160,7 @@ impl TBDllite {
 
     pub fn complete(&self, deduction_tree: bool, verbose: bool) -> TBDllite {
         // TESTING: for type constriction
-        type T = TBI_DLlite;
+        type T = TbiDllite;
 
         if self.items.len() == 0 {
             if verbose {
@@ -176,8 +176,8 @@ impl TBDllite {
              */
 
             // keep the items
-            let items: Arc<Mutex<VecDeque<TBI_DLlite>>> = Arc::new(Mutex::new(VecDeque::new()));
-            let items_temporal: Arc<Mutex<VecDeque<TBI_DLlite>>> =
+            let items: Arc<Mutex<VecDeque<TbiDllite>>> = Arc::new(Mutex::new(VecDeque::new()));
+            let items_temporal: Arc<Mutex<VecDeque<TbiDllite>>> =
                 Arc::new(Mutex::new(VecDeque::new()));
 
             // keep the index to be treated
@@ -192,7 +192,7 @@ impl TBDllite {
             // indicators for the while main loop
             let mut stop_condition: bool; // stop condition for the loop, see if to_treat is 'empty' or not
             let mut current_index: usize; // at each iteration keeps the index to be treated
-            let mut current_item: TBI_DLlite; // at each iteration keeps the item to be treated
+            let mut current_item: TbiDllite; // at each iteration keeps the item to be treated
             let mut is_already_treated: bool;
             let mut iterations: usize;
 
@@ -267,7 +267,7 @@ impl TBDllite {
 
                         // here we add the deduction tree switch
                         let new_item_vec =
-                            TBI_DLlite::apply_rule(vec![item], &rule_zero, deduction_tree);
+                            TbiDllite::apply_rule(vec![item], &rule_zero, deduction_tree);
 
                         // here there is some unnecessary clone stuff
                         if new_item_vec.is_some() {
@@ -317,7 +317,7 @@ impl TBDllite {
 
                         // added deduction tree here
                         let new_item_vec =
-                            TBI_DLlite::apply_rule(vec![item], &rule_one, deduction_tree);
+                            TbiDllite::apply_rule(vec![item], &rule_one, deduction_tree);
 
                         // here there is some unnecessary clone stuff
                         if new_item_vec.is_some() {
@@ -459,7 +459,7 @@ impl TBDllite {
 
                             // three different vectors
                             // added deduction tree
-                            let new_item_vec3 = TBI_DLlite::apply_rule(
+                            let new_item_vec3 = TbiDllite::apply_rule(
                                 vec![&current_item, &item],
                                 rule,
                                 deduction_tree,
@@ -469,17 +469,17 @@ impl TBDllite {
                                 // if the rule succeeded
 
                                 if optional_vec.is_some() {
-                                    let mut tbis_to_add: Vec<TBI_DLlite> = Vec::new();
+                                    let mut tbis_to_add: Vec<TbiDllite> = Vec::new();
                                     let iterator = optional_vec.as_ref().unwrap();
                                     // try to apply rule zero and one
                                     for tbi in iterator {
                                         // added deduction tree
-                                        let zero_tbi = TBI_DLlite::apply_rule(
+                                        let zero_tbi = TbiDllite::apply_rule(
                                             vec![tbi],
                                             &rule_zero,
                                             deduction_tree,
                                         );
-                                        let one_tbi = TBI_DLlite::apply_rule(
+                                        let one_tbi = TbiDllite::apply_rule(
                                             vec![tbi],
                                             &rule_one,
                                             deduction_tree,

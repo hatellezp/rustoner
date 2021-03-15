@@ -4,8 +4,8 @@ use std::f64::consts::PI;
 // creation of matrix and vectors
 
 pub fn create_indetity_matrix_complex(n: usize) -> DMatrix<Complex<f64>> {
-    /// creates a matrix of size n*n
-    /// be aware of this
+    // creates a matrix of size n*n
+    // be aware of this
     let id: DMatrix<Complex<f64>> =
         DMatrix::from_vec(n, n, vec![Complex { re: 1.0, im: 0. }; n * n]);
     id
@@ -33,10 +33,13 @@ pub fn create_unity_roots(v: &mut DVector<Complex<f64>>, n: usize, inverse: bool
     // println!("{}", &v);
 }
 
+/*
 pub fn create_all_units_vector_complex(n: usize) -> DVector<Complex<f64>> {
     let v: DVector<Complex<f64>> = DVector::from_vec(vec![Complex { re: 1.0, im: 0. }; n]);
     v
 }
+
+ */
 
 // basic operations
 

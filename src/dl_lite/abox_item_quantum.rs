@@ -1,10 +1,10 @@
 use std::fmt;
 
 use crate::dl_lite::node::NodeDllite;
-use crate::dl_lite::tbox_item::TBI_DLlite;
-use crate::kb::knowledge_base::{AbRule, Implier, TBoxItem};
+use crate::dl_lite::tbox_item::TbiDllite;
+use crate::kb::knowledge_base::{AbRule, Implier};
 
-use crate::dl_lite::abox_item::{AbiDllite, Side};
+use crate::dl_lite::abox_item::AbiDllite;
 use crate::kb::knowledge_base::ABoxItem;
 use crate::kb::types::DLType;
 use std::cmp::Ordering;
@@ -19,7 +19,7 @@ pub struct AbiqDllite {
     prevalue: f64,
     value: Option<f64>,
     level: usize,
-    impliers: Vec<(Vec<TBI_DLlite>, Vec<AbiqDllite>)>,
+    impliers: Vec<(Vec<TbiDllite>, Vec<AbiqDllite>)>,
 }
 
 impl Eq for AbiqDllite {}
@@ -50,13 +50,13 @@ impl Ord for AbiqDllite {
 }
 
 impl Implier for AbiqDllite {
-    type Imp = (Vec<TBI_DLlite>, Vec<AbiqDllite>);
+    type Imp = (Vec<TbiDllite>, Vec<AbiqDllite>);
 
-    fn implied_by(&self) -> &Vec<(Vec<TBI_DLlite>, Vec<AbiqDllite>)> {
+    fn implied_by(&self) -> &Vec<(Vec<TbiDllite>, Vec<AbiqDllite>)> {
         &self.impliers
     }
 
-    fn add_to_implied_by(&mut self, implier: (Vec<TBI_DLlite>, Vec<AbiqDllite>)) {
+    fn add_to_implied_by(&mut self, implier: (Vec<TbiDllite>, Vec<AbiqDllite>)) {
         let mut tb = implier.0;
         let mut ab = implier.1;
 
@@ -70,7 +70,7 @@ impl Implier for AbiqDllite {
         match contains {
             Option::Some(Ordering::Less) => {
                 let mut cmpd: Option<Ordering>;
-                let mut inner_implier: &(Vec<TBI_DLlite>, Vec<AbiqDllite>);
+                let mut inner_implier: &(Vec<TbiDllite>, Vec<AbiqDllite>);
                 let lenght: usize = self.impliers.len();
 
                 for index in 0..lenght {
@@ -97,7 +97,7 @@ impl Implier for AbiqDllite {
         let ab1 = &imp1.1;
         let ab2 = &imp2.1;
 
-        let tb_cmp = TBI_DLlite::cmp_imp(tb1, tb2);
+        let tb_cmp = TbiDllite::cmp_imp(tb1, tb2);
         let ab_cmp = AbiqDllite::compare_two_vectors(ab1, ab2);
 
         match (tb_cmp, ab_cmp) {
@@ -122,7 +122,7 @@ impl Implier for AbiqDllite {
 
 impl ABoxItem for AbiqDllite {
     type NodeItem = NodeDllite;
-    type TBI = TBI_DLlite;
+    type TBI = TbiDllite;
 
     fn negate(&self) -> Self {
         let abi_neg = self.abi.negate();
@@ -161,7 +161,7 @@ impl AbiqDllite {
             _ => 1.0,
         };
 
-        let impliers: Vec<(Vec<TBI_DLlite>, Vec<AbiqDllite>)> = Vec::new();
+        let impliers: Vec<(Vec<TbiDllite>, Vec<AbiqDllite>)> = Vec::new();
 
         AbiqDllite {
             abi,
@@ -198,15 +198,19 @@ impl AbiqDllite {
 
     // reference to the concept or role in the abox_item
 
+    /*
     pub fn nominal(&self, position: usize) -> Option<&NodeDllite> {
         self.abi.nominal(position)
     }
+
+     */
 
     pub fn same_nominal(&self, other: &Self) -> bool {
         self.abi.same_nominal(&other.abi)
     }
 
-    pub fn is_match(&self, tbi: &TBI_DLlite) -> Vec<Side> {
+    /*
+    pub fn is_match(&self, tbi: &TbiDllite) -> Vec<Side> {
         self.abi.is_match(tbi)
     }
 
@@ -216,11 +220,13 @@ impl AbiqDllite {
         abis
     }
 
+     */
+
     // pub fn apply_two(one: &ABIQ, two: &ABIQ, tbox: &TB) -> Option<Vec<ABIQ>> {}
     pub fn apply_rule(
         abiqs: Vec<&AbiqDllite>,
-        tbis: Vec<&TBI_DLlite>,
-        rule: &AbRule<TBI_DLlite, AbiqDllite>,
+        tbis: Vec<&TbiDllite>,
+        rule: &AbRule<TbiDllite, AbiqDllite>,
         deduction_tree: bool,
     ) -> Option<Vec<AbiqDllite>> {
         let prov_vec = match tbis.len() {

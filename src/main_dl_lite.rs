@@ -24,7 +24,7 @@ use crate::dl_lite::string_formatter::{
     create_string_for_unravel_conflict_tbox, pretty_print_abiq_conflict, tbi_to_string,
 };
 use crate::dl_lite::tbox::TBDllite;
-use crate::dl_lite::tbox_item::TBI_DLlite;
+use crate::dl_lite::tbox_item::TbiDllite;
 
 use crate::kb::aggr_functions::{AGGR_COUNT, AGGR_MAX, AGGR_MEAN, AGGR_MIN, AGGR_SUM};
 
@@ -130,7 +130,7 @@ pub fn main() {
                     Task::VERTB => {
                         new_tb = onto.complete_tbox(deduction_tree, verbose);
 
-                        let mut contradictions: Vec<&TBI_DLlite> = Vec::new();
+                        let mut contradictions: Vec<&TbiDllite> = Vec::new();
 
                         for tbi in new_tb.items() {
                             if tbi.is_contradiction() && !tbi.is_trivial() {
@@ -344,7 +344,7 @@ pub fn main() {
                         match task {
                             Task::VERAB => {
                                 //change current abox
-                                let contradictions: Vec<(TBI_DLlite, Vec<AbiqDllite>)> =
+                                let contradictions: Vec<(TbiDllite, Vec<AbiqDllite>)> =
                                     abox_completed.is_inconsistent_detailed(onto.tbox(), verbose);
                                 // let is_abox_consistent = abox_completed.is_inconsistent(onto.tbox(), verbose);
 

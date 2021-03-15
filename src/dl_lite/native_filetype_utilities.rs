@@ -10,7 +10,7 @@ use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader, Error, ErrorKind};
 
-use crate::kb::knowledge_base::{ABox, ABoxItem, SymbolDict, TBox, TBoxItem};
+use crate::kb::knowledge_base::{ABox, SymbolDict, TBox, TBoxItem};
 
 pub fn parse_symbols_native(filename: &str, verbose: bool) -> io::Result<SymbolDict> {
     let file_result = File::open(filename);

@@ -11,7 +11,7 @@ use crate::dl_lite::node::NodeDllite;
 use crate::dl_lite::rule::{dl_lite_abox_rule_one, dl_lite_abox_rule_three, dl_lite_abox_rule_two};
 use crate::dl_lite::string_formatter::{abi_to_string, abiq_in_vec_of_vec};
 use crate::dl_lite::tbox::TBDllite;
-use crate::dl_lite::tbox_item::TBI_DLlite;
+use crate::dl_lite::tbox_item::TbiDllite;
 use crate::kb::knowledge_base::{ABox, ABoxItem, AbRule, Item, SymbolDict, TBox, TBoxItem};
 use crate::kb::types::{ConflictType, DLType, CR};
 
@@ -118,9 +118,12 @@ impl AbqDllite {
         abq
     }
 
+    /*
     pub fn is_completed(&self) -> bool {
         self.completed
     }
+
+     */
 
     // create an abox from a vec of index, will help when finding conflicts in a database
     pub fn sub_abox(&self, index: Vec<usize>, name: Option<&str>) -> Option<AbqDllite> {
@@ -147,14 +150,14 @@ impl AbqDllite {
         &self,
         tb: &TBDllite,
         verbose: bool,
-    ) -> Vec<(TBI_DLlite, Vec<AbiqDllite>)> {
+    ) -> Vec<(TbiDllite, Vec<AbiqDllite>)> {
         let tbis = tb.items();
 
         // we can have a:A and A < (-A)
         // also a:A a:B and A < (-B) the first case is an special case, so we test for the second
         // only
 
-        let mut contradictions: Vec<(TBI_DLlite, Vec<AbiqDllite>)> = Vec::new();
+        let mut contradictions: Vec<(TbiDllite, Vec<AbiqDllite>)> = Vec::new();
 
         let mut combs_added_one: Vec<&AbiqDllite> = Vec::new();
         let mut combs_added_two: Vec<(&AbiqDllite, &AbiqDllite)> = Vec::new();
@@ -337,7 +340,7 @@ impl AbqDllite {
     }
 
     pub fn complete(&self, tbox: &TBDllite, deduction_tree: bool, verbose: bool) -> AbqDllite {
-        type T = TBI_DLlite;
+        type T = TbiDllite;
         type A = AbiqDllite;
 
         if self.items.len() == 0 {
@@ -666,7 +669,7 @@ impl AbqDllite {
         &self,
         _tb: &TBDllite,
         only_conflicts: bool,
-        contradictions: &Vec<(TBI_DLlite, Vec<AbiqDllite>)>,
+        contradictions: &Vec<(TbiDllite, Vec<AbiqDllite>)>,
     ) -> Vec<usize> {
         let max_level = self.get_max_level();
         let mut levels: Vec<usize> = vec![0; max_level + 1];

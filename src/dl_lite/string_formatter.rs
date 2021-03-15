@@ -2,7 +2,7 @@ use crate::dl_lite::abox_item::AbiDllite;
 use crate::dl_lite::abox_item_quantum::AbiqDllite;
 use crate::dl_lite::json_filetype_utilities::{invalid_data_result, result_from_error};
 use crate::dl_lite::node::{Mod, NodeDllite};
-use crate::dl_lite::tbox_item::TBI_DLlite;
+use crate::dl_lite::tbox_item::TbiDllite;
 use crate::kb::types::DLType;
 use std::cmp::Ordering;
 
@@ -108,7 +108,7 @@ pub fn node_to_string(
 }
 
 // TESTING: this function creates a tbi from nothing so level is ZERO
-pub fn string_to_tbi(s: &str, symbols: &SymbolDict) -> io::Result<Vec<TBI_DLlite>> {
+pub fn string_to_tbi(s: &str, symbols: &SymbolDict) -> io::Result<Vec<TbiDllite>> {
     let pre_splitted = s.trim();
 
     let equiv = pre_splitted.contains("=");
@@ -137,7 +137,7 @@ pub fn string_to_tbi(s: &str, symbols: &SymbolDict) -> io::Result<Vec<TBI_DLlite
 
             let splitted: Vec<&str>;
             let mut tuples: Vec<(io::Result<NodeDllite>, io::Result<NodeDllite>)>;
-            let mut tbis: Vec<TBI_DLlite> = Vec::new();
+            let mut tbis: Vec<TbiDllite> = Vec::new();
 
             if sub {
                 splitted = pre_splitted.split("<").collect();
@@ -171,7 +171,7 @@ pub fn string_to_tbi(s: &str, symbols: &SymbolDict) -> io::Result<Vec<TBI_DLlite
                 }
 
                 let mut error_happened = false;
-                let mut try_to_add: Result<Vec<TBI_DLlite>, Error> = Ok(Vec::new());
+                let mut try_to_add: Result<Vec<TbiDllite>, Error> = Ok(Vec::new());
                 while !tuples.is_empty() {
                     let (lside_result, rside_result) = tuples.pop().unwrap();
 
@@ -203,7 +203,7 @@ pub fn string_to_tbi(s: &str, symbols: &SymbolDict) -> io::Result<Vec<TBI_DLlite
                         }
                         (Ok(lside), Ok(rside)) => {
                             let level = 0; // newly created tbi level should be zero
-                            let new_tbi_op = TBI_DLlite::new(lside.clone(), rside.clone(), level);
+                            let new_tbi_op = TbiDllite::new(lside.clone(), rside.clone(), level);
 
                             match new_tbi_op {
                                 Some(new_tbi) => {
@@ -239,7 +239,7 @@ pub fn string_to_tbi(s: &str, symbols: &SymbolDict) -> io::Result<Vec<TBI_DLlite
     }
 }
 
-pub fn tbi_to_string(tbi: &TBI_DLlite, symbols: &SymbolDict) -> Option<String> {
+pub fn tbi_to_string(tbi: &TbiDllite, symbols: &SymbolDict) -> Option<String> {
     let lstr_op = node_to_string(tbi.lside(), symbols, "".to_string());
     let rstr_op = node_to_string(tbi.rside(), symbols, "".to_string());
 
@@ -303,8 +303,7 @@ pub fn string_to_abi(
 
                             // each nominal
                             if !symbols.contains_key(a1) {
-                                node1 =
-                                    NodeDllite::new(Some(current_id), DLType::Nominal).unwrap();
+                                node1 = NodeDllite::new(Some(current_id), DLType::Nominal).unwrap();
 
                                 to_be_added.push((a1.to_string(), (current_id, DLType::Nominal)));
                                 current_id += 1;
@@ -321,8 +320,7 @@ pub fn string_to_abi(
 
                             // then a2
                             if !symbols.contains_key(a2) {
-                                node2 =
-                                    NodeDllite::new(Some(current_id), DLType::Nominal).unwrap();
+                                node2 = NodeDllite::new(Some(current_id), DLType::Nominal).unwrap();
 
                                 to_be_added.push((a2.to_string(), (current_id, DLType::Nominal)));
                                 current_id += 1;
@@ -346,8 +344,7 @@ pub fn string_to_abi(
 
                             // each nominal
                             if !symbols.contains_key(a1) {
-                                node1 =
-                                    NodeDllite::new(Some(current_id), DLType::Nominal).unwrap();
+                                node1 = NodeDllite::new(Some(current_id), DLType::Nominal).unwrap();
 
                                 to_be_added.push((a1.to_string(), (current_id, DLType::Nominal)));
                                 current_id += 1;
@@ -748,7 +745,7 @@ pub fn abiq_to_string(abiq: &AbiqDllite, symbols: &SymbolDict, to_native: bool) 
 }
 
 pub fn pretty_print_abiq_conflict(
-    conflict_tuple: (&TBI_DLlite, &Vec<AbiqDllite>),
+    conflict_tuple: (&TbiDllite, &Vec<AbiqDllite>),
     symbols: &SymbolDict,
 ) -> String {
     /*
@@ -792,7 +789,7 @@ pub fn pretty_print_abiq_conflict(
     s
 }
 
-pub fn pretty_vector_tbi_to_string(vec: &Vec<TBI_DLlite>, symbols: &SymbolDict) -> String {
+pub fn pretty_vector_tbi_to_string(vec: &Vec<TbiDllite>, symbols: &SymbolDict) -> String {
     let mut s = String::from("[");
 
     let vec_len = vec.len();
@@ -895,7 +892,7 @@ pub fn create_string_for_gencontb(
 }
 
 pub fn create_string_for_unravel_conflict_tbi(
-    tbi: &TBI_DLlite,
+    tbi: &TbiDllite,
     symbols: &SymbolDict,
     pad: usize,
 ) -> String {
@@ -1072,7 +1069,7 @@ pub fn create_string_for_unravel_conflict_abox(
     ab: &AbqDllite,
     symbols: &SymbolDict,
     only_conflicts: bool,
-    contradictions: &Vec<(TBI_DLlite, Vec<AbiqDllite>)>,
+    contradictions: &Vec<(TbiDllite, Vec<AbiqDllite>)>,
 ) -> String {
     // we only consider abis_contradictions if only_conflicts is present
 
@@ -1109,7 +1106,7 @@ pub fn create_string_for_unravel_conflict_abox(
     s
 }
 
-pub fn abiq_in_vec_of_vec(abiq: &AbiqDllite, v: &Vec<(TBI_DLlite, Vec<AbiqDllite>)>) -> bool {
+pub fn abiq_in_vec_of_vec(abiq: &AbiqDllite, v: &Vec<(TbiDllite, Vec<AbiqDllite>)>) -> bool {
     let mut abiq_vec: &Vec<AbiqDllite>;
 
     for inner_v in v {

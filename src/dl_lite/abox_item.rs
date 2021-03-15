@@ -2,12 +2,12 @@ use std::fmt;
 
 use crate::dl_lite::node::NodeDllite;
 
-use crate::dl_lite::tbox_item::TBI_DLlite;
 use crate::kb::types::DLType;
 use std::cmp::Ordering;
 
-use crate::kb::knowledge_base::{Item, TBoxItem};
+use crate::kb::knowledge_base::Item;
 
+/*
 // help enum for the match function in the ABI implementation
 #[derive(Eq, PartialEq, Debug, Copy, Clone, Hash)]
 pub enum Side {
@@ -16,13 +16,15 @@ pub enum Side {
     Right,
 }
 
+ */
+
 /*
    remember that only base roles and base concepts are allowed here !!
 */
 #[derive(Eq, PartialEq, Debug, Clone, Hash)]
 pub enum AbiDllite {
     RA(NodeDllite, NodeDllite, NodeDllite), // role assertion
-    CA(NodeDllite, NodeDllite),              // concept assertion
+    CA(NodeDllite, NodeDllite),             // concept assertion
 }
 
 impl fmt::Display for AbiDllite {
@@ -149,6 +151,7 @@ impl AbiDllite {
         }
     }
 
+    /*
     pub fn nominal(&self, position: usize) -> Option<&NodeDllite> {
         /*
         will return a reference (wrapped in an Option) to the wanted nominal:
@@ -188,7 +191,7 @@ impl AbiDllite {
         new_self.decompact()
     }
 
-    pub fn is_match(&self, tbi: &TBI_DLlite) -> Vec<Side> {
+    pub fn is_match(&self, tbi: &TbiDllite) -> Vec<Side> {
         // because tbox_item(s) are well formed, you only need to test against one
         let all_roles = DLType::all_roles(tbi.lside().t(), self.t());
         let all_concepts = DLType::all_concepts(tbi.lside().t(), self.t());
@@ -213,4 +216,6 @@ impl AbiDllite {
             v
         }
     }
+
+     */
 }

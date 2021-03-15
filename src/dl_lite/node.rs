@@ -78,10 +78,9 @@ impl PartialOrd for NodeDllite {
                             DLType::BaseConcept => Some(Ordering::Greater),
                             DLType::NegatedConcept => Some(Ordering::Less),
                             DLType::ExistsConcept => match (self, other) {
-                                (
-                                    NodeDllite::X(Mod::E, bnself),
-                                    NodeDllite::X(Mod::E, bnother),
-                                ) => bnself.partial_cmp(bnother),
+                                (NodeDllite::X(Mod::E, bnself), NodeDllite::X(Mod::E, bnother)) => {
+                                    bnself.partial_cmp(bnother)
+                                }
                                 (_, _) => Option::None,
                             },
                             _ => Option::None,
@@ -89,10 +88,9 @@ impl PartialOrd for NodeDllite {
                         DLType::NegatedConcept => match other.t() {
                             DLType::BaseConcept | DLType::ExistsConcept => Some(Ordering::Greater),
                             DLType::NegatedConcept => match (self, other) {
-                                (
-                                    NodeDllite::X(Mod::N, bnself),
-                                    NodeDllite::X(Mod::N, bnother),
-                                ) => bnself.partial_cmp(bnother),
+                                (NodeDllite::X(Mod::N, bnself), NodeDllite::X(Mod::N, bnother)) => {
+                                    bnself.partial_cmp(bnother)
+                                }
                                 (_, _) => Option::None,
                             },
                             _ => Option::None,
