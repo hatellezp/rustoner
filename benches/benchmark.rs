@@ -16,7 +16,7 @@ pub fn read_symbols_from_native(filename: &str) -> usize {
 pub fn criterion_benchmark_symbols(c: &mut Criterion) {
     let mut group = c.benchmark_group("read_symbols_native");
 
-    let duration = std::time::Duration::new(1200, 0);
+    let duration = std::time::Duration::new(300, 0);
     group.measurement_time(duration);
 
     let symbols = ["symbols10", "symbols100", "symbols1000", "symbols10000"]; // , "symbols100000" , "symbols1000000"];
