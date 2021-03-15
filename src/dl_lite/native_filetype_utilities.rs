@@ -1,4 +1,4 @@
-use crate::dl_lite::abox::ABQ_DLlite;
+use crate::dl_lite::abox::AbqDllite;
 use crate::dl_lite::string_formatter::{
     abiq_to_string, string_to_abiq, string_to_symbol, string_to_tbi, tbi_to_string, PS,
 };
@@ -381,7 +381,7 @@ pub fn parse_abox_native_quantum(
     filename: &str,
     symbols: &mut SymbolDict,
     verbose: bool,
-) -> io::Result<ABQ_DLlite> {
+) -> io::Result<AbqDllite> {
     /*
     this function might add nominal symbols dynamically, so we need to actuallize symbols :/
     dangerous manipulation here...
@@ -406,7 +406,7 @@ pub fn parse_abox_native_quantum(
             let (_, id_bound) = find_bound_of_symbols(symbols);
             let mut current_id = id_bound + 1;
 
-            let mut ab = ABQ_DLlite::new(ab_name);
+            let mut ab = AbqDllite::new(ab_name);
 
             for line_result in reader.lines() {
                 if verbose {
@@ -504,7 +504,7 @@ pub fn parse_abox_native_quantum(
 }
 
 pub fn abox_to_native_string_quantum(
-    abox: &ABQ_DLlite,
+    abox: &AbqDllite,
     symbols: &SymbolDict,
     dont_write_trivial: bool,
 ) -> Option<String> {

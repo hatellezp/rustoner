@@ -4,7 +4,7 @@ use crate::dl_lite::node::Node_DLlite;
 use crate::dl_lite::tbox_item::TBI_DLlite;
 use crate::kb::knowledge_base::{AbRule, Implier, TBoxItem};
 
-use crate::dl_lite::abox_item::{ABI_DLlite, Side};
+use crate::dl_lite::abox_item::{AbiDllite, Side};
 use crate::kb::knowledge_base::ABoxItem;
 use crate::kb::types::DLType;
 use std::cmp::Ordering;
@@ -14,49 +14,49 @@ use std::hash::{Hash, Hasher};
    remember that only base roles and base concepts are allowed here !!
 */
 #[derive(PartialEq, Debug, Clone)]
-pub struct ABIQ_DLlite {
-    abi: ABI_DLlite, // role or concept assertion
+pub struct AbiqDllite {
+    abi: AbiDllite, // role or concept assertion
     prevalue: f64,
     value: Option<f64>,
     level: usize,
-    impliers: Vec<(Vec<TBI_DLlite>, Vec<ABIQ_DLlite>)>,
+    impliers: Vec<(Vec<TBI_DLlite>, Vec<AbiqDllite>)>,
 }
 
-impl Eq for ABIQ_DLlite {}
+impl Eq for AbiqDllite {}
 
 // TODO: is this enough ????
-impl Hash for ABIQ_DLlite {
+impl Hash for AbiqDllite {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.abi.hash(state);
     }
 }
 
-impl fmt::Display for ABIQ_DLlite {
+impl fmt::Display for AbiqDllite {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} ({}, {:?})", self.abi, self.prevalue, self.value)
     }
 }
 
-impl PartialOrd for ABIQ_DLlite {
+impl PartialOrd for AbiqDllite {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         self.abi.partial_cmp(&other.abi)
     }
 }
 
-impl Ord for ABIQ_DLlite {
+impl Ord for AbiqDllite {
     fn cmp(&self, other: &Self) -> Ordering {
         self.partial_cmp(other).unwrap()
     }
 }
 
-impl Implier for ABIQ_DLlite {
-    type Imp = (Vec<TBI_DLlite>, Vec<ABIQ_DLlite>);
+impl Implier for AbiqDllite {
+    type Imp = (Vec<TBI_DLlite>, Vec<AbiqDllite>);
 
-    fn implied_by(&self) -> &Vec<(Vec<TBI_DLlite>, Vec<ABIQ_DLlite>)> {
+    fn implied_by(&self) -> &Vec<(Vec<TBI_DLlite>, Vec<AbiqDllite>)> {
         &self.impliers
     }
 
-    fn add_to_implied_by(&mut self, implier: (Vec<TBI_DLlite>, Vec<ABIQ_DLlite>)) {
+    fn add_to_implied_by(&mut self, implier: (Vec<TBI_DLlite>, Vec<AbiqDllite>)) {
         let mut tb = implier.0;
         let mut ab = implier.1;
 
@@ -70,7 +70,7 @@ impl Implier for ABIQ_DLlite {
         match contains {
             Option::Some(Ordering::Less) => {
                 let mut cmpd: Option<Ordering>;
-                let mut inner_implier: &(Vec<TBI_DLlite>, Vec<ABIQ_DLlite>);
+                let mut inner_implier: &(Vec<TBI_DLlite>, Vec<AbiqDllite>);
                 let lenght: usize = self.impliers.len();
 
                 for index in 0..lenght {
@@ -98,7 +98,7 @@ impl Implier for ABIQ_DLlite {
         let ab2 = &imp2.1;
 
         let tb_cmp = TBI_DLlite::cmp_imp(tb1, tb2);
-        let ab_cmp = ABIQ_DLlite::compare_two_vectors(ab1, ab2);
+        let ab_cmp = AbiqDllite::compare_two_vectors(ab1, ab2);
 
         match (tb_cmp, ab_cmp) {
             (Option::None, _) => Option::None,
@@ -120,7 +120,7 @@ impl Implier for ABIQ_DLlite {
     }
 }
 
-impl ABoxItem for ABIQ_DLlite {
+impl ABoxItem for AbiqDllite {
     type NodeItem = Node_DLlite;
     type TBI = TBI_DLlite;
 
@@ -128,7 +128,7 @@ impl ABoxItem for ABIQ_DLlite {
         let abi_neg = self.abi.negate();
 
         // really dangerous here
-        ABIQ_DLlite::new(abi_neg, Some(self.prevalue), self.value, self.level + 1)
+        AbiqDllite::new(abi_neg, Some(self.prevalue), self.value, self.level + 1)
     }
 
     fn t(&self) -> DLType {
@@ -149,21 +149,21 @@ here we however, we will allow for negation of and other complex constructions
 this will allow for finding that 'a doesn't belong to A'
  */
 
-impl ABIQ_DLlite {
+impl AbiqDllite {
     pub fn new(
-        abi: ABI_DLlite,
+        abi: AbiDllite,
         prevalue: Option<f64>,
         value: Option<f64>,
         level: usize,
-    ) -> ABIQ_DLlite {
+    ) -> AbiqDllite {
         let prevalue = match prevalue {
             Some(pv) => pv,
             _ => 1.0,
         };
 
-        let impliers: Vec<(Vec<TBI_DLlite>, Vec<ABIQ_DLlite>)> = Vec::new();
+        let impliers: Vec<(Vec<TBI_DLlite>, Vec<AbiqDllite>)> = Vec::new();
 
-        ABIQ_DLlite {
+        AbiqDllite {
             abi,
             prevalue,
             value,
@@ -172,12 +172,16 @@ impl ABIQ_DLlite {
         }
     }
 
-    pub fn abi(&self) -> &ABI_DLlite {
+    pub fn abi(&self) -> &AbiDllite {
         &self.abi
     }
 
     pub fn prevalue(&self) -> f64 {
         self.prevalue
+    }
+
+    pub fn set_value(&mut self, v: f64) {
+        self.value = Some(v)
     }
 
     pub fn value(&self) -> Option<f64> {
@@ -206,19 +210,19 @@ impl ABIQ_DLlite {
         self.abi.is_match(tbi)
     }
 
-    pub fn get_abis(abiqs: Vec<&ABIQ_DLlite>) -> Vec<&ABI_DLlite> {
-        let abis: Vec<&ABI_DLlite> = abiqs.iter().map(|&x| x.abi()).collect::<Vec<_>>();
+    pub fn get_abis(abiqs: Vec<&AbiqDllite>) -> Vec<&AbiDllite> {
+        let abis: Vec<&AbiDllite> = abiqs.iter().map(|&x| x.abi()).collect::<Vec<_>>();
 
         abis
     }
 
     // pub fn apply_two(one: &ABIQ, two: &ABIQ, tbox: &TB) -> Option<Vec<ABIQ>> {}
     pub fn apply_rule(
-        abiqs: Vec<&ABIQ_DLlite>,
+        abiqs: Vec<&AbiqDllite>,
         tbis: Vec<&TBI_DLlite>,
-        rule: &AbRule<TBI_DLlite, ABIQ_DLlite>,
+        rule: &AbRule<TBI_DLlite, AbiqDllite>,
         deduction_tree: bool,
-    ) -> Option<Vec<ABIQ_DLlite>> {
+    ) -> Option<Vec<AbiqDllite>> {
         let prov_vec = match tbis.len() {
             1 => rule(abiqs, tbis, deduction_tree),
             2 => rule(abiqs, tbis, deduction_tree),
@@ -228,8 +232,8 @@ impl ABIQ_DLlite {
         if prov_vec.is_none() {
             Option::None
         } else {
-            let prov_vec: Vec<ABIQ_DLlite> = prov_vec.unwrap();
-            let mut final_vec: Vec<ABIQ_DLlite> = Vec::new();
+            let prov_vec: Vec<AbiqDllite> = prov_vec.unwrap();
+            let mut final_vec: Vec<AbiqDllite> = Vec::new();
 
             for item in &prov_vec {
                 if !item.abi().is_trivial() {
@@ -241,12 +245,12 @@ impl ABIQ_DLlite {
         }
     }
 
-    pub fn compare_two_vectors(v1: &Vec<ABIQ_DLlite>, v2: &Vec<ABIQ_DLlite>) -> Option<Ordering> {
+    pub fn compare_two_vectors(v1: &Vec<AbiqDllite>, v2: &Vec<AbiqDllite>) -> Option<Ordering> {
         let len1 = v1.len();
         let len2 = v2.len();
         let mut all_good = true;
-        let mut abiq1: &ABIQ_DLlite;
-        let mut abiq2: &ABIQ_DLlite;
+        let mut abiq1: &AbiqDllite;
+        let mut abiq2: &AbiqDllite;
 
         let (lenght, ordering) = match len1.cmp(&len2) {
             Ordering::Less => (len1, Ordering::Less),
@@ -268,7 +272,7 @@ impl ABIQ_DLlite {
     }
 
     // function utility for levels
-    pub fn get_extrema_level(v: Vec<&ABIQ_DLlite>, max_index: usize, get_max: bool) -> usize {
+    pub fn get_extrema_level(v: Vec<&AbiqDllite>, max_index: usize, get_max: bool) -> usize {
         // for max or min
         let mut extrema_level: usize = if get_max { 0 } else { usize::max_value() };
 

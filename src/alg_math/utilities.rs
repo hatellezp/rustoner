@@ -1,7 +1,5 @@
-// use num_complex::Complex;
 use nalgebra::{Complex, DMatrix, DVector};
 use std::f64::consts::PI;
-// use std::fs::copy;
 
 // creation of matrix and vectors
 
@@ -43,11 +41,11 @@ pub fn create_all_units_vector_complex(n: usize) -> DVector<Complex<f64>> {
 // basic operations
 
 pub fn matrix_is_zero_complex(m: &DMatrix<Complex<f64>>) -> bool {
-    let ZERO: Complex<f64> = Complex { re: 0., im: 0. };
+    let zero: Complex<f64> = Complex { re: 0., im: 0. };
 
     for r in 0..m.nrows() {
         for c in 0..m.ncols() {
-            if m[(r, c)] != ZERO {
+            if m[(r, c)] != zero {
                 return false;
             }
         }
@@ -82,7 +80,7 @@ pub fn multiply_matrix_complex(m: &mut DMatrix<Complex<f64>>, mul: Complex<f64>)
 
 pub fn solve_system(
     matrix: &DMatrix<Complex<f64>>,
-    solution: &mut DVector<Complex<f64>>,
+    mut solution: &mut DVector<Complex<f64>>,
     identity_mod: Complex<f64>,
     matrix_mod: Complex<f64>,
     vector_mod: Complex<f64>,
@@ -101,9 +99,24 @@ pub fn solve_system(
         // here we solve (identity_mod * 1 - matrix_mod * m)X = vector_mod * (1,...1)
         let global_size = rows; // to avoid misunderstandings
 
-        let mut receiver_matrix = create_indetity_matrix_complex(global_size);
+        // let mut receiver_matrix = create_indetity_matrix_complex(global_size);
         let mut copy_matrix = create_indetity_matrix_complex(global_size);
-        let mut vector = create_all_units_vector_complex(global_size);
+
+        // this idea allocate to vector, we are going to put everyting in solution
+        // let mut vector = create_all_units_vector_complex(global_size);
+        // put everything in solution
+        for i in 0..global_size {
+            solution[i] = Complex { re: 1.0, im: 0. };
+        }
+
+        let mut receiver_matrix: DMatrix<Complex<f64>> = DMatrix::from_vec(
+            global_size,
+            global_size,
+            vec![Complex { re: 0., im: 0. }; global_size * global_size],
+        );
+        for i in 0..global_size {
+            receiver_matrix[(i, i)] = Complex { re: 1., im: 0. };
+        }
 
         // copy content from matrxi to copy_matrix
         copy_matrix.copy_from(matrix);
@@ -119,20 +132,25 @@ pub fn solve_system(
 
         // first test in-place modification
         // mutliply vector
-        multiply_vector_complex(&mut vector, vector_mod);
+        // multiply_vector_complex(&mut vector, vector_mod);
+        multiply_vector_complex(&mut solution, vector_mod);
 
         // I'm using LU decomposition here
         let decomposed = receiver_matrix.lu();
-        decomposed.solve_mut(&mut vector);
+        decomposed.solve_mut(&mut solution);
 
         // put everything in solution
-        solution.copy_from(&vector);
+        // solution.copy_from(&vector);
 
         // done
     }
 }
 
 // wrappers
+pub fn solve_system_wrapper_only_id_mod(v: Vec<f64>, receiver: &mut Vec<f64>, id_mod: f64) -> bool {
+    solve_system_wrapper(v, receiver, id_mod, 1., 1.)
+}
+
 pub fn solve_system_wrapper(
     v: Vec<f64>,
     receiver: &mut Vec<f64>,

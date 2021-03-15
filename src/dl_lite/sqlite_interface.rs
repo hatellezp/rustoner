@@ -1,8 +1,8 @@
 use rusqlite::{Connection, Result, NO_PARAMS};
 
-use crate::dl_lite::abox::ABQ_DLlite;
-use crate::dl_lite::abox_item::ABI_DLlite;
-use crate::dl_lite::abox_item_quantum::ABIQ_DLlite;
+use crate::dl_lite::abox::AbqDllite;
+use crate::dl_lite::abox_item::AbiDllite;
+use crate::dl_lite::abox_item_quantum::AbiqDllite;
 use crate::dl_lite::native_filetype_utilities::find_bound_of_symbols;
 use crate::dl_lite::node::Node_DLlite;
 use crate::dl_lite::sqlite_structs::{
@@ -509,7 +509,7 @@ pub fn drop_tables_from_database(conn: &Connection, tables_to_drop: Vec<&str>, v
 pub fn add_abi_to_db_quantum(
     symbols: &SymbolDict,
     ab_name: &str,
-    abiq: &ABIQ_DLlite,
+    abiq: &AbiqDllite,
     conn: &Connection,
     verbose: bool,
 ) {
@@ -523,7 +523,7 @@ pub fn add_abi_to_db_quantum(
 
     // match abi type
     match abi {
-        ABI_DLlite::CA(c, a) => {
+        AbiDllite::CA(c, a) => {
             add_nodes_to_db(symbols, vec![c, a], conn, verbose);
 
             let c_id = get_node_from_db(symbols, c, conn, verbose).unwrap()[0].id_db as usize;
@@ -561,7 +561,7 @@ pub fn add_abi_to_db_quantum(
                 println!("query: {}\nreturned: {:?}", query, &res);
             }
         }
-        ABI_DLlite::RA(r, a, b) => {
+        AbiDllite::RA(r, a, b) => {
             add_nodes_to_db(symbols, vec![r, a, b], conn, verbose);
 
             let r_id = get_node_from_db(symbols, r, conn, verbose).unwrap()[0].id_db as usize;
@@ -611,7 +611,7 @@ pub fn add_abi_to_db_quantum(
 
 pub fn add_abis_to_db_quantum(
     symbols: &SymbolDict,
-    abiqs: &Vec<ABIQ_DLlite>,
+    abiqs: &Vec<AbiqDllite>,
     ab_name: &str,
     conn: &Connection,
     verbose: bool,
@@ -682,7 +682,7 @@ pub fn add_abis_to_db_quantum(
 
 pub fn add_abis_from_db_quantum(
     symbols: &mut SymbolDict,
-    abq: &mut ABQ_DLlite,
+    abq: &mut AbqDllite,
     conn: &Connection,
     ab_name: &str,
     verbose: bool,

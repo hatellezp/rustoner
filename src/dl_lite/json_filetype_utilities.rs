@@ -3,7 +3,7 @@ use std::{fs, io};
 use serde_json::{Result, Value};
 
 // use crate::dl_lite::abox::AB;
-use crate::dl_lite::abox_item::ABI_DLlite;
+use crate::dl_lite::abox_item::AbiDllite;
 use crate::dl_lite::node::Node_DLlite;
 // use crate::dl_lite::node::Mod;
 use crate::dl_lite::tbox::TB_DLlite;
@@ -209,7 +209,7 @@ pub fn parse_value_to_tbi(
     }
 }
 
-pub fn parse_value_abi(_value: &Value, _symbols: Vec<&Node_DLlite>) -> Option<ABI_DLlite> {
+pub fn parse_value_abi(_value: &Value, _symbols: Vec<&Node_DLlite>) -> Option<AbiDllite> {
     Option::None
 }
 

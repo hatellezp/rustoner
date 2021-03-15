@@ -1,4 +1,4 @@
-use crate::dl_lite::abox_item::ABI_DLlite;
+use crate::dl_lite::abox_item::AbiDllite;
 use crate::dl_lite::json_filetype_utilities::{parse_symbols_json, parse_tbox_json, tbox_to_value};
 use crate::dl_lite::node::{Mod, Node_DLlite};
 use crate::dl_lite::tbox::TB_DLlite;
@@ -6,7 +6,7 @@ use crate::dl_lite::tbox_item::TBI_DLlite;
 use crate::kb::types::DLType;
 use crate::kb::types::FileType;
 use serde_json::json;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 // use serde_json::Value;
 use std::fs::File;
 use std::io::Write;
@@ -20,8 +20,8 @@ use crate::dl_lite::native_filetype_utilities::{
 
 use rusqlite::{Connection, Result};
 
-use crate::dl_lite::abox::ABQ_DLlite;
-use crate::dl_lite::abox_item_quantum::ABIQ_DLlite;
+use crate::dl_lite::abox::AbqDllite;
+use crate::dl_lite::abox_item_quantum::AbiqDllite;
 use crate::dl_lite::sqlite_interface::{
     add_basic_tables_to_db, add_symbols_from_db, add_symbols_to_db, add_tbis_from_db,
     add_tbis_to_db,
@@ -45,7 +45,7 @@ pub struct Ontology_DLlite {
     name: String,
     symbols: SymbolDict,
     tbox: TB_DLlite,
-    current_abox: Option<ABQ_DLlite>,
+    current_abox: Option<AbqDllite>,
 }
 
 impl fmt::Display for Ontology_DLlite {
@@ -110,11 +110,15 @@ impl Ontology_DLlite {
         &self.tbox
     }
 
-    pub fn abox(&self) -> Option<&ABQ_DLlite> {
+    pub fn abox(&self) -> Option<&AbqDllite> {
         match &self.current_abox {
             Option::None => Option::None,
             Some(ab) => Some(ab),
         }
+    }
+
+    pub fn abox_as_mut(&mut self) -> Option<&mut AbqDllite> {
+        self.current_abox.as_mut()
     }
 
     pub fn abox_name(&self) -> String {
@@ -142,7 +146,7 @@ impl Ontology_DLlite {
         }
     }
 
-    pub fn add_abis_from_vec(&mut self, v: &Vec<ABIQ_DLlite>) {
+    pub fn add_abis_from_vec(&mut self, v: &Vec<AbiqDllite>) {
         match self.current_abox.as_mut() {
             Option::None => (),
             Some(ab) => {
@@ -201,7 +205,7 @@ impl Ontology_DLlite {
         }
     }
 
-    pub fn new_abox_from_aboxq(&mut self, ab: ABQ_DLlite) {
+    pub fn new_abox_from_aboxq(&mut self, ab: AbqDllite) {
         self.current_abox = Some(ab);
     }
 
@@ -281,7 +285,7 @@ impl Ontology_DLlite {
         }
     }
 
-    pub fn add_abi(&mut self, abi: &ABIQ_DLlite) {
+    pub fn add_abi(&mut self, abi: &AbiqDllite) {
         // you must have created a new abox
         if self.current_abox.is_some() {
             let abox = self.current_abox.as_mut().unwrap();
@@ -289,7 +293,7 @@ impl Ontology_DLlite {
         }
     }
 
-    pub fn add_abis_from_abox(&mut self, ab: &ABQ_DLlite) {
+    pub fn add_abis_from_abox(&mut self, ab: &AbqDllite) {
         for abi in ab.items() {
             self.add_abi(abi)
         }
@@ -326,7 +330,7 @@ impl Ontology_DLlite {
         self.current_abox = ab_op;
     }
 
-    pub fn complete_abox(&self, deduction_tree: bool, verbose: bool) -> Option<ABQ_DLlite> {
+    pub fn complete_abox(&self, deduction_tree: bool, verbose: bool) -> Option<AbqDllite> {
         match &self.current_abox {
             Some(ab) => Some(ab.complete(self.tbox(), deduction_tree, verbose)),
             _ => Option::None,
@@ -336,7 +340,7 @@ impl Ontology_DLlite {
     // please note that this matrix detect also implications
     pub fn conflict_matrix(
         &self,
-        abq: &ABQ_DLlite,
+        abq: &AbqDllite,
         deduction_tree: bool,
         verbose: bool,
     ) -> (
@@ -472,9 +476,9 @@ impl Ontology_DLlite {
                             }
 
                             let abq_tmp =
-                                ABQ_DLlite::from_vec("tmp", vec![abiq_i.clone(), abiq_j.clone()]);
+                                AbqDllite::from_vec("tmp", vec![abiq_i.clone(), abiq_j.clone()]);
                             let abq_tmp_neg =
-                                ABQ_DLlite::from_vec("tmp_neg", vec![abiq_i.clone(), abiq_j_neg]);
+                                AbqDllite::from_vec("tmp_neg", vec![abiq_i.clone(), abiq_j_neg]);
 
                             if verbose {
                                 println!(
@@ -534,13 +538,160 @@ impl Ontology_DLlite {
         }
     }
 
+    pub fn clean_index_matrix(matrix: &Vec<i8>) -> Option<(Vec<usize>, bool, bool)> {
+        let mut conflict_index_hashset: HashSet<usize> = HashSet::new();
+        let mut conflict_clean: Vec<usize> = Vec::new();
+
+        let nsquared = matrix.len();
+        let n = (nsquared as f64).sqrt() as usize;
+
+        if n * n != nsquared {
+            Option::None
+        } else {
+            for i in 0..n {
+                for j in 0..n {
+                    if matrix[i * n + j] != 0 {
+                        conflict_index_hashset.insert(i);
+                        conflict_index_hashset.insert(j);
+                    }
+                }
+            }
+
+            for i in 0..n {
+                if !conflict_index_hashset.contains(&i) {
+                    conflict_clean.push(i);
+                }
+            }
+
+            let all_clean = conflict_clean.len() == n;
+            let all_conflict = conflict_clean.len() == 0;
+            Some((conflict_clean, all_clean, all_conflict))
+        }
+    }
+
+    pub fn from_conflict_to_clean_matrix(
+        matrix: &Vec<i8>,
+        _verbose: bool,
+    ) -> Option<(
+        Vec<i8>,
+        HashMap<usize, Option<usize>>,
+        HashMap<usize, usize>,
+        Option<(usize, usize)>,
+    )> {
+        let res_op = Ontology_DLlite::clean_index_matrix(matrix);
+
+        let mut chosen_index: Option<(usize, usize)> = Option::None;
+
+        match res_op {
+            Option::None => Option::None,
+            Some((conflict_clean, all_clean, all_conflict)) => {
+                // here we create a new matrix
+                // first is everything is dirty then not modification
+
+                // this is an aliasing to dont forget
+                let before_matrix = matrix;
+
+                let nsquared = before_matrix.len();
+                let n = (nsquared as f64).sqrt() as usize;
+
+                let mut before_matrix_to_done_matrix: HashMap<usize, Option<usize>> =
+                    HashMap::new();
+                let mut done_matrix_to_before_matrix: HashMap<usize, usize> = HashMap::new();
+                let mut done_matrix: Vec<i8> = Vec::new();
+
+                // if everything is a conflict the copy all
+                if all_conflict {
+                    done_matrix = matrix.clone();
+
+                    for i in 0..n {
+                        before_matrix_to_done_matrix.insert(i, Some(i));
+                        done_matrix_to_before_matrix.insert(i, i);
+                    }
+
+                    Some((
+                        done_matrix,
+                        before_matrix_to_done_matrix,
+                        done_matrix_to_before_matrix,
+                        chosen_index,
+                    ))
+                } else if all_clean {
+                    // if everything is clean then output an empty vector
+                    for i in 0..n {
+                        before_matrix_to_done_matrix.insert(i, Option::None);
+                    }
+
+                    Some((
+                        done_matrix,
+                        before_matrix_to_done_matrix,
+                        done_matrix_to_before_matrix,
+                        chosen_index,
+                    ))
+                } else {
+                    // you must leave at least one clean fact
+                    let one_clean_fact_index = conflict_clean[0]; // this can't be empty
+
+                    let new_dim = n - conflict_clean.len();
+                    let new_dim = new_dim + 1; // we add one for the one clean fact!!!
+                    done_matrix = vec![0; new_dim * new_dim];
+                    let mut current_index: usize = 0;
+                    let mut changed = false;
+
+                    for i in 0..n {
+                        if !conflict_clean.contains(&i) {
+                            before_matrix_to_done_matrix.insert(i, Some(current_index));
+                            done_matrix_to_before_matrix.insert(current_index, i);
+                            current_index += 1;
+                        } else if i == one_clean_fact_index {
+                            before_matrix_to_done_matrix.insert(i, Some(current_index));
+                            done_matrix_to_before_matrix.insert(current_index, i);
+
+                            // new point to old!!!
+                            if !changed {
+                                chosen_index = Some((current_index, i));
+                                changed = true;
+                            }
+
+                            current_index += 1;
+                        } else {
+                            before_matrix_to_done_matrix.insert(i, Option::None);
+                        }
+                    }
+
+                    let mut before_i: usize;
+                    let mut before_j: usize;
+
+                    if current_index != new_dim {
+                        // something went wrong and the matrice have not the same size
+                        Option::None
+                    } else {
+                        for i in 0..new_dim {
+                            before_i = *(done_matrix_to_before_matrix.get(&i).unwrap());
+                            for j in 0..new_dim {
+                                before_j = *(done_matrix_to_before_matrix.get(&j).unwrap());
+
+                                done_matrix[new_dim * i + j] =
+                                    before_matrix[n * before_i + before_j];
+                            }
+                        }
+
+                        Some((
+                            done_matrix,
+                            before_matrix_to_done_matrix,
+                            done_matrix_to_before_matrix,
+                            chosen_index,
+                        ))
+                    }
+                }
+            }
+        }
+    }
+
     // here we compute the A matrix
     // remember: a*1 - b*A = c*(1,...,1)
     // (Vec<i8>, HashMap<usize, Option<usize>>, HashMap<usize, usize>)
-    pub fn compute_A_matrix(
-        abq: &ABQ_DLlite,
+    pub fn compute_aggregation_matrix(
+        abq: &AbqDllite,
         matrix: &Vec<i8>,
-        _real_to_virtual: &HashMap<usize, Option<usize>>,
         virtual_to_real: &HashMap<usize, usize>,
         aggr: AggrFn,
         verbose: bool,
@@ -548,7 +699,7 @@ impl Ontology_DLlite {
         let matrix_len = matrix.len();
         let mut v: Vec<f64> = vec![0 as f64; matrix_len];
         let mut real_index_op: Option<&usize>;
-        let mut abiq_op: Option<&ABIQ_DLlite>;
+        let mut abiq_op: Option<&AbiqDllite>;
         let mut aggr_v: f64;
         let mut i: usize;
         let mut j: usize;
@@ -606,20 +757,13 @@ impl Ontology_DLlite {
         contains_contradiction
     }
 
-    /*
-    pub fn find_consequences(&self, abox: &AB) -> AB {
-        AB::new(abox.name())
-    }
-
-     */
-
     pub fn find_consequences_from_file(
         &self,
         filename: &str,
         _filetype: FileType,
-    ) -> io::Result<ABQ_DLlite> {
+    ) -> io::Result<AbqDllite> {
         let ab_name = parse_name_from_filename(filename);
-        Ok(ABQ_DLlite::new(ab_name))
+        Ok(AbqDllite::new(ab_name))
     }
 
     // -------------------------------------------------------------------------------------------
@@ -805,7 +949,7 @@ impl Ontology_DLlite {
         s
     }
 
-    pub fn abox_to_string_quantum(&self, ab: &ABQ_DLlite) -> String {
+    pub fn abox_to_string_quantum(&self, ab: &AbqDllite) -> String {
         let mut s = String::from("    {\n");
 
         for abi in ab.items() {
@@ -832,7 +976,7 @@ impl Ontology_DLlite {
         s
     }
 
-    fn abiq_to_string(&self, abiq: &ABIQ_DLlite) -> String {
+    fn abiq_to_string(&self, abiq: &AbiqDllite) -> String {
         let abi_to_string = self.abi_to_string(abiq.abi());
 
         let v = match abiq.value() {
@@ -844,9 +988,9 @@ impl Ontology_DLlite {
         res
     }
 
-    fn abi_to_string(&self, abi: &ABI_DLlite) -> String {
+    fn abi_to_string(&self, abi: &AbiDllite) -> String {
         let s = match abi {
-            ABI_DLlite::RA(r, a, b) => {
+            AbiDllite::RA(r, a, b) => {
                 let r = self.node_to_string(r);
                 let a = self.node_to_string(a);
                 let b = self.node_to_string(b);
@@ -854,7 +998,7 @@ impl Ontology_DLlite {
                 let s = format!("{},{} : {}", a, b, r);
                 s
             }
-            ABI_DLlite::CA(c, a) => {
+            AbiDllite::CA(c, a) => {
                 let c = self.node_to_string(c);
                 let a = self.node_to_string(a);
 

@@ -2,7 +2,6 @@ use fftw::array::AlignedVec;
 use fftw::plan::*;
 use fftw::types::*;
 
-// juse num_complex::Complex;
 use crate::alg_math::utilities::{
     create_unity_roots, matrix_is_zero_complex, matrix_subtraction, multiply_matrix_complex,
     multiply_vector_complex,
@@ -155,7 +154,7 @@ fn find_bound_complex(
         // on the roots
 
         // apparently I must put real_degree as signed integer
-        let mut real_degree: isize; // there, solved it, real_degree is signed now
+        let _real_degree: isize; // there, solved it, real_degree is signed now
 
         let mut possible_coeff_real: f64;
         let mut max_coeff: f64;
@@ -181,7 +180,8 @@ fn find_bound_complex(
                 // find the real degree of the polynomial
                 // I think these updates are not necessary ...
                 // tolerance is there to avoid 0 related problems
-                real_degree = -1;
+                let mut real_degree: Option<usize> = Option::None;
+
                 possible_coeff_real = tolerance / 2.;
                 max_coeff = tolerance / 2.;
 
@@ -189,7 +189,7 @@ fn find_bound_complex(
                     possible_coeff_real = out_vector[n_samples - i - 1].re / (n_samples as f64);
 
                     if possible_coeff_real.abs() > tolerance {
-                        real_degree = (n_samples - i - 1) as isize;
+                        real_degree = Some(n_samples - i - 1);
                         max_coeff = possible_coeff_real;
                         break;
                     } else {
@@ -198,7 +198,10 @@ fn find_bound_complex(
                 }
 
                 // recast real_degree
-                let real_degree: usize = real_degree as usize;
+                let real_degree = match real_degree {
+                    Option::None => 0,
+                    Some(rd) => rd,
+                }; // something bad happenend here
 
                 // now that we have the real degree we compute the bound
                 // where the max comprehend all polynomials

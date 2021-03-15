@@ -1,5 +1,6 @@
 mod alg_math;
 mod dl_lite;
+mod helper;
 mod interface;
 mod kb;
 
@@ -7,8 +8,8 @@ mod kb;
 use structopt::StructOpt;
 
 // from alg_math
-use crate::alg_math::bounds::find_bound_complex_wrapper;
-use crate::alg_math::utilities::solve_system_wrapper;
+
+
 
 // from kb
 use crate::kb::knowledge_base::{ABox, SymbolDict, TBox, TBoxItem};
@@ -17,8 +18,8 @@ use crate::kb::types::FileType;
 // from the dl_lite module
 use crate::dl_lite::ontology::Ontology_DLlite;
 
-use crate::dl_lite::abox::ABQ_DLlite;
-use crate::dl_lite::abox_item_quantum::ABIQ_DLlite;
+use crate::dl_lite::abox::AbqDllite;
+use crate::dl_lite::abox_item_quantum::AbiqDllite;
 use crate::dl_lite::native_filetype_utilities::tbox_to_native_string;
 use crate::dl_lite::string_formatter::{
     create_string_for_gencontb, create_string_for_unravel_conflict_abox,
@@ -35,10 +36,18 @@ use crate::interface::cli::{Cli, Task};
 use crate::interface::utilities::{get_filetype, parse_name_from_filename, write_str_to_file};
 
 // to ask basic questions
+use crate::helper::rank_abox;
+use crate::helper::{edge_attr, node_attr};
+use petgraph::dot::{Config, Dot};
+
 use question::{Answer, Question};
 
+use std::process::Command;
+use tempfile::NamedTempFile;
+
 // constants for the bound computing
-const TOLERANCE: f64 = 0.000001;
+// const TOLERANCE: f64 = 0.000001;
+const TOLERANCE: f64 = 0.;
 const M_SCALER: f64 = 1.1;
 const B_TRANSLATE: f64 = 1.;
 
@@ -336,7 +345,7 @@ pub fn main() {
                         match task {
                             Task::VERAB => {
                                 //change current abox
-                                let contradictions: Vec<(TBI_DLlite, Vec<ABIQ_DLlite>)> =
+                                let contradictions: Vec<(TBI_DLlite, Vec<AbiqDllite>)> =
                                     abox_completed.is_inconsistent_detailed(onto.tbox(), verbose);
                                 // let is_abox_consistent = abox_completed.is_inconsistent(onto.tbox(), verbose);
 
@@ -416,8 +425,8 @@ pub fn main() {
                             Task::CLEANAB => {
                                 let clean_name = "clean";
                                 let dirty_name = "dirty";
-                                let mut clean_ab = ABQ_DLlite::new(clean_name);
-                                let mut dirty_ab = ABQ_DLlite::new(dirty_name);
+                                let mut clean_ab = AbqDllite::new(clean_name);
+                                let mut dirty_ab = AbqDllite::new(dirty_name);
 
                                 let orig_ab_op = onto.abox();
 
@@ -432,7 +441,7 @@ pub fn main() {
                                         // remember that onto has the completed tbox
                                         for abiq in orig_ab.items() {
                                             is_self_conflict =
-                                                ABQ_DLlite::abiq_is_self_contradicting(
+                                                AbqDllite::abiq_is_self_contradicting(
                                                     abiq,
                                                     onto.tbox(),
                                                 );
@@ -546,36 +555,182 @@ pub fn main() {
                             Task::GENCONAB => {}
                             Task::RNKAB => {
                                 // the current abox is not the completed one
-                                let abox = onto.abox().unwrap();
+                                let mut abox = onto.abox().unwrap().clone();
                                 deduction_tree = false;
 
-                                let matrix_detailed =
-                                    onto.conflict_matrix(abox, deduction_tree, verbose);
-
-                                println!("{:?}\n", matrix_detailed);
-                                println!("{:?}", onto.symbols());
-
-                                let (m, rtv, vtr) = matrix_detailed;
-
-                                let matrixA = Ontology_DLlite::compute_A_matrix(
-                                    abox, &m, &rtv, &vtr, AGGR_SUM, verbose,
-                                );
-                                println!("{:?}", &matrixA);
-
-                                let bound_op = find_bound_complex_wrapper(
-                                    matrixA.clone(),
+                                let (before_matrix, virtual_to_real, conflict_type) = rank_abox(
+                                    &onto,
+                                    &mut abox,
+                                    deduction_tree,
+                                    AGGR_SUM,
                                     TOLERANCE,
                                     M_SCALER,
                                     B_TRANSLATE,
+                                    verbose,
                                 );
+                                // now the abox is ranked
 
-                                println!("{:?}", &bound_op);
+                                if !silent {
+                                    let question_print = " -- do you see the output?".to_string();
 
-                                let rank_len = (matrixA.len() as f64).sqrt() as usize;
+                                    let print_output = Question::new(&question_print)
+                                        .default(Answer::YES)
+                                        .show_defaults()
+                                        .confirm();
 
-                                let mut rank: Vec<f64> = vec![0.; rank_len];
-                                solve_system_wrapper(matrixA, &mut rank, bound_op.unwrap(), 1., 1.);
-                                println!("{:?}", &rank);
+                                    if print_output == Answer::YES {
+                                        let abox_string = onto.abox_to_string_quantum(&abox);
+                                        println!("{}", &abox_string);
+                                    }
+                                }
+
+                                // save to file the new abox
+                                match path_output_op {
+                                    Some(path_output) => {
+                                        let filename = path_output.to_str().unwrap().to_string();
+                                        dont_write_trivial = true;
+
+                                        // add the abis
+                                        onto.add_abis_from_abox(&abox_completed);
+                                        onto.abox_to_file(
+                                            &filename,
+                                            FileType::NATIVE,
+                                            dont_write_trivial,
+                                        );
+
+                                        if !silent {
+                                            println!(" -- abox written to {}", &filename);
+                                        }
+                                    }
+                                    Option::None => (),
+                                }
+
+                                // now create graph if necessary
+                                let question_print =
+                                    " -- do you want to create a conflict graph?".to_string();
+
+                                let print_output = Question::new(&question_print)
+                                    .default(Answer::YES)
+                                    .show_defaults()
+                                    .confirm();
+
+                                if print_output == Answer::YES {
+                                    let graph = abox.create_graph_dot(
+                                        onto.symbols(),
+                                        &before_matrix,
+                                        &virtual_to_real,
+                                        &conflict_type,
+                                    );
+
+                                    let get_edge = edge_attr;
+                                    let get_node = node_attr;
+
+                                    let dot_notation = Dot::with_attr_getters(
+                                        &graph,
+                                        &[Config::EdgeNoLabel],
+                                        &get_edge,
+                                        &get_node,
+                                    );
+
+                                    let output = format!("{}", dot_notation);
+
+                                    // two things: first save dot notation, second save graph to pdf
+                                    let question_print =
+                                        " -- do you want to save to dot notation?".to_string();
+
+                                    let print_output = Question::new(&question_print)
+                                        .default(Answer::YES)
+                                        .show_defaults()
+                                        .confirm();
+
+                                    if print_output == Answer::YES {
+                                        let filename =
+                                            format!("{}_conflict_graph.dot", abox.name());
+                                        write_str_to_file(&output, &filename);
+
+                                        if !silent {
+                                            println!(" -- dot file created: {}", &filename);
+                                        }
+                                    }
+
+                                    // now show graph
+                                    let question_print =
+                                        " -- do you want see a generate a visual output?"
+                                            .to_string();
+
+                                    let print_output = Question::new(&question_print)
+                                        .default(Answer::YES)
+                                        .show_defaults()
+                                        .confirm();
+
+                                    if print_output == Answer::YES {
+                                        // here create a temporary file
+                                        let temp_dot_file_res = NamedTempFile::new();
+
+                                        match temp_dot_file_res {
+                                            Err(e) => {
+                                                if !silent {
+                                                    println!("could not generate output: {}", e);
+                                                }
+                                            }
+                                            Ok(temp_dot) => {
+                                                let path_to_temp_dot =
+                                                    (&temp_dot).path().to_str().clone();
+
+                                                match path_to_temp_dot {
+                                                    Option::None => {
+                                                        println!(
+                                                            "path is not valid: {:?}",
+                                                            &path_to_temp_dot
+                                                        );
+                                                    }
+                                                    Some(path_to_temp) => {
+                                                        // write to temporary file
+                                                        write_str_to_file(&output, path_to_temp);
+
+                                                        let name_output_file = format!(
+                                                            "{}_conflict_graph.pdf",
+                                                            &abox.name()
+                                                        );
+                                                        let command = format!(
+                                                            "dot -Tpdf {} -o {}",
+                                                            path_to_temp, &name_output_file
+                                                        );
+
+                                                        // execute dot command
+                                                        // TODO: change this to be platform independent
+                                                        let output = Command::new("sh")
+                                                            .arg("-c")
+                                                            .arg(&command)
+                                                            .output();
+
+                                                        match output {
+                                                            Err(e) => {
+                                                                println!(
+                                                                    "couldn't create output: {}",
+                                                                    &e
+                                                                );
+                                                            }
+                                                            Ok(o) => {
+                                                                if !silent {
+                                                                    let _std_out =
+                                                                        std::str::from_utf8(
+                                                                            &o.stdout,
+                                                                        )
+                                                                        .unwrap();
+                                                                    println!(
+                                                                        " -- file generated: {}",
+                                                                        &name_output_file
+                                                                    );
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                             _ => {
                                 println!("not sure how you arrived here...");

@@ -1,5 +1,5 @@
-use crate::dl_lite::abox_item::ABI_DLlite;
-use crate::dl_lite::abox_item_quantum::ABIQ_DLlite;
+use crate::dl_lite::abox_item::AbiDllite;
+use crate::dl_lite::abox_item_quantum::AbiqDllite;
 use crate::dl_lite::node::Node_DLlite;
 use crate::dl_lite::tbox_item::TBI_DLlite;
 use crate::kb::knowledge_base::{ABox, ABoxItem, Implier, Item, TBox, TBoxItem};
@@ -432,10 +432,10 @@ pub fn dl_lite_rule_eight(vec: Vec<&TBI_DLlite>, deduction_tree: bool) -> Option
 
 // if (a,b):r then a:Er and b:Er^⁻
 pub fn dl_lite_abox_rule_one(
-    abis: Vec<&ABIQ_DLlite>,
+    abis: Vec<&AbiqDllite>,
     _tbis: Vec<&TBI_DLlite>,
     deduction_tree: bool,
-) -> Option<Vec<ABIQ_DLlite>> {
+) -> Option<Vec<AbiqDllite>> {
     if abis.len() < 1 {
         Option::None
     } else {
@@ -443,26 +443,26 @@ pub fn dl_lite_abox_rule_one(
         let big_level = abis[0].level();
 
         match abi {
-            ABI_DLlite::CA(_, _) => Option::None,
-            ABI_DLlite::RA(r, a, b) => {
+            AbiDllite::CA(_, _) => Option::None,
+            AbiDllite::RA(r, a, b) => {
                 let r_is_neg = r.is_negated();
-                let mut v: Vec<ABIQ_DLlite> = Vec::new();
+                let mut v: Vec<AbiqDllite> = Vec::new();
 
                 match r_is_neg {
                     true => Some(v),
                     false => {
                         // first create a: Er
                         let er = r.clone().exists().unwrap(); // this should work, r is a base role
-                        let a_er = ABI_DLlite::new_ca(er, a.clone(), true).unwrap(); // rules are always applied for completion
+                        let a_er = AbiDllite::new_ca(er, a.clone(), true).unwrap(); // rules are always applied for completion
 
                         // secondly create b:Er^-
                         let erinv = r.clone().inverse().unwrap().exists().unwrap();
-                        let b_erinv = ABI_DLlite::new_ca(erinv, b.clone(), true).unwrap();
+                        let b_erinv = AbiDllite::new_ca(erinv, b.clone(), true).unwrap();
 
                         let mut a_er_q =
-                            ABIQ_DLlite::new(a_er, Option::None, Option::None, big_level + 1);
+                            AbiqDllite::new(a_er, Option::None, Option::None, big_level + 1);
                         let mut b_erinv_q =
-                            ABIQ_DLlite::new(b_erinv, Option::None, Option::None, big_level + 1);
+                            AbiqDllite::new(b_erinv, Option::None, Option::None, big_level + 1);
 
                         if deduction_tree {
                             a_er_q.add_to_implied_by((vec![], vec![abis[0].clone()]));
@@ -482,10 +482,10 @@ pub fn dl_lite_abox_rule_one(
 
 // if (a,b):r and r < s then (a,b):s
 pub fn dl_lite_abox_rule_two(
-    abis: Vec<&ABIQ_DLlite>,
+    abis: Vec<&AbiqDllite>,
     tbis: Vec<&TBI_DLlite>,
     deduction_tree: bool,
-) -> Option<Vec<ABIQ_DLlite>> {
+) -> Option<Vec<AbiqDllite>> {
     if abis.len() < 1 || tbis.len() < 1 {
         Option::None
     } else {
@@ -494,18 +494,13 @@ pub fn dl_lite_abox_rule_two(
         let big_level = abis[0].level();
 
         match abi {
-            ABI_DLlite::CA(_, _) => Option::None,
-            ABI_DLlite::RA(r, a, b) => {
+            AbiDllite::CA(_, _) => Option::None,
+            AbiDllite::RA(r, a, b) => {
                 if r == tbi.lside() {
-                    let new_ra =
-                        ABI_DLlite::new_ra(tbi.rside().clone(), a.clone(), b.clone(), true);
+                    let new_ra = AbiDllite::new_ra(tbi.rside().clone(), a.clone(), b.clone(), true);
 
-                    let mut new_ra_q = ABIQ_DLlite::new(
-                        new_ra.unwrap(),
-                        Option::None,
-                        Option::None,
-                        big_level + 1,
-                    );
+                    let mut new_ra_q =
+                        AbiqDllite::new(new_ra.unwrap(), Option::None, Option::None, big_level + 1);
 
                     if deduction_tree {
                         new_ra_q.add_to_implied_by((vec![tbi.clone()], vec![abis[0].clone()]));
@@ -523,10 +518,10 @@ pub fn dl_lite_abox_rule_two(
 
 // if a:c and c < d then a:d
 pub fn dl_lite_abox_rule_three(
-    abis: Vec<&ABIQ_DLlite>,
+    abis: Vec<&AbiqDllite>,
     tbis: Vec<&TBI_DLlite>,
     deduction_tree: bool,
-) -> Option<Vec<ABIQ_DLlite>> {
+) -> Option<Vec<AbiqDllite>> {
     if abis.len() < 1 || tbis.len() < 1 {
         Option::None
     } else {
@@ -535,17 +530,13 @@ pub fn dl_lite_abox_rule_three(
         let big_level = abis[0].level();
 
         match abi {
-            ABI_DLlite::RA(_, _, _) => Option::None,
-            ABI_DLlite::CA(c, a) => {
+            AbiDllite::RA(_, _, _) => Option::None,
+            AbiDllite::CA(c, a) => {
                 if c == tbi.lside() {
-                    let new_ca = ABI_DLlite::new_ca(tbi.rside().clone(), a.clone(), true);
+                    let new_ca = AbiDllite::new_ca(tbi.rside().clone(), a.clone(), true);
 
-                    let mut new_ca_q = ABIQ_DLlite::new(
-                        new_ca.unwrap(),
-                        Option::None,
-                        Option::None,
-                        big_level + 1,
-                    );
+                    let mut new_ca_q =
+                        AbiqDllite::new(new_ca.unwrap(), Option::None, Option::None, big_level + 1);
 
                     if deduction_tree {
                         new_ca_q.add_to_implied_by((vec![tbi.clone()], vec![abis[0].clone()]));

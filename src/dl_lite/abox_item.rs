@@ -20,36 +20,36 @@ pub enum Side {
    remember that only base roles and base concepts are allowed here !!
 */
 #[derive(Eq, PartialEq, Debug, Clone, Hash)]
-pub enum ABI_DLlite {
+pub enum AbiDllite {
     RA(Node_DLlite, Node_DLlite, Node_DLlite), // role assertion
     CA(Node_DLlite, Node_DLlite),              // concept assertion
 }
 
-impl fmt::Display for ABI_DLlite {
+impl fmt::Display for AbiDllite {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ABI_DLlite::RA(r, a, b) => write!(f, "<{}: {}, {}>", r, a, b),
-            ABI_DLlite::CA(c, a) => write!(f, "<{}: {}>", c, a),
+            AbiDllite::RA(r, a, b) => write!(f, "<{}: {}, {}>", r, a, b),
+            AbiDllite::CA(c, a) => write!(f, "<{}: {}>", c, a),
         }
     }
 }
 
-impl PartialOrd for ABI_DLlite {
+impl PartialOrd for AbiDllite {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         if self == other {
             Some(Ordering::Equal)
         } else {
             match self {
-                ABI_DLlite::CA(c1, a1) => match other {
-                    ABI_DLlite::RA(_, _, _) => Some(Ordering::Less),
-                    ABI_DLlite::CA(c2, a2) => match c1.cmp(c2) {
+                AbiDllite::CA(c1, a1) => match other {
+                    AbiDllite::RA(_, _, _) => Some(Ordering::Less),
+                    AbiDllite::CA(c2, a2) => match c1.cmp(c2) {
                         Ordering::Equal => Some(a1.cmp(a2)),
                         _ => Some(c1.cmp(c2)),
                     },
                 },
-                ABI_DLlite::RA(r1, a1, b1) => match other {
-                    ABI_DLlite::CA(_, _) => Some(Ordering::Greater),
-                    ABI_DLlite::RA(r2, a2, b2) => match r1.cmp(r2) {
+                AbiDllite::RA(r1, a1, b1) => match other {
+                    AbiDllite::CA(_, _) => Some(Ordering::Greater),
+                    AbiDllite::RA(r2, a2, b2) => match r1.cmp(r2) {
                         Ordering::Equal => match a1.cmp(a2) {
                             Ordering::Equal => Some(b1.cmp(b2)),
                             _ => Some(a1.cmp(a2)),
@@ -62,7 +62,7 @@ impl PartialOrd for ABI_DLlite {
     }
 }
 
-impl Ord for ABI_DLlite {
+impl Ord for AbiDllite {
     fn cmp(&self, other: &Self) -> Ordering {
         self.partial_cmp(other).unwrap()
     }
@@ -74,59 +74,59 @@ here we however, we will allow for negation of and other complex constructions
 this will allow for finding that 'a doesn't belong to A'
  */
 
-impl ABI_DLlite {
+impl AbiDllite {
     pub fn new_ra(
         r: Node_DLlite,
         a: Node_DLlite,
         b: Node_DLlite,
         for_completion: bool,
-    ) -> Option<ABI_DLlite> {
+    ) -> Option<AbiDllite> {
         let is_base_role = r.t() == DLType::BaseRole || for_completion;
         let all_nominals = DLType::all_nominals(a.t(), b.t());
 
         if !is_base_role || !all_nominals {
             Option::None
         } else {
-            Some(ABI_DLlite::RA(r, a, b))
+            Some(AbiDllite::RA(r, a, b))
         }
     }
 
-    pub fn new_ca(c: Node_DLlite, a: Node_DLlite, for_completion: bool) -> Option<ABI_DLlite> {
+    pub fn new_ca(c: Node_DLlite, a: Node_DLlite, for_completion: bool) -> Option<AbiDllite> {
         let is_base_concept = c.t() == DLType::BaseConcept || for_completion;
         let is_nominal = a.t() == DLType::Nominal;
         if !is_base_concept || !is_nominal {
             Option::None
         } else {
-            Some(ABI_DLlite::CA(c, a))
+            Some(AbiDllite::CA(c, a))
         }
     }
 
-    pub fn negate(&self) -> ABI_DLlite {
+    pub fn negate(&self) -> AbiDllite {
         match self {
-            ABI_DLlite::CA(c, a) => {
+            AbiDllite::CA(c, a) => {
                 let c_neg = c.clone().negate();
 
-                ABI_DLlite::new_ca(c_neg, a.clone(), true).unwrap()
+                AbiDllite::new_ca(c_neg, a.clone(), true).unwrap()
             }
-            ABI_DLlite::RA(r, a, b) => {
+            AbiDllite::RA(r, a, b) => {
                 let r_neg = r.clone().negate();
 
-                ABI_DLlite::new_ra(r_neg, a.clone(), b.clone(), true).unwrap()
+                AbiDllite::new_ra(r_neg, a.clone(), b.clone(), true).unwrap()
             }
         }
     }
 
     pub fn is_trivial(&self) -> bool {
         match self {
-            ABI_DLlite::CA(c, _) => c.t() == DLType::Top,
+            AbiDllite::CA(c, _) => c.t() == DLType::Top,
             _ => false,
         }
     }
 
     pub fn t(&self) -> DLType {
         match self {
-            ABI_DLlite::RA(_, _, _) => DLType::BaseRole,
-            ABI_DLlite::CA(_, _) => DLType::BaseConcept,
+            AbiDllite::RA(_, _, _) => DLType::BaseRole,
+            AbiDllite::CA(_, _) => DLType::BaseConcept,
         }
     }
 
@@ -136,15 +136,15 @@ impl ABI_DLlite {
         returns a reference to the role or concept symbol of the  abox item
          */
         match self {
-            ABI_DLlite::RA(r, _, _) => r,
-            ABI_DLlite::CA(c, _) => c,
+            AbiDllite::RA(r, _, _) => r,
+            AbiDllite::CA(c, _) => c,
         }
     }
 
     pub fn same_nominal(&self, other: &Self) -> bool {
         match (self, other) {
-            (ABI_DLlite::RA(_, a1, b1), ABI_DLlite::RA(_, a2, b2)) => a1 == a2 && b1 == b2,
-            (ABI_DLlite::CA(_, a1), ABI_DLlite::CA(_, a2)) => a1 == a2,
+            (AbiDllite::RA(_, a1, b1), AbiDllite::RA(_, a2, b2)) => a1 == a2 && b1 == b2,
+            (AbiDllite::CA(_, a1), AbiDllite::CA(_, a2)) => a1 == a2,
             (_, _) => false,
         }
     }
@@ -164,12 +164,12 @@ impl ABI_DLlite {
             WARNING: this function returns positions with numeration beginning at 0!!
          */
         match self {
-            ABI_DLlite::RA(_, a, b) => match position {
+            AbiDllite::RA(_, a, b) => match position {
                 0 => Some(a),
                 1 => Some(b),
                 _ => Option::None,
             },
-            ABI_DLlite::CA(_, a) => match position {
+            AbiDllite::CA(_, a) => match position {
                 0 => Some(a),
                 _ => Option::None,
             },
@@ -178,8 +178,8 @@ impl ABI_DLlite {
 
     pub fn decompact(self) -> (Node_DLlite, Node_DLlite, Option<Node_DLlite>) {
         match self {
-            ABI_DLlite::RA(r, a, b) => (r, a, Some(b)),
-            ABI_DLlite::CA(c, a) => (c, a, Option::None),
+            AbiDllite::RA(r, a, b) => (r, a, Some(b)),
+            AbiDllite::CA(c, a) => (c, a, Option::None),
         }
     }
 

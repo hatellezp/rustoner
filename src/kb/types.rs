@@ -198,3 +198,10 @@ pub enum FileType {
     JSON,
     NATIVE,
 }
+
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
+pub enum ConflictType {
+    Clean,
+    Conflict,
+    SelfConflict,
+}

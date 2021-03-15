@@ -1,5 +1,5 @@
-use crate::dl_lite::abox_item::ABI_DLlite;
-use crate::dl_lite::abox_item_quantum::ABIQ_DLlite;
+use crate::dl_lite::abox_item::AbiDllite;
+use crate::dl_lite::abox_item_quantum::AbiqDllite;
 use crate::dl_lite::json_filetype_utilities::{invalid_data_result, result_from_error};
 use crate::dl_lite::node::{Mod, Node_DLlite};
 use crate::dl_lite::tbox_item::TBI_DLlite;
@@ -11,7 +11,7 @@ use std::hash::Hash;
 use std::io;
 use std::io::{Error, ErrorKind};
 
-use crate::dl_lite::abox::ABQ_DLlite;
+use crate::dl_lite::abox::AbqDllite;
 use crate::kb::knowledge_base::{ABox, Implier, SymbolDict, TBox, TBoxItem};
 
 //--------------------------------------------------------------------------------------------------
@@ -264,7 +264,7 @@ pub fn string_to_abi(
     mut current_id: usize,
     for_completion: bool,
 ) -> (
-    io::Result<(ABI_DLlite, Vec<(String, (usize, DLType))>)>,
+    io::Result<(AbiDllite, Vec<(String, (usize, DLType))>)>,
     usize,
 ) {
     let splitted = s.trim();
@@ -331,13 +331,9 @@ pub fn string_to_abi(
                                 node2 = Node_DLlite::new(Some(id2), DLType::Nominal).unwrap();
                             }
 
-                            let abi = ABI_DLlite::new_ra(
-                                abi_symbol.clone(),
-                                node1,
-                                node2,
-                                for_completion,
-                            )
-                            .unwrap();
+                            let abi =
+                                AbiDllite::new_ra(abi_symbol.clone(), node1, node2, for_completion)
+                                    .unwrap();
 
                             (Ok((abi, to_be_added)), current_id)
                         }
@@ -360,7 +356,7 @@ pub fn string_to_abi(
                                 node1 = Node_DLlite::new(Some(id1), DLType::Nominal).unwrap();
                             }
 
-                            let abi = ABI_DLlite::new_ca(abi_symbol.clone(), node1, for_completion)
+                            let abi = AbiDllite::new_ca(abi_symbol.clone(), node1, for_completion)
                                 .unwrap();
 
                             (Ok((abi, to_be_added)), current_id)
@@ -389,9 +385,9 @@ pub fn string_to_abi(
     }
 }
 
-pub fn abi_to_string(abi: &ABI_DLlite, symbols: &SymbolDict) -> Option<String> {
+pub fn abi_to_string(abi: &AbiDllite, symbols: &SymbolDict) -> Option<String> {
     match abi {
-        ABI_DLlite::CA(c, a) => {
+        AbiDllite::CA(c, a) => {
             let c_str_op = node_to_string(c, symbols, "".to_string());
             let a_str_op = node_to_string(a, symbols, "".to_string());
 
@@ -407,7 +403,7 @@ pub fn abi_to_string(abi: &ABI_DLlite, symbols: &SymbolDict) -> Option<String> {
                 (_, _) => Option::None,
             }
         }
-        ABI_DLlite::RA(r, a, b) => {
+        AbiDllite::RA(r, a, b) => {
             let r_str_op = node_to_string(r, symbols, "".to_string());
             let a_str_op = node_to_string(a, symbols, "".to_string());
             let b_str_op = node_to_string(b, symbols, "".to_string());
@@ -636,7 +632,7 @@ pub fn string_to_abiq(
     current_id: usize,
     for_completion: bool,
 ) -> (
-    io::Result<(ABIQ_DLlite, Vec<(String, (usize, DLType))>)>,
+    io::Result<(AbiqDllite, Vec<(String, (usize, DLType))>)>,
     usize,
 ) {
     let splitted = s.trim();
@@ -717,14 +713,14 @@ pub fn string_to_abiq(
         Ok((abi, v)) => {
             // if we are parsing then the level is forcefully 0
             let level = 0;
-            let abiq = ABIQ_DLlite::new(abi, Some(pvalue), value, level);
+            let abiq = AbiqDllite::new(abi, Some(pvalue), value, level);
 
             (Ok((abiq, v)), cid)
         }
     }
 }
 
-pub fn abiq_to_string(abiq: &ABIQ_DLlite, symbols: &SymbolDict, to_native: bool) -> Option<String> {
+pub fn abiq_to_string(abiq: &AbiqDllite, symbols: &SymbolDict, to_native: bool) -> Option<String> {
     let abi_to_string = abi_to_string(abiq.abi(), symbols);
 
     let pv_to_string = format!("{}", abiq.prevalue());
@@ -752,7 +748,7 @@ pub fn abiq_to_string(abiq: &ABIQ_DLlite, symbols: &SymbolDict, to_native: bool)
 }
 
 pub fn pretty_print_abiq_conflict(
-    conflict_tuple: (&TBI_DLlite, &Vec<ABIQ_DLlite>),
+    conflict_tuple: (&TBI_DLlite, &Vec<AbiqDllite>),
     symbols: &SymbolDict,
 ) -> String {
     /*
@@ -817,7 +813,7 @@ pub fn pretty_vector_tbi_to_string(vec: &Vec<TBI_DLlite>, symbols: &SymbolDict) 
     s
 }
 
-pub fn pretty_vector_abiq_to_string(vec: &Vec<ABIQ_DLlite>, symbols: &SymbolDict) -> String {
+pub fn pretty_vector_abiq_to_string(vec: &Vec<AbiqDllite>, symbols: &SymbolDict) -> String {
     let mut s = String::from("[");
     let to_native = false;
     let vec_len = vec.len();
@@ -990,7 +986,7 @@ pub fn create_string_for_unravel_conflict_tbox(
     s
 }
 pub fn create_string_for_unravel_conflict_abiq(
-    abiq: &ABIQ_DLlite,
+    abiq: &AbiqDllite,
     symbols: &SymbolDict,
     pad: usize,
 ) -> String {
@@ -1073,10 +1069,10 @@ pub fn create_string_for_unravel_conflict_abiq(
 
 pub fn create_string_for_unravel_conflict_abox(
     tb: &TB_DLlite,
-    ab: &ABQ_DLlite,
+    ab: &AbqDllite,
     symbols: &SymbolDict,
     only_conflicts: bool,
-    contradictions: &Vec<(TBI_DLlite, Vec<ABIQ_DLlite>)>,
+    contradictions: &Vec<(TBI_DLlite, Vec<AbiqDllite>)>,
 ) -> String {
     // we only consider abis_contradictions if only_conflicts is present
 
@@ -1113,8 +1109,8 @@ pub fn create_string_for_unravel_conflict_abox(
     s
 }
 
-pub fn abiq_in_vec_of_vec(abiq: &ABIQ_DLlite, v: &Vec<(TBI_DLlite, Vec<ABIQ_DLlite>)>) -> bool {
-    let mut abiq_vec: &Vec<ABIQ_DLlite>;
+pub fn abiq_in_vec_of_vec(abiq: &AbiqDllite, v: &Vec<(TBI_DLlite, Vec<AbiqDllite>)>) -> bool {
+    let mut abiq_vec: &Vec<AbiqDllite>;
 
     for inner_v in v {
         abiq_vec = &inner_v.1;
