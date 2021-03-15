@@ -7,7 +7,7 @@ use rustoner::kb::*;
 // for symbols first
 pub fn read_symbols_from_native(filename: &str) -> usize {
     let name = String::from(filename);
-    let mut onto = ontology::Ontology_DLlite::new(name);
+    let mut onto = ontology::OntologyDllite::new(name);
 
     onto.add_symbols_from_file(filename, types::FileType::NATIVE, false);
     1
