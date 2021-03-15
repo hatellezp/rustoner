@@ -31,12 +31,15 @@ impl fmt::Display for DLType {
 }
 
 impl DLType {
+    /*
     pub fn is_base_type(&self) -> bool {
         match self {
             DLType::Nominal | DLType::BaseRole | DLType::BaseConcept => true,
             _ => false,
         }
     }
+
+     */
 
     pub fn is_nominal_type(&self) -> bool {
         match self {
@@ -102,6 +105,7 @@ impl DLType {
         DLType::all_roles(t1, t2) || DLType::all_concepts(t1, t2) || DLType::all_nominals(t1, t2)
     }
 
+    /*
     pub fn types() -> [DLType; 9] {
         [
             DLType::Bottom,
@@ -116,6 +120,9 @@ impl DLType {
         ]
     }
 
+     */
+
+    /*
     pub fn to_usize_for_db(&self) -> usize {
         match self {
             DLType::Bottom => 0,
@@ -161,6 +168,8 @@ impl DLType {
             _ => Option::None,
         }
     }
+
+     */
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]

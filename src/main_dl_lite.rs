@@ -9,8 +9,6 @@ use structopt::StructOpt;
 
 // from alg_math
 
-
-
 // from kb
 use crate::kb::knowledge_base::{ABox, SymbolDict, TBox, TBoxItem};
 use crate::kb::types::FileType;
@@ -28,10 +26,10 @@ use crate::dl_lite::string_formatter::{
 use crate::dl_lite::tbox::TB_DLlite;
 use crate::dl_lite::tbox_item::TBI_DLlite;
 
-use crate::kb::aggr_functions::AGGR_SUM;
+use crate::kb::aggr_functions::{AGGR_COUNT, AGGR_MAX, AGGR_MEAN, AGGR_MIN, AGGR_SUM};
 
 // from the interface module
-use crate::interface::cli::{Cli, Task};
+use crate::interface::cli::{AggrName, Cli, Task};
 
 use crate::interface::utilities::{get_filetype, parse_name_from_filename, write_str_to_file};
 
@@ -64,6 +62,7 @@ pub fn main() {
     let path_output_op: Option<std::path::PathBuf> = args.path_output;
     let verbose: bool = args.verbose;
     let silent: bool = args.silent;
+    let aggr_name_op: Option<AggrName> = args.aggr;
     // let _ephemere: bool = args.ephemere;
 
     // ---------------------------------
@@ -558,11 +557,24 @@ pub fn main() {
                                 let mut abox = onto.abox().unwrap().clone();
                                 deduction_tree = false;
 
+                                // find aggregation function
+                                let aggr = match aggr_name_op {
+                                    Option::None => AGGR_SUM,
+                                    Some(aggr_name) => match aggr_name {
+                                        AggrName::UNDEFINED => AGGR_SUM,
+                                        AggrName::SUM => AGGR_SUM,
+                                        AggrName::MAX => AGGR_MAX,
+                                        AggrName::MIN => AGGR_MIN,
+                                        AggrName::MEAN => AGGR_MEAN,
+                                        AggrName::COUNT => AGGR_COUNT,
+                                    },
+                                };
+
                                 let (before_matrix, virtual_to_real, conflict_type) = rank_abox(
                                     &onto,
                                     &mut abox,
                                     deduction_tree,
-                                    AGGR_SUM,
+                                    aggr,
                                     TOLERANCE,
                                     M_SCALER,
                                     B_TRANSLATE,

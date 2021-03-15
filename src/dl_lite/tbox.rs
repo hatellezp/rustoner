@@ -96,6 +96,7 @@ impl TB_DLlite {
         }
     }
 
+    /*
     pub fn new_from_iter<I>(it: I) -> TB_DLlite
     where
         I: Iterator<Item = TBI_DLlite>,
@@ -109,12 +110,15 @@ impl TB_DLlite {
         tb
     }
 
+     */
+
     pub fn levels(&self) -> Vec<usize> {
         let levels: Vec<usize> = self.items.iter().map(|x| (&x).level()).collect();
 
         levels
     }
 
+    /*
     pub fn completed(&self) -> &bool {
         &(self.completed)
     }
@@ -138,6 +142,8 @@ impl TB_DLlite {
             self.items = new_items;
         }
     }
+
+     */
 
     // get a list to negative inclusions
     pub fn negative_inclusions(&self, take_trivial: bool) -> Vec<&TBI_DLlite> {
@@ -578,6 +584,7 @@ impl TB_DLlite {
         }
     }
 
+    /*
     pub fn is_satisfiable(&self, deduction_tree: bool, verbose: bool) -> bool {
         let new_tb = self.complete(deduction_tree, verbose);
 
@@ -589,6 +596,8 @@ impl TB_DLlite {
 
         return true;
     }
+
+     */
 
     pub fn get_tbis_by_level(&self, only_conflicts: bool) -> Vec<usize> {
         let max_level = self.get_max_level();

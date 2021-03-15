@@ -282,6 +282,7 @@ impl Node_DLlite {
         }
     }
 
+    /*
     pub fn is_inverted(&self) -> bool {
         self.t() == DLType::InverseRole
     }
@@ -295,6 +296,9 @@ impl Node_DLlite {
         }
     }
 
+     */
+
+    /*
     pub fn print_iter<I>(it: I) -> String
     where
         I: Iterator<Item = Node_DLlite>,
@@ -308,4 +312,6 @@ impl Node_DLlite {
 
         s_accumulator
     }
+
+     */
 }

@@ -2,8 +2,6 @@ use std::collections::{HashMap, VecDeque};
 use std::fmt;
 use std::sync::{Arc, Mutex};
 
-
-
 use crate::dl_lite::abox_item_quantum::AbiqDllite;
 use crate::dl_lite::helpers_and_utilities::{
     complete_helper_add_if_necessary_general, complete_helper_dump_from_mutex_temporal_to_current,
@@ -16,8 +14,6 @@ use crate::dl_lite::tbox::TB_DLlite;
 use crate::dl_lite::tbox_item::TBI_DLlite;
 use crate::kb::knowledge_base::{ABox, ABoxItem, AbRule, Item, SymbolDict, TBox, TBoxItem};
 use crate::kb::types::{ConflictType, DLType, CR};
-
-
 
 use petgraph::{Directed, Graph};
 
@@ -715,7 +711,8 @@ impl AbqDllite {
             conft = *(conflict_type.get(&i).unwrap());
 
             match conft {
-                ConflictType::SelfConflict | ConflictType::Clean => (),
+                ConflictType::SelfConflict => (),
+                ConflictType::Clean => (),
                 ConflictType::Conflict => {
                     string_op = abi_to_string(abiq.abi(), symbols);
 

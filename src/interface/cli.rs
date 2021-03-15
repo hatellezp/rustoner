@@ -14,7 +14,7 @@ pub enum Task {
     CAB,      // complete abox
     RNKAB,    // rank assertions on abox
     UNDEFINED,
-    INIT, // initiate database
+    // INIT, // initiate database
 }
 
 impl FromStr for Task {
@@ -32,8 +32,35 @@ impl FromStr for Task {
             "genconab" => Ok(Task::GENCONAB),
             "cab" => Ok(Task::CAB),
             "rankab" => Ok(Task::RNKAB),
-            "init" => Ok(Task::INIT),
+            // "init" => Ok(Task::INIT),
             _ => Ok(Task::UNDEFINED),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum AggrName {
+    MAX,
+    MIN,
+    SUM,
+    MEAN,
+    COUNT,
+    UNDEFINED,
+}
+
+impl FromStr for AggrName {
+    type Err = ParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s2 = s.trim();
+
+        match s2 {
+            "sum" => Ok(AggrName::SUM),
+            "max" => Ok(AggrName::MAX),
+            "min" => Ok(AggrName::MIN),
+            "count" => Ok(AggrName::COUNT),
+            "mean" => Ok(AggrName::MEAN),
+            _ => Ok(AggrName::UNDEFINED),
         }
     }
 }
@@ -81,4 +108,10 @@ pub struct Cli {
         help = "optional, if present will parse symbols from this file instead od symbols in the tbox file"
     )]
     pub path_symbols: Option<std::path::PathBuf>,
+
+    #[structopt(
+        long = "aggr",
+        help = "choose a function to aggregate during conflict graph computing: (sum|min|max|count)"
+    )]
+    pub aggr: Option<AggrName>,
 }

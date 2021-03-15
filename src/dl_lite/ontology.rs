@@ -1,32 +1,34 @@
 use crate::dl_lite::abox_item::AbiDllite;
-use crate::dl_lite::json_filetype_utilities::{parse_symbols_json, parse_tbox_json, tbox_to_value};
+use crate::dl_lite::json_filetype_utilities::{parse_symbols_json, parse_tbox_json};
 use crate::dl_lite::node::{Mod, Node_DLlite};
 use crate::dl_lite::tbox::TB_DLlite;
 use crate::dl_lite::tbox_item::TBI_DLlite;
 use crate::kb::types::DLType;
 use crate::kb::types::FileType;
-use serde_json::json;
+
 use std::collections::{HashMap, HashSet};
 // use serde_json::Value;
+use std::fmt;
 use std::fs::File;
 use std::io::Write;
-use std::{fmt, io};
 // use std::iter::Map;
 // use crate::dl_lite::abox::AB;
 use crate::dl_lite::native_filetype_utilities::{
     abox_to_native_string_quantum, parse_abox_native_quantum, parse_symbols_native,
-    parse_tbox_native, tbox_to_native_string,
+    parse_tbox_native,
 };
 
-use rusqlite::{Connection, Result};
+// use rusqlite::{Connection, Result};
 
 use crate::dl_lite::abox::AbqDllite;
 use crate::dl_lite::abox_item_quantum::AbiqDllite;
+
+/*
 use crate::dl_lite::sqlite_interface::{
     add_basic_tables_to_db, add_symbols_from_db, add_symbols_to_db, add_tbis_from_db,
     add_tbis_to_db,
 };
-use crate::interface::utilities::parse_name_from_filename;
+ */
 
 // import traits
 use crate::kb::knowledge_base::{ABox, ABoxItem, AggrFn, SymbolDict, TBox, TBoxItem};
@@ -117,6 +119,7 @@ impl Ontology_DLlite {
         }
     }
 
+    /*
     pub fn abox_as_mut(&mut self) -> Option<&mut AbqDllite> {
         self.current_abox.as_mut()
     }
@@ -131,12 +134,18 @@ impl Ontology_DLlite {
     pub fn symbols_as_mut(&mut self) -> &mut SymbolDict {
         &mut self.symbols
     }
+
+     */
+
     // ------------------------------------------------------------------------
     // modifications of the ontology
 
+    /*
     pub fn sort(&mut self) {
         self.tbox.sort();
     }
+
+     */
 
     pub fn add_tbis_from_vec(&mut self, v: &Vec<TBI_DLlite>) {
         for tbi in v {
@@ -146,6 +155,7 @@ impl Ontology_DLlite {
         }
     }
 
+    /*
     pub fn add_abis_from_vec(&mut self, v: &Vec<AbiqDllite>) {
         match self.current_abox.as_mut() {
             Option::None => (),
@@ -158,6 +168,8 @@ impl Ontology_DLlite {
             }
         }
     }
+
+     */
 
     // ----------------------------------------------------------------------------------------
     // for parsing
@@ -205,9 +217,12 @@ impl Ontology_DLlite {
         }
     }
 
+    /*
     pub fn new_abox_from_aboxq(&mut self, ab: AbqDllite) {
         self.current_abox = Some(ab);
     }
+
+     */
 
     pub fn new_abox_from_file_quantum(
         &mut self,
@@ -244,6 +259,7 @@ impl Ontology_DLlite {
         }
     }
 
+    /*
     pub fn add_abis_from_file_quantum(
         &mut self,
         filename: &str,
@@ -285,6 +301,8 @@ impl Ontology_DLlite {
         }
     }
 
+     */
+
     pub fn add_abi(&mut self, abi: &AbiqDllite) {
         // you must have created a new abox
         if self.current_abox.is_some() {
@@ -299,11 +317,14 @@ impl Ontology_DLlite {
         }
     }
 
+    /*
     pub fn add_tbis_from_tbox(&mut self, tb: &TB_DLlite) {
         for tbi in tb.items() {
             self.add_tbi(tbi);
         }
     }
+
+     */
 
     // ------------------------------------------------------------------------
     // reasoner tasks
@@ -317,6 +338,7 @@ impl Ontology_DLlite {
         tb
     }
 
+    /*
     pub fn auto_complete(&mut self, deduction_tree: bool, verbose: bool) {
         // the tbox
         let tb = self.complete_tbox(deduction_tree, verbose);
@@ -329,6 +351,8 @@ impl Ontology_DLlite {
         let ab_op = self.complete_abox(deduction_tree, verbose);
         self.current_abox = ab_op;
     }
+
+     */
 
     pub fn complete_abox(&self, deduction_tree: bool, verbose: bool) -> Option<AbqDllite> {
         match &self.current_abox {
@@ -421,8 +445,6 @@ impl Ontology_DLlite {
                     real_to_virtual.insert(index, Option::None);
                 }
             }
-
-            // TESTING: I'm here
 
             // now we have two mappers:
             // real_to_virtual: given a real index of abq it will output the index of the item in the virtual list
@@ -747,6 +769,7 @@ impl Ontology_DLlite {
         v
     }
 
+    /*
     pub fn contains_contradiction(&self) -> bool {
         let mut contains_contradiction = false;
 
@@ -766,6 +789,8 @@ impl Ontology_DLlite {
         Ok(AbqDllite::new(ab_name))
     }
 
+     */
+
     // -------------------------------------------------------------------------------------------
     // get methods
 
@@ -773,10 +798,13 @@ impl Ontology_DLlite {
         &self.symbols
     }
 
+    /*
     // this function returns two different sizes: symbol size and tbox size
     pub fn len(&self) -> (usize, usize) {
         (self.symbols.len(), self.tbox.len())
     }
+
+     */
 
     // ------------------------------------------------------------------------
     // private functions for the inner work of 'Ontology'
@@ -1010,6 +1038,7 @@ impl Ontology_DLlite {
         s
     }
 
+    /*
     pub fn tbox_to_file(
         &self,
         filename: &str,
@@ -1085,6 +1114,8 @@ impl Ontology_DLlite {
         }
     }
 
+     */
+
     pub fn abox_to_file(
         &self,
         filename: &str,
@@ -1137,6 +1168,8 @@ impl Ontology_DLlite {
     // ------------------------------------------------------------------------------------------
     // this part is the sqlite interface
     // ------------------------------------------------------------------------------------------
+
+    /*
     pub fn populate_db(&mut self, conn: &Connection, verbose: bool) -> bool {
         // sort your tbis before
         self.sort();
@@ -1147,6 +1180,9 @@ impl Ontology_DLlite {
         true
     }
 
+     */
+
+    /*
     pub fn initiate_from_db(filename: &str, verbose: bool) -> Result<Ontology_DLlite> {
         let conn_res = Connection::open(filename);
 
@@ -1169,4 +1205,6 @@ impl Ontology_DLlite {
             }
         }
     }
+
+     */
 }

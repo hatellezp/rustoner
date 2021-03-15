@@ -209,9 +209,12 @@ pub fn parse_value_to_tbi(
     }
 }
 
+/*
 pub fn parse_value_abi(_value: &Value, _symbols: Vec<&Node_DLlite>) -> Option<AbiDllite> {
     Option::None
 }
+
+ */
 
 // when manipulating use &str to avoid unnecessary copies and when returning the data
 // then use String
@@ -387,6 +390,7 @@ pub fn parse_tbox_json(
     }
 }
 
+/*
 fn node_to_value(node: &Node_DLlite, symbols: &SymbolDict) -> Option<Value> {
     let string_op = node_to_string(node, symbols, String::new());
 
@@ -434,6 +438,8 @@ pub fn tbox_to_value(
         Option::None
     }
 }
+
+ */
 
 pub fn invalid_data_result<T>(error: &str) -> io::Result<T> {
     let new_error = Error::new(ErrorKind::InvalidData, error);

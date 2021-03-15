@@ -1,5 +1,5 @@
 // mod shiq;
 
 fn main() {
-    println!("hello there!");
+    println!("unimplemented!");
 }
