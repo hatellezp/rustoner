@@ -10,9 +10,9 @@ edition = "2018"
 name = "rustoner_shiq"
 path = "src/main_shiq.rs"
 
-[[bin]]
-name = "tester"
-path = "src/test.rs"
+# [[bin]]
+# name = "tester"
+# path = "src/test.rs"
 
 # this is the good one
 [[bin]]
@@ -30,8 +30,8 @@ exitcode = "*"
 question = "0.2.2"
 
 # for other formats
-rusqlite = "*"
-quick-xml = { version = "0.22.0", features = ["serialize"] }
+# rusqlite = "*"
+# quick-xml = { version = "0.22.0", features = ["serialize"] }
 
 # for combinations of higher complexity logics
 itertools = "*"
