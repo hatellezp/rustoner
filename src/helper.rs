@@ -27,6 +27,12 @@ pub fn rank_abox(
     let (done_matrix, before_to_done_matrix, _done_to_before_matrix, clean_index_tuple_op) =
         OntologyDllite::from_conflict_to_clean_matrix(&before_matrix, verbose).unwrap();
 
+    pretty_print_matrix(&done_matrix);
+    println!(
+        "from rank abox {:?}\n{:?}\n{:?}",
+        &before_to_done_matrix, &_done_to_before_matrix, &clean_index_tuple_op
+    );
+
     let mut conflict_type: HashMap<usize, ConflictType> = HashMap::new();
 
     // this will be used independently of emptiness of done_matrix
@@ -102,6 +108,11 @@ pub fn rank_abox(
                         .map(|x| x * (1. / clean_rank))
                         .collect::<Vec<f64>>();
                     rank[new_clean_index] = 1.;
+                } else {
+                    // otherwise we done something else
+                    // take the median value of the rank
+                    // and normalize for that one
+                    ()
                 }
 
                 // now that we have upscale if possible, we put the value in the abox
@@ -175,4 +186,15 @@ pub fn edge_attr(_g: &Graph<String, bool>, e: EdgeReference<bool>) -> String {
 
 pub fn node_attr(_g: &Graph<String, bool>, _ni: (petgraph::prelude::NodeIndex, &String)) -> String {
     String::from("")
+}
+
+pub fn pretty_print_matrix(v: &Vec<i8>) {
+    let n = (v.len() as f64).sqrt() as usize;
+
+    for i in 0..n {
+        for j in 0..n {
+            print!("{}, ", v[n * i + j]);
+        }
+        println!();
+    }
 }

@@ -290,8 +290,22 @@ impl AbqDllite {
                     if abiq_i.same_nominal(abiq_j) {
                         // println!("--------------------they have same nominal");
 
-                        is_match = (abiq_i.item() == lside && abiq_j.item().is_negation(rside))
-                            || (abiq_i.item() == rside && abiq_j.item().is_negation(lside));
+                        // here is the first case
+                        // a:A a:B and A < - B
+
+                        /*
+                           i :- a:X_i
+                           j :- a:X_j
+                           tbi:- A < (-B)
+                           several cases:
+                               X_i = A and X_j = B
+                               X_j = A and X_i = B
+                        */
+
+                        // println!("detailed:\n           abiq_i item: {}\n           abiq_j item: {}\n           lside: {}\n           rside: {}", abiq_i.item(), abiq_j.item(), lside, rside);
+
+                        is_match = (abiq_i.item() == lside) && abiq_j.item().is_negation(rside)
+                            || (abiq_j.item() == lside) && abiq_i.item().is_negation(rside);
 
                         // there a second test:
                         if i != j {
@@ -299,13 +313,16 @@ impl AbqDllite {
                             // println!("------------------negated_{} is {}", j, &negated_j);
 
                             if abiq_j.item().is_negation(abiq_i.item()) {
-                                // println!("  --  found contradiction without tbi: abiq_{}: {}, abiq_{}: {}", i, abiq_i, j, abiq_j);
+                                println!("  --  found contradiction without tbi: abiq_{}: {}, abiq_{}: {}", i, abiq_i, j, abiq_j);
                                 return true;
                             }
                         }
 
                         if is_match {
-                            // println!("  --  found contradiction: abiq_i: {}, abiq_j: {}, tbi: {}", abiq_i, abiq_j, tbi);
+                            println!(
+                                "  --  found contradiction: abiq_i: {}, abiq_j: {}, tbi: {}",
+                                abiq_i, abiq_j, tbi
+                            );
                             return true;
                         }
                     }
@@ -669,7 +686,7 @@ impl AbqDllite {
         &self,
         _tb: &TBDllite,
         only_conflicts: bool,
-        contradictions: &Vec<(TbiDllite, Vec<AbiqDllite>)>,
+        contradictions: &[(TbiDllite, Vec<AbiqDllite>)],
     ) -> Vec<usize> {
         let max_level = self.get_max_level();
         let mut levels: Vec<usize> = vec![0; max_level + 1];

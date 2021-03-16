@@ -34,6 +34,20 @@ use crate::dl_lite::sqlite_interface::{
 use crate::kb::knowledge_base::{ABox, ABoxItem, AggrFn, SymbolDict, TBox, TBoxItem};
 
 /*
+some types to avoid large names
+ */
+type CleanMatrixDictOpt = Option<(
+    Vec<i8>,
+    HashMap<usize, Option<usize>>,
+    HashMap<usize, usize>,
+    Option<(usize, usize)>,
+)>;
+type ConflictMatrixDict = (
+    Vec<i8>,
+    HashMap<usize, Option<usize>>,
+    HashMap<usize, usize>,
+);
+/*
 an ontology model
     - name is the name of the ontology
     - symbols is a dictionary where symbols are stored in the form symbol_name -> (id, type)
@@ -81,7 +95,7 @@ impl fmt::Display for OntologyDllite {
         }
 
         // last bracket
-        s.push_str("}");
+        s.push('}');
 
         write!(f, "{}", s)
     }
@@ -147,7 +161,7 @@ impl OntologyDllite {
 
      */
 
-    pub fn add_tbis_from_vec(&mut self, v: &Vec<TbiDllite>) {
+    pub fn add_tbis_from_vec(&mut self, v: &[TbiDllite]) {
         for tbi in v {
             if !self.tbox.contains(&tbi) {
                 self.tbox.add(tbi.clone());
@@ -189,7 +203,7 @@ impl OntologyDllite {
                 );
             }
             Ok(new_symbols) => {
-                for (key, _) in &new_symbols {
+                for key in new_symbols.keys() {
                     self.add_symbol(&new_symbols, key);
                 }
             }
@@ -197,7 +211,7 @@ impl OntologyDllite {
     }
 
     pub fn add_tbis_from_file(&mut self, filename: &str, filetype: FileType, verbose: bool) {
-        if self.symbols.len() != 0 {
+        if !self.symbols.is_empty() {
             let tb_result = match filetype {
                 FileType::JSON => parse_tbox_json(filename, &self.symbols, verbose),
                 FileType::NATIVE => parse_tbox_native(filename, &self.symbols, verbose),
@@ -230,7 +244,7 @@ impl OntologyDllite {
         filetype: FileType,
         verbose: bool,
     ) {
-        if self.symbols.len() != 0 {
+        if !self.symbols.is_empty() {
             match filetype {
                 FileType::JSON => {
                     if verbose {
@@ -333,9 +347,7 @@ impl OntologyDllite {
     // respect to a tbox and store them in a matrix
 
     pub fn complete_tbox(&self, deduction_tree: bool, verbose: bool) -> TBDllite {
-        let tb = self.tbox.complete(deduction_tree, verbose);
-
-        tb
+        self.tbox.complete(deduction_tree, verbose)
     }
 
     /*
@@ -367,11 +379,7 @@ impl OntologyDllite {
         abq: &AbqDllite,
         deduction_tree: bool,
         verbose: bool,
-    ) -> (
-        Vec<i8>,
-        HashMap<usize, Option<usize>>,
-        HashMap<usize, usize>,
-    ) {
+    ) -> ConflictMatrixDict {
         /*
         so the idea here is to first detect self conflicting nodes and not include them in
         the afore computation, the second vector helps to keep track of which abi is mapped to
@@ -422,13 +430,11 @@ impl OntologyDllite {
                     }
 
                     self_conflicting.push(index);
-                } else {
-                    if verbose {
-                        println!(
-                            " -- Ontology::conflict_matrix: {:?} found to be NOT self conflicting",
-                            abq.get(index)
-                        );
-                    }
+                } else if verbose {
+                    println!(
+                        " -- Ontology::conflict_matrix: {:?} found to be NOT self conflicting",
+                        abq.get(index)
+                    );
                 }
             }
             // now we know which are the self conflicting elements
@@ -560,7 +566,7 @@ impl OntologyDllite {
         }
     }
 
-    pub fn clean_index_matrix(matrix: &Vec<i8>) -> Option<(Vec<usize>, bool, bool)> {
+    pub fn clean_index_matrix(matrix: &[i8]) -> Option<(Vec<usize>, bool, bool)> {
         let mut conflict_index_hashset: HashSet<usize> = HashSet::new();
         let mut conflict_clean: Vec<usize> = Vec::new();
 
@@ -586,20 +592,12 @@ impl OntologyDllite {
             }
 
             let all_clean = conflict_clean.len() == n;
-            let all_conflict = conflict_clean.len() == 0;
+            let all_conflict = conflict_clean.is_empty();
             Some((conflict_clean, all_clean, all_conflict))
         }
     }
 
-    pub fn from_conflict_to_clean_matrix(
-        matrix: &Vec<i8>,
-        _verbose: bool,
-    ) -> Option<(
-        Vec<i8>,
-        HashMap<usize, Option<usize>>,
-        HashMap<usize, usize>,
-        Option<(usize, usize)>,
-    )> {
+    pub fn from_conflict_to_clean_matrix(matrix: &[i8], _verbose: bool) -> CleanMatrixDictOpt {
         let res_op = OntologyDllite::clean_index_matrix(matrix);
 
         let mut chosen_index: Option<(usize, usize)> = Option::None;
@@ -623,7 +621,8 @@ impl OntologyDllite {
 
                 // if everything is a conflict the copy all
                 if all_conflict {
-                    done_matrix = matrix.clone();
+                    // done_matrix = matrix.clone();
+                    done_matrix = matrix.to_owned();
 
                     for i in 0..n {
                         before_matrix_to_done_matrix.insert(i, Some(i));
@@ -713,7 +712,7 @@ impl OntologyDllite {
     // (Vec<i8>, HashMap<usize, Option<usize>>, HashMap<usize, usize>)
     pub fn compute_aggregation_matrix(
         abq: &AbqDllite,
-        matrix: &Vec<i8>,
+        matrix: &[i8],
         virtual_to_real: &HashMap<usize, usize>,
         aggr: AggrFn,
         verbose: bool,
@@ -809,7 +808,7 @@ impl OntologyDllite {
     // ------------------------------------------------------------------------
     // private functions for the inner work of 'Ontology'
 
-    fn add_symbol(&mut self, new_symbols: &SymbolDict, new_name: &String) -> bool {
+    fn add_symbol(&mut self, new_symbols: &SymbolDict, new_name: &str) -> bool {
         if new_symbols.contains_key(new_name) {
             if !self.symbols.contains_key(new_name) {
                 let (_, t) = new_symbols[new_name];
@@ -818,7 +817,7 @@ impl OntologyDllite {
                 let (_low, high) =
                     OntologyDllite::find_lower_and_highest_value_from_symbols(self.symbols());
 
-                self.symbols.insert(new_name.clone(), (high + 1, t));
+                self.symbols.insert(new_name.to_string(), (high + 1, t));
                 // self.number_of_symbols += 1;
 
                 true
@@ -1017,7 +1016,7 @@ impl OntologyDllite {
     }
 
     fn abi_to_string(&self, abi: &AbiDllite) -> String {
-        let s = match abi {
+        match abi {
             AbiDllite::RA(r, a, b) => {
                 let r = self.node_to_string(r);
                 let a = self.node_to_string(a);
@@ -1033,9 +1032,7 @@ impl OntologyDllite {
                 let s = format!("{} : {}", a, c);
                 s
             }
-        };
-
-        s
+        }
     }
 
     /*

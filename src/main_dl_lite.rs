@@ -34,8 +34,8 @@ use crate::interface::cli::{AggrName, Cli, Task};
 use crate::interface::utilities::{get_filetype, parse_name_from_filename, write_str_to_file};
 
 // to ask basic questions
-use crate::helper::rank_abox;
 use crate::helper::{edge_attr, node_attr};
+use crate::helper::{pretty_print_matrix, rank_abox};
 use petgraph::dot::{Config, Dot};
 
 use question::{Answer, Question};
@@ -581,6 +581,14 @@ pub fn main() {
                                     verbose,
                                 );
                                 // now the abox is ranked
+
+                                println!("{}", &onto);
+
+                                pretty_print_matrix(&before_matrix);
+                                println!(
+                                    "virtual to real:\n{:?}\nconflict type:\n{:?}\n",
+                                    &virtual_to_real, &conflict_type
+                                );
 
                                 if !silent {
                                     let question_print = " -- do you see the output?".to_string();

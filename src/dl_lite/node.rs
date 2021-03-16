@@ -54,13 +54,13 @@ impl PartialOrd for NodeDllite {
         if self == other {
             Some(Ordering::Equal)
         } else {
-            if self.t().is_concept_type() && !other.t().is_concept_type() {
+            if (self.t().is_concept_type() && !other.t().is_concept_type())
+                || (self.t().is_role_type() && other.t().is_nominal_type())
+            {
                 Some(Ordering::Less)
-            } else if self.t().is_role_type() && other.t().is_nominal_type() {
-                Some(Ordering::Less)
-            } else if self.t().is_nominal_type() && !other.t().is_nominal_type() {
-                Some(Ordering::Greater)
-            } else if self.t().is_role_type() && other.t().is_concept_type() {
+            } else if (self.t().is_nominal_type() && !other.t().is_nominal_type())
+                || (self.t().is_role_type() && other.t().is_concept_type())
+            {
                 Some(Ordering::Greater)
             } else if DLType::all_concepts(self.t(), other.t()) {
                 if self.t() == DLType::Bottom || other.t() == DLType::Top {
@@ -279,37 +279,4 @@ impl NodeDllite {
             _ => Option::None,
         }
     }
-
-    /*
-    pub fn is_inverted(&self) -> bool {
-        self.t() == DLType::InverseRole
-    }
-
-    pub fn is_inverse(&self, other: &Node_DLlite) -> bool {
-        match (self, other) {
-            (Node_DLlite::X(Mod::I, _), Node_DLlite::X(Mod::I, _)) => false,
-            (Node_DLlite::X(Mod::I, bn), _) => bn.deref() == other,
-            (_, Node_DLlite::X(Mod::I, bn)) => self == bn.deref(),
-            (_, _) => false,
-        }
-    }
-
-     */
-
-    /*
-    pub fn print_iter<I>(it: I) -> String
-    where
-        I: Iterator<Item = Node_DLlite>,
-    {
-        let mut s_accumulator = String::new();
-        let mut waiting_s: String;
-        for item in it {
-            waiting_s = item.to_string();
-            s_accumulator.push_str(waiting_s.as_str());
-        }
-
-        s_accumulator
-    }
-
-     */
 }

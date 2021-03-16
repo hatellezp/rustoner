@@ -18,7 +18,7 @@ pub fn parse_name_from_filename(filename: &str) -> &str {
     let v: Vec<&str> = filename.split(path_separator).collect();
 
     let name = v.last().unwrap().trim();
-    let v: Vec<&str> = name.split(".").collect();
+    let v: Vec<&str> = name.split('.').collect();
 
     v[0].trim()
 }

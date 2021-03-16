@@ -16,9 +16,19 @@ use crate::kb::knowledge_base::{ABox, Implier, SymbolDict, TBox, TBoxItem};
 
 //--------------------------------------------------------------------------------------------------
 
+type AbiqDlliteParseResult = (
+    io::Result<(AbiqDllite, Vec<(String, (usize, DLType))>)>,
+    usize,
+);
+type AbiDlliteParseResult = (
+    io::Result<(AbiDllite, Vec<(String, (usize, DLType))>)>,
+    usize,
+);
+// ------------------------------------------------------------------
+
 pub fn string_to_symbol(string: &str) -> io::Result<(&str, DLType)> {
     let new_string = string.trim();
-    let vec_of_string: Vec<&str> = new_string.split(":").collect();
+    let vec_of_string: Vec<&str> = new_string.split(':').collect();
 
     if vec_of_string.len() != 2 {
         let new_error = Error::new(
@@ -55,7 +65,7 @@ pub fn string_to_node(s: &str, symbols: &SymbolDict) -> io::Result<NodeDllite> {
     this function need a symbols dictionary reference to function
      */
     let splitted = s.trim();
-    let splitted = splitted.split(" ").collect::<Vec<&str>>();
+    let splitted = splitted.split(' ').collect::<Vec<&str>>();
 
     __parse_string_to_node_helper(splitted, symbols)
 }
@@ -71,7 +81,7 @@ pub fn node_to_string(
         NodeDllite::N(n) => {
             let vec_of_s = find_keys_for_value(symbols, *n);
 
-            if vec_of_s.len() > 0 {
+            if !vec_of_s.is_empty() {
                 current.push_str(vec_of_s[0].as_str());
                 Some(current)
             } else {
@@ -81,7 +91,7 @@ pub fn node_to_string(
         NodeDllite::R(n) | NodeDllite::C(n) => {
             let vec_of_s = find_keys_for_value(symbols, *n);
 
-            if vec_of_s.len() > 0 {
+            if !vec_of_s.is_empty() {
                 current.push_str(vec_of_s[0].as_str()); // no space here, need to account for it when doing the modifiers
                 Some(current)
             } else {
@@ -111,21 +121,21 @@ pub fn node_to_string(
 pub fn string_to_tbi(s: &str, symbols: &SymbolDict) -> io::Result<Vec<TbiDllite>> {
     let pre_splitted = s.trim();
 
-    let equiv = pre_splitted.contains("=");
-    let sub = pre_splitted.contains("<");
+    let equiv = pre_splitted.contains('=');
+    let sub = pre_splitted.contains('<');
 
     match (sub, equiv) {
         (true, true) => {
             let new_error = Error::new(
                 ErrorKind::InvalidData,
-                format!("badly formed file '=' and '<' bot appear").as_str(),
+                "badly formed file '=' and '<' bot appear",
             );
             Err(new_error)
         }
         (false, false) => {
             let new_error = Error::new(
                 ErrorKind::InvalidData,
-                format!("badly formed file not '=' nor '<' found").as_str(),
+                "badly formed file not '=' nor '<' found",
             );
             Err(new_error)
         }
@@ -140,9 +150,9 @@ pub fn string_to_tbi(s: &str, symbols: &SymbolDict) -> io::Result<Vec<TbiDllite>
             let mut tbis: Vec<TbiDllite> = Vec::new();
 
             if sub {
-                splitted = pre_splitted.split("<").collect();
+                splitted = pre_splitted.split('<').collect();
             } else {
-                splitted = pre_splitted.split("=").collect();
+                splitted = pre_splitted.split('=').collect();
             }
 
             if splitted.len() != 2 {
@@ -263,12 +273,9 @@ pub fn string_to_abi(
     symbols: &mut SymbolDict,
     mut current_id: usize,
     for_completion: bool,
-) -> (
-    io::Result<(AbiDllite, Vec<(String, (usize, DLType))>)>,
-    usize,
-) {
+) -> AbiDlliteParseResult {
     let splitted = s.trim();
-    let splitted: Vec<&str> = splitted.split(":").collect();
+    let splitted: Vec<&str> = splitted.split(':').collect();
 
     if splitted.len() != 2 {
         (
@@ -288,7 +295,7 @@ pub fn string_to_abi(
             match &abox_symbol {
                 Err(e) => (result_from_error(e), current_id),
                 Ok(abi_symbol) => {
-                    let constants: Vec<&str> = splitted[0].trim().split(",").collect();
+                    let constants: Vec<&str> = splitted[0].trim().split(',').collect();
                     let mut to_be_added: Vec<(String, (usize, DLType))>;
 
                     match (dltype, constants.len()) {
@@ -407,14 +414,7 @@ pub fn abi_to_string(abi: &AbiDllite, symbols: &SymbolDict) -> Option<String> {
 
             match (r_str_op, a_str_op, b_str_op) {
                 (Some(r_str), Some(a_str), Some(b_str)) => {
-                    let mut res = String::from("(");
-                    res.push_str(a_str.as_str());
-                    res.push_str(", ");
-                    res.push_str(b_str.as_str());
-                    res.push_str(")");
-                    res.push_str(" : ");
-                    res.push_str(r_str.as_str());
-
+                    let res = format!("{}, {}: {}", a_str, b_str, r_str);
                     Some(res)
                 }
                 (_, _, _) => Option::None,
@@ -601,13 +601,13 @@ impl PartialOrd for PS {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         if self == other {
             Some(Ordering::Equal)
-        } else if self.t.is_concept_type() && !other.t.is_concept_type() {
+        } else if (self.t.is_concept_type() && !other.t.is_concept_type())
+            || (self.t.is_role_type() && other.t.is_nominal_type())
+        {
             Some(Ordering::Less)
-        } else if self.t.is_role_type() && other.t.is_nominal_type() {
-            Some(Ordering::Less)
-        } else if self.t.is_nominal_type() && !other.t.is_nominal_type() {
-            Some(Ordering::Greater)
-        } else if self.t.is_role_type() && other.t.is_concept_type() {
+        } else if (self.t.is_nominal_type() && !other.t.is_nominal_type())
+            || (self.t.is_role_type() && other.t.is_concept_type())
+        {
             Some(Ordering::Greater)
         } else {
             self.name.partial_cmp(&other.name)
@@ -628,14 +628,11 @@ pub fn string_to_abiq(
     symbols: &mut SymbolDict,
     current_id: usize,
     for_completion: bool,
-) -> (
-    io::Result<(AbiqDllite, Vec<(String, (usize, DLType))>)>,
-    usize,
-) {
+) -> AbiqDlliteParseResult {
     let splitted = s.trim();
 
     // a normal abi is splitted by ':', here we split by ';' first
-    let splitted: Vec<&str> = splitted.split(",").collect();
+    let splitted: Vec<&str> = splitted.split(',').collect();
     let splitted: Vec<&str> = splitted.iter().map(|x| x.trim()).collect();
     let lenght = splitted.len();
 
@@ -648,7 +645,7 @@ pub fn string_to_abiq(
 
             match possible_pv {
                 Err(_) => {
-                    new_s.push_str(",");
+                    new_s.push(',');
                     new_s.push_str(splitted[1]);
 
                     (new_s, 1.0, Option::None)
@@ -662,7 +659,7 @@ pub fn string_to_abiq(
             match possible_pv {
                 Err(_) => {
                     // the second term is not a number
-                    new_s.push_str(",");
+                    new_s.push(',');
                     new_s.push_str(splitted[1]);
 
                     // now parse the rest
@@ -686,7 +683,7 @@ pub fn string_to_abiq(
             }
         }
         _ => {
-            new_s.push_str(",");
+            new_s.push(',');
             new_s.push_str(splitted[1]);
 
             let pv_res = splitted[2].parse::<f64>();
@@ -769,65 +766,63 @@ pub fn pretty_print_abiq_conflict(
 
     s.push_str("      tbi: ");
     s.push_str(&tbi_string);
-    s.push_str("\n");
+    s.push('\n');
 
     let abiq_zero_string = abiq_to_string(v_abiq.get(0).unwrap(), symbols, to_native).unwrap();
 
     s.push_str("      abis: ");
     s.push_str(&abiq_zero_string);
-    s.push_str("\n");
+    s.push('\n');
 
     for i in 1..v_abiq_len {
         let abiq_string = abiq_to_string(v_abiq.get(i).unwrap(), symbols, to_native).unwrap();
 
         s.push_str("            ");
         s.push_str(&abiq_string);
-        s.push_str("\n");
+        s.push('\n');
     }
 
     s.push_str("  },");
     s
 }
 
-pub fn pretty_vector_tbi_to_string(vec: &Vec<TbiDllite>, symbols: &SymbolDict) -> String {
+pub fn pretty_vector_tbi_to_string(vec: &[TbiDllite], symbols: &SymbolDict) -> String {
     let mut s = String::from("[");
 
     let vec_len = vec.len();
     let mut tbi_string_op: Option<String>;
-    let mut tbi_string: String;
+    let _tbi_string: String;
 
     for i in 0..vec_len {
         tbi_string_op = tbi_to_string(vec.get(i).unwrap(), symbols);
 
-        if tbi_string_op.is_some() {
-            tbi_string = tbi_string_op.unwrap();
-            s.push_str(&tbi_string);
+        if let Some(some_tbi) = tbi_string_op {
+            s.push_str(&some_tbi);
             s.push_str(", ");
         }
     }
 
-    s.push_str("]");
+    s.push(']');
     s
 }
 
-pub fn pretty_vector_abiq_to_string(vec: &Vec<AbiqDllite>, symbols: &SymbolDict) -> String {
+pub fn pretty_vector_abiq_to_string(vec: &[AbiqDllite], symbols: &SymbolDict) -> String {
     let mut s = String::from("[");
     let to_native = false;
     let vec_len = vec.len();
     let mut tbi_string_op: Option<String>;
-    let mut tbi_string: String;
+    let _tbi_string: String;
 
     for i in 0..vec_len {
         tbi_string_op = abiq_to_string(vec.get(i).unwrap(), symbols, to_native);
 
-        if tbi_string_op.is_some() {
-            tbi_string = tbi_string_op.unwrap();
-            s.push_str(&tbi_string);
+        if let Some(some_tbi) = tbi_string_op {
+            s.push_str(&some_tbi);
             s.push_str(", ");
         }
     }
 
-    s.push_str("]");
+    s.push(']');
     s
 }
 
@@ -852,42 +847,40 @@ pub fn create_string_for_gencontb(
         s.push_str(&temp_s);
 
         for tbi in new_tb.items() {
-            if !tbi.is_trivial() || !dont_write_trivial {
-                if tbi.level() == level {
-                    s.push_str("    {\n");
+            if (!tbi.is_trivial() || !dont_write_trivial) && tbi.level() == level {
+                s.push_str("    {\n");
 
-                    let tbi_to_string = tbi_to_string(tbi, symbols).unwrap();
+                let tbi_to_string = tbi_to_string(tbi, symbols).unwrap();
 
-                    temp_s = format!("      tbi: {}\n", &tbi_to_string);
+                temp_s = format!("      tbi: {}\n", &tbi_to_string);
+                s.push_str(&temp_s);
+
+                if level > 0 {
+                    let impliers = tbi.implied_by();
+                    let len_impliers = impliers.len();
+
+                    let mut implier_string =
+                        pretty_vector_tbi_to_string(impliers.get(0).unwrap(), symbols);
+
+                    temp_s = format!("      impliers: {}\n", &implier_string);
                     s.push_str(&temp_s);
 
-                    if level > 0 {
-                        let impliers = tbi.implied_by();
-                        let len_impliers = impliers.len();
+                    for i in 1..len_impliers {
+                        implier_string =
+                            pretty_vector_tbi_to_string(impliers.get(i).unwrap(), symbols);
 
-                        let mut implier_string =
-                            pretty_vector_tbi_to_string(impliers.get(0).unwrap(), symbols);
-
-                        temp_s = format!("      impliers: {}\n", &implier_string);
+                        temp_s = format!("                {}\n", &implier_string);
                         s.push_str(&temp_s);
-
-                        for i in 1..len_impliers {
-                            implier_string =
-                                pretty_vector_tbi_to_string(impliers.get(i).unwrap(), symbols);
-
-                            temp_s = format!("                {}\n", &implier_string);
-                            s.push_str(&temp_s);
-                        }
                     }
-                    s.push_str("    },\n");
                 }
+                s.push_str("    },\n");
             }
         }
 
         s.push_str("  },\n");
     }
 
-    s.push_str("]");
+    s.push(']');
     s
 }
 
@@ -932,7 +925,7 @@ pub fn create_string_for_unravel_conflict_tbi(
                 }
             }
 
-            if implier_s.len() > 0 && implier_s.as_str() != "\n" {
+            if !implier_s.is_empty() && implier_s.as_str() != "\n" {
                 temp_s = format!("{}impliers {}\n", space_string(pad + 6), i + 1);
                 s.push_str(&temp_s);
                 s.push_str(&implier_s);
@@ -979,7 +972,7 @@ pub fn create_string_for_unravel_conflict_tbox(
         }
     }
 
-    s.push_str("]");
+    s.push(']');
     s
 }
 pub fn create_string_for_unravel_conflict_abiq(
@@ -1051,7 +1044,7 @@ pub fn create_string_for_unravel_conflict_abiq(
                 }
             }
 
-            if implier_s.len() > 0 && implier_s.as_str() != "\n" {
+            if !implier_s.is_empty() && implier_s.as_str() != "\n" {
                 temp_s = format!("{}impliers {}\n", space_string(pad + 6), i + 1);
                 s.push_str(&temp_s);
                 s.push_str(&implier_s);
@@ -1069,7 +1062,7 @@ pub fn create_string_for_unravel_conflict_abox(
     ab: &AbqDllite,
     symbols: &SymbolDict,
     only_conflicts: bool,
-    contradictions: &Vec<(TbiDllite, Vec<AbiqDllite>)>,
+    contradictions: &[(TbiDllite, Vec<AbiqDllite>)],
 ) -> String {
     // we only consider abis_contradictions if only_conflicts is present
 
@@ -1102,11 +1095,11 @@ pub fn create_string_for_unravel_conflict_abox(
         }
     }
 
-    s.push_str("]");
+    s.push(']');
     s
 }
 
-pub fn abiq_in_vec_of_vec(abiq: &AbiqDllite, v: &Vec<(TbiDllite, Vec<AbiqDllite>)>) -> bool {
+pub fn abiq_in_vec_of_vec(abiq: &AbiqDllite, v: &[(TbiDllite, Vec<AbiqDllite>)]) -> bool {
     let mut abiq_vec: &Vec<AbiqDllite>;
 
     for inner_v in v {
@@ -1121,6 +1114,5 @@ pub fn abiq_in_vec_of_vec(abiq: &AbiqDllite, v: &Vec<(TbiDllite, Vec<AbiqDllite>
 
 fn space_string(l: usize) -> String {
     let v = vec![""; l];
-    let v = v.join(" ");
-    v
+    v.join(" ")
 }

@@ -76,13 +76,20 @@ impl fmt::Display for TBDllite {
 
             for item in &self.items {
                 s.push_str(item.to_string().as_str());
-                s.push_str(", ");
+                s.push(',');
             }
 
-            s.push_str("]");
+            s.push(']');
 
             write!(f, "{}", s)
         }
+    }
+}
+
+// adding Default Implementation: thanks Clippy
+impl Default for TBDllite {
+    fn default() -> Self {
+        TBDllite::new()
     }
 }
 
@@ -162,13 +169,12 @@ impl TBDllite {
         // TESTING: for type constriction
         type T = TbiDllite;
 
-        if self.items.len() == 0 {
+        if self.items.is_empty() {
             if verbose {
                 println!("the tbox is empty, nothing to complete");
-                TBDllite::new()
-            } else {
-                TBDllite::new()
             }
+
+            TBDllite::new()
         } else {
             /*
             the strategy is as follows, for each Vec or VecDeque keeps two, one that change during the
@@ -270,14 +276,12 @@ impl TBDllite {
                             TbiDllite::apply_rule(vec![item], &rule_zero, deduction_tree);
 
                         // here there is some unnecessary clone stuff
-                        if new_item_vec.is_some() {
-                            // let new_item = (&new_item_vec.unwrap())[0].clone();
-
+                        if let Some(some_vec) = new_item_vec {
                             length_temporal = complete_helper_add_if_necessary_general(
                                 &items,
                                 &mut items_temporal,
                                 vec![item],
-                                &new_item_vec.unwrap(), // always one element
+                                &some_vec, // always one element
                                 length_temporal,
                                 verbose,
                                 CR::Zero,
@@ -320,12 +324,12 @@ impl TBDllite {
                             TbiDllite::apply_rule(vec![item], &rule_one, deduction_tree);
 
                         // here there is some unnecessary clone stuff
-                        if new_item_vec.is_some() {
+                        if let Some(some_vec) = new_item_vec {
                             length_temporal = complete_helper_add_if_necessary_general(
                                 &items,
                                 &mut items_temporal,
                                 vec![item],
-                                &new_item_vec.unwrap(), // always one element
+                                &some_vec, // always one element
                                 length_temporal,
                                 verbose,
                                 CR::First,
@@ -465,7 +469,7 @@ impl TBDllite {
                                 deduction_tree,
                             );
 
-                            for optional_vec in vec![&new_item_vec3] {
+                            for optional_vec in &[&new_item_vec3] {
                                 // if the rule succeeded
 
                                 if optional_vec.is_some() {
@@ -487,12 +491,12 @@ impl TBDllite {
 
                                         tbis_to_add.push(tbi.clone());
 
-                                        if zero_tbi.is_some() {
-                                            tbis_to_add.push(zero_tbi.unwrap()[0].clone());
+                                        if let Some(some_tbi) = zero_tbi {
+                                            tbis_to_add.push(some_tbi[0].clone());
                                         }
 
-                                        if one_tbi.is_some() {
-                                            tbis_to_add.push(one_tbi.unwrap()[0].clone());
+                                        if let Some(some_tbi) = one_tbi {
+                                            tbis_to_add.push(some_tbi[0].clone());
                                         }
                                     }
 

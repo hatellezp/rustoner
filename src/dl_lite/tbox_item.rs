@@ -5,8 +5,9 @@ use crate::kb::knowledge_base::{Implier, TbRule};
 use crate::kb::knowledge_base::{Item, TBoxItem};
 use crate::kb::types::DLType;
 use std::cmp::Ordering;
+use std::hash::{Hash, Hasher};
 
-#[derive(Debug, Hash, Clone)]
+#[derive(Debug, Clone)]
 pub struct TbiDllite {
     lside: NodeDllite,
     rside: NodeDllite,
@@ -17,6 +18,14 @@ pub struct TbiDllite {
 impl PartialEq for TbiDllite {
     fn eq(&self, other: &Self) -> bool {
         self.lside == other.lside && self.rside == other.rside
+    }
+}
+
+// I must implement Hash myself because PartialEq is implemented and can cause unforeseen errors: thanks Clippy
+impl Hash for TbiDllite {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.lside.hash(state);
+        self.rside.hash(state);
     }
 }
 
@@ -95,12 +104,9 @@ impl Implier for TbiDllite {
                         inner_implier = &self.impliers.get(index).unwrap();
                         cmpd = Self::cmp_imp(&implier, inner_implier);
 
-                        match cmpd {
-                            Option::Some(Ordering::Less) => {
-                                self.impliers[index] = implier;
-                                break; // rust is very smart, told me that value was being used in future iteration, so I put a break right here
-                            }
-                            _ => (),
+                        if let Option::Some(Ordering::Less) = cmpd {
+                            self.impliers[index] = implier;
+                            break; // rust is very smart, told me that value was being used in future iteration, so I put a break right here
                         }
                     }
                 }
@@ -133,9 +139,9 @@ impl TBoxItem for TbiDllite {
 
 impl TbiDllite {
     pub fn new(lside: NodeDllite, rside: NodeDllite, level: usize) -> Option<TbiDllite> {
-        if lside.t() == DLType::Nominal || rside.t() == DLType::Nominal {
-            Option::None
-        } else if lside.is_negated() || !DLType::same_type(lside.t(), rside.t()) {
+        if (lside.t() == DLType::Nominal || rside.t() == DLType::Nominal)
+            || (lside.is_negated() || !DLType::same_type(lside.t(), rside.t()))
+        {
             Option::None
         } else {
             let implied_by: Vec<Vec<TbiDllite>> = Vec::new();
@@ -193,19 +199,19 @@ impl TbiDllite {
             _ => Option::None,
         };
 
-        if prov_vec.is_none() {
-            Option::None
-        } else {
-            let prov_vec = prov_vec.unwrap();
-            let mut final_vec: Vec<TbiDllite> = Vec::new();
+        match prov_vec {
+            Option::None => Option::None,
+            Some(prov_vec_unwrapped) => {
+                let mut final_vec: Vec<TbiDllite> = Vec::new();
 
-            for item in &prov_vec {
-                if !item.is_redundant() {
-                    final_vec.push(item.clone());
+                for item in &prov_vec_unwrapped {
+                    if !item.is_redundant() {
+                        final_vec.push(item.clone());
+                    }
                 }
-            }
 
-            Some(final_vec)
+                Some(final_vec)
+            }
         }
     }
 

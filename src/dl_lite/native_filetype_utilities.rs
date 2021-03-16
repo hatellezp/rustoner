@@ -476,10 +476,8 @@ pub fn parse_abox_native_quantum(
                                     }
                                 }
                             }
-                        } else {
-                            if verbose {
-                                println!("line won't be parsed, not in between 'BEGINTBOX' and 'ENDTBOX' bounds");
-                            }
+                        } else if verbose {
+                            println!("line won't be parsed, not in between 'BEGINTBOX' and 'ENDTBOX' bounds");
                         }
                     }
                 }

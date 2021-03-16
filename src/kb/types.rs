@@ -42,36 +42,33 @@ impl DLType {
      */
 
     pub fn is_nominal_type(&self) -> bool {
-        match self {
-            DLType::Nominal => true,
-            _ => false,
-        }
+        matches!(self, DLType::Nominal)
     }
 
     pub fn is_role_type(&self) -> bool {
-        match self {
-            DLType::BaseRole | DLType::InverseRole | DLType::NegatedRole => true,
-            _ => false,
-        }
+        matches!(
+            self,
+            DLType::BaseRole | DLType::InverseRole | DLType::NegatedRole
+        )
     }
 
     pub fn is_concept_type(&self) -> bool {
-        match self {
+        matches!(
+            self,
             DLType::Bottom
-            | DLType::Top
-            | DLType::BaseConcept
-            | DLType::ExistsConcept
-            | DLType::NegatedConcept => true,
-            _ => false,
-        }
+                | DLType::Top
+                | DLType::BaseConcept
+                | DLType::ExistsConcept
+                | DLType::NegatedConcept
+        )
     }
 
     pub fn all_roles(t1: DLType, t2: DLType) -> bool {
         match t1 {
-            DLType::BaseRole | DLType::InverseRole | DLType::NegatedRole => match t2 {
-                DLType::BaseRole | DLType::InverseRole | DLType::NegatedRole => true,
-                _ => false,
-            },
+            DLType::BaseRole | DLType::InverseRole | DLType::NegatedRole => matches!(
+                t2,
+                DLType::BaseRole | DLType::InverseRole | DLType::NegatedRole
+            ),
             _ => false,
         }
     }
@@ -85,14 +82,14 @@ impl DLType {
             | DLType::Top
             | DLType::BaseConcept
             | DLType::ExistsConcept
-            | DLType::NegatedConcept => match t2 {
+            | DLType::NegatedConcept => matches!(
+                t2,
                 DLType::Bottom
-                | DLType::Top
-                | DLType::BaseConcept
-                | DLType::ExistsConcept
-                | DLType::NegatedConcept => true,
-                _ => false,
-            },
+                    | DLType::Top
+                    | DLType::BaseConcept
+                    | DLType::ExistsConcept
+                    | DLType::NegatedConcept
+            ),
             _ => false,
         }
     }

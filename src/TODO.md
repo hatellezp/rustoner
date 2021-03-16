@@ -1,6 +1,7 @@
 
 ### to do:
  - quoi qu'il arrive finir **l'interface!!!** 
+    - if the conflict graph is empty then do nothing! for rankab 
     - ajouter option pour différents types de output de dot
     - vérifier que dot et dot.exe existent
     - ajouter aide
