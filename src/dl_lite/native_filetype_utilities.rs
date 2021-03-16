@@ -77,7 +77,7 @@ pub fn parse_symbols_native(filename: &str, verbose: bool) -> io::Result<SymbolD
                         if begin_symbol_encountered && !end_symbol_encountered {
                             let vec: Vec<&str> = line_trimmed.split("//").collect();
 
-                            let not_ignored = vec[0].clone().trim();
+                            let not_ignored = vec[0].trim();
 
                             if not_ignored == "BEGINSYMBOL" {
                                 begin_symbol_encountered = true;
@@ -101,12 +101,12 @@ pub fn parse_symbols_native(filename: &str, verbose: bool) -> io::Result<SymbolD
                             if verbose {
                                 let ignored: String = String::from(vec[1..].join("//").trim());
 
-                                if &ignored != "" {
+                                if !ignored.is_empty() {
                                     println!(" -- native_utilities::parse_symbols_native: this comment will be ignored: {}", &ignored);
                                 }
                             }
 
-                            let parsed: io::Result<(&str, DLType)> = string_to_symbol(&not_ignored);
+                            let parsed: io::Result<(&str, DLType)> = string_to_symbol(not_ignored);
 
                             match parsed {
                                 Ok((name, t)) => {
@@ -155,12 +155,15 @@ pub fn parse_symbols_native(filename: &str, verbose: bool) -> io::Result<SymbolD
                 symbols.insert(String::from("Top"), (1, DLType::Top));
 
                 let unsorted_size = unsorted_symbols.len();
+                for (i, item) in unsorted_symbols.iter().enumerate().take(unsorted_size) {
+                    // for i in 0..unsorted_size {
+                    // let s = &unsorted_symbols[i];
 
-                for i in 0..unsorted_size {
-                    let s = &unsorted_symbols[i];
+                    // let name = s.name();
+                    // let t = s.t();
 
-                    let name = s.name();
-                    let t = s.t();
+                    let name = item.name();
+                    let t = item.t();
 
                     symbols.insert(String::from(name), (i + 2, t));
                 }
@@ -238,7 +241,7 @@ pub fn parse_tbox_native(
                         if begin_tbox_encountered && !end_tbox_encountered {
                             let vec: Vec<&str> = line_trimmed.split("//").collect();
 
-                            let not_ignored = vec[0].clone().trim();
+                            let not_ignored = vec[0].trim();
 
                             if not_ignored == "BEGINTBOX" {
                                 begin_tbox_encountered = true;
@@ -262,12 +265,12 @@ pub fn parse_tbox_native(
                             if verbose {
                                 let ignored: String = String::from(vec[1..].join("//").trim());
 
-                                if &ignored != "" {
+                                if !ignored.is_empty() {
                                     println!(" -- native_utilities::parse_tbox_native: this comment will be ignored: {}", &ignored);
                                 }
                             }
 
-                            let parsed = string_to_tbi(&not_ignored, symbols);
+                            let parsed = string_to_tbi(not_ignored, symbols);
 
                             match parsed {
                                 Ok(mut tbi_vec) => {
@@ -328,12 +331,9 @@ pub fn tbox_to_native_string(
         if !(tbi.is_trivial() && dont_write_trivial) {
             let tbi_str_op = tbi_to_string(tbi, symbols);
 
-            match tbi_str_op {
-                Some(tbi_str) => {
-                    res.push_str(tbi_str.as_str());
-                    res.push_str("\n");
-                }
-                _ => (),
+            if let Some(some_tbi_str) = tbi_str_op {
+                res.push_str(some_tbi_str.as_str());
+                res.push('\n');
             }
         }
     }
@@ -349,7 +349,7 @@ pub fn find_bound_of_symbols(symbols: &SymbolDict) -> (usize, usize) {
         let mut lower: Option<usize> = Option::None;
         let mut upper: Option<usize> = Option::None;
 
-        for (_, (id, _)) in symbols {
+        for (id, _) in symbols.values() {
             lower = match lower {
                 Option::None => Some(*id),
                 Some(old_id) => {
@@ -444,18 +444,18 @@ pub fn parse_abox_native_quantum(
                         if begin_abox_encountered && !end_abox_encountered {
                             let vec: Vec<&str> = line_trimmed.split("//").collect();
 
-                            let not_ignored = vec[0].clone();
+                            let not_ignored = vec[0];
 
                             if verbose {
                                 let ignored: String = String::from(vec[1..].join("//").trim());
 
-                                if &ignored != "" {
+                                if !ignored.is_empty() {
                                     println!("this comment will be ignored: {}", &ignored);
                                 }
                             }
 
                             let (parsed_result, current_id_result) =
-                                string_to_abiq(&not_ignored, symbols, current_id, false); // parsing from file should be a new abox
+                                string_to_abiq(not_ignored, symbols, current_id, false); // parsing from file should be a new abox
                             current_id = current_id_result;
 
                             match parsed_result {
@@ -510,8 +510,8 @@ pub fn abox_to_native_string_quantum(
 
     // I should define a header for this files
     let to_native = true;
-    let header = "";
-    res.push_str(header);
+    // let header = "";
+    // res.push_str(header);
 
     res.push_str("BEGINABOX\n");
 
@@ -519,12 +519,9 @@ pub fn abox_to_native_string_quantum(
         if !(abi.is_trivial() && dont_write_trivial) {
             let abi_str_op = abiq_to_string(abi, symbols, to_native);
 
-            match abi_str_op {
-                Some(abi_str) => {
-                    res.push_str(abi_str.as_str());
-                    res.push_str("\n");
-                }
-                _ => (),
+            if let Some(some_abi_str) = abi_str_op {
+                res.push_str(some_abi_str.as_str());
+                res.push('\n');
             }
         }
     }

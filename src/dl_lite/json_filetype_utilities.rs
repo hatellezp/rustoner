@@ -29,10 +29,7 @@ pub fn parse_value_to_string(v: &Value) -> io::Result<&str> {
     }
 }
 
-pub fn parse_symbol(
-    s_vec: &Vec<Value>,
-    latest: usize,
-) -> (io::Result<(&str, usize, DLType)>, usize) {
+pub fn parse_symbol(s_vec: &[Value], latest: usize) -> (io::Result<(&str, usize, DLType)>, usize) {
     /*
     how parsing works: ["r", "myrole"] -> ("myrole", number, DLType::RoleBase)
      */
@@ -95,31 +92,33 @@ pub fn parse_symbol(
                     dlt = Option::None;
                 }
 
-                if dlt.is_none() {
-                    let new_error = Error::new(
-                        ErrorKind::InvalidData,
-                        format!("not a valid dl type: {}", &t),
-                    );
-                    (Err(new_error), latest)
-                } else {
-                    let dlt_unwrapped = dlt.unwrap();
-                    let id: usize;
-                    let new_latest: usize;
-
-                    if dlt_unwrapped == DLType::Bottom {
-                        name = "Bottom";
-                        id = 0;
-                        new_latest = latest;
-                    } else if dlt_unwrapped == DLType::Top {
-                        name = "Top";
-                        id = 1;
-                        new_latest = latest;
-                    } else {
-                        id = latest + 1;
-                        new_latest = id;
+                match dlt {
+                    Option::None => {
+                        let new_error = Error::new(
+                            ErrorKind::InvalidData,
+                            format!("not a valid dl type: {}", &t),
+                        );
+                        (Err(new_error), latest)
                     }
+                    Some(dlt_unwrapped) => {
+                        let id: usize;
+                        let new_latest: usize;
 
-                    (Ok((name, id, dlt.unwrap())), new_latest)
+                        if dlt_unwrapped == DLType::Bottom {
+                            name = "Bottom";
+                            id = 0;
+                            new_latest = latest;
+                        } else if dlt_unwrapped == DLType::Top {
+                            name = "Top";
+                            id = 1;
+                            new_latest = latest;
+                        } else {
+                            id = latest + 1;
+                            new_latest = id;
+                        }
+
+                        (Ok((name, id, dlt.unwrap())), new_latest)
+                    }
                 }
             }
         }
@@ -253,34 +252,31 @@ pub fn parse_symbols_json(filename: &str) -> io::Result<SymbolDict> {
                                     let mut symbols: SymbolDict = HashMap::new();
 
                                     for value in vec_of_values {
-                                        match value {
-                                            Value::Array(symbol_spec) => {
-                                                result = parse_symbol(symbol_spec, latest);
+                                        if let Value::Array(symbol_spec) = value {
+                                            result = parse_symbol(symbol_spec, latest);
 
-                                                parsed_result = result.0;
-                                                latest = result.1;
+                                            parsed_result = result.0;
+                                            latest = result.1;
 
-                                                match parsed_result {
-                                                    Err(error) => {
-                                                        println!(
-                                                            "couldn't add symbol: {}",
-                                                            &error.to_string()
-                                                        );
-                                                        // result_from_error(&error)
-                                                    }
-                                                    Ok(parsed) => {
-                                                        symbols.insert(
-                                                            String::from(parsed.0),
-                                                            (parsed.1, parsed.2),
-                                                        );
-                                                    }
+                                            match parsed_result {
+                                                Err(error) => {
+                                                    println!(
+                                                        "couldn't add symbol: {}",
+                                                        &error.to_string()
+                                                    );
+                                                    // result_from_error(&error)
+                                                }
+                                                Ok(parsed) => {
+                                                    symbols.insert(
+                                                        String::from(parsed.0),
+                                                        (parsed.1, parsed.2),
+                                                    );
                                                 }
                                             }
-                                            _ => (), // invalid_data_result(format!("not a list item: {}", &value).as_str()),
                                         }
                                     }
 
-                                    if symbols.len() == 0 {
+                                    if symbols.is_empty() {
                                         invalid_data_result("not symbols were added")
                                     } else {
                                         Ok(symbols)

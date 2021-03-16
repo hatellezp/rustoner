@@ -102,7 +102,7 @@ pub fn complete_helper_add_if_necessary_general<T: Display + PartialEq + Eq + Cl
     mu_all: &MutexGuard<VecDeque<T>>,
     mu: &mut MutexGuard<VecDeque<T>>,
     applied_items: Vec<&T>,
-    created_items: &Vec<T>,
+    created_items: &[T],
     mut mu_length: usize,
     verbose: bool,
     rn: CR,
@@ -122,7 +122,7 @@ pub fn complete_helper_add_if_necessary_general<T: Display + PartialEq + Eq + Cl
             }
             if mu.contains(&new_item) {
                 for item in mu.iter_mut() {
-                    if &new_item == &item {
+                    if new_item == item {
                         let impliers = new_item.implied_by();
                         for implier in impliers {
                             item.add_to_implied_by(implier.clone());
@@ -170,15 +170,14 @@ fn print_vector_of_tbi<T: Display + PartialEq + Eq>(vec: &Vec<T>) -> String {
 
  */
 
-fn print_vector_of_tbi_references<T: Display + PartialEq + Eq>(vec: &Vec<&T>) -> String {
+fn print_vector_of_tbi_references<T: Display + PartialEq + Eq>(vec: &[&T]) -> String {
     let mut s = String::from("[");
 
     for item in vec {
         s.push_str(format!("{}, ", &item).as_str());
     }
 
-    s.push_str("]");
-
+    s.push(']');
     s
 }
 

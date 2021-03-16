@@ -13,7 +13,7 @@ use std::hash::{Hash, Hasher};
 /*
    remember that only base roles and base concepts are allowed here !!
 */
-#[derive(PartialEq, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct AbiqDllite {
     abi: AbiDllite, // role or concept assertion
     prevalue: f64,
@@ -22,9 +22,17 @@ pub struct AbiqDllite {
     impliers: Vec<(Vec<TbiDllite>, Vec<AbiqDllite>)>,
 }
 
+// TODO: this might apport some unseen problems... :(
+impl PartialEq for AbiqDllite {
+    fn eq(&self, other: &Self) -> bool {
+        self.abi.eq(other.abi())
+    }
+}
+
 impl Eq for AbiqDllite {}
 
 // TODO: is this enough ????
+//     : Clippy complais that I only hash the abi, maybe I should do the same for the abiq ?
 impl Hash for AbiqDllite {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.abi.hash(state);
@@ -77,12 +85,9 @@ impl Implier for AbiqDllite {
                     inner_implier = &self.impliers.get(index).unwrap();
                     cmpd = Self::cmp_imp(&implier, inner_implier);
 
-                    match cmpd {
-                        Option::Some(Ordering::Less) => {
-                            self.impliers[index] = implier;
-                            break; // rust is very smart, told me that value was being used in future iteration, so I put a break right here
-                        }
-                        _ => (),
+                    if let Some(Ordering::Less) = cmpd {
+                        self.impliers[index] = implier;
+                        break; // rust is very smart, told me that value was being used in future iteration, so I put a break right here
                     }
                 }
             }
@@ -196,31 +201,9 @@ impl AbiqDllite {
         self.abi.is_trivial()
     }
 
-    // reference to the concept or role in the abox_item
-
-    /*
-    pub fn nominal(&self, position: usize) -> Option<&NodeDllite> {
-        self.abi.nominal(position)
-    }
-
-     */
-
     pub fn same_nominal(&self, other: &Self) -> bool {
         self.abi.same_nominal(&other.abi)
     }
-
-    /*
-    pub fn is_match(&self, tbi: &TbiDllite) -> Vec<Side> {
-        self.abi.is_match(tbi)
-    }
-
-    pub fn get_abis(abiqs: Vec<&AbiqDllite>) -> Vec<&AbiDllite> {
-        let abis: Vec<&AbiDllite> = abiqs.iter().map(|&x| x.abi()).collect::<Vec<_>>();
-
-        abis
-    }
-
-     */
 
     // pub fn apply_two(one: &ABIQ, two: &ABIQ, tbox: &TB) -> Option<Vec<ABIQ>> {}
     pub fn apply_rule(
@@ -235,23 +218,22 @@ impl AbiqDllite {
             _ => Option::None,
         };
 
-        if prov_vec.is_none() {
-            Option::None
-        } else {
-            let prov_vec: Vec<AbiqDllite> = prov_vec.unwrap();
+        if let Some(some_vec) = prov_vec {
             let mut final_vec: Vec<AbiqDllite> = Vec::new();
 
-            for item in &prov_vec {
+            for item in some_vec {
                 if !item.abi().is_trivial() {
-                    final_vec.push(item.clone());
+                    final_vec.push(item);
                 }
             }
 
             Some(final_vec)
+        } else {
+            Option::None
         }
     }
 
-    pub fn compare_two_vectors(v1: &Vec<AbiqDllite>, v2: &Vec<AbiqDllite>) -> Option<Ordering> {
+    pub fn compare_two_vectors(v1: &[AbiqDllite], v2: &[AbiqDllite]) -> Option<Ordering> {
         let len1 = v1.len();
         let len2 = v2.len();
         let mut all_good = true;
@@ -276,31 +258,4 @@ impl AbiqDllite {
             false => Option::None,
         }
     }
-
-    /*
-    // function utility for levels
-    pub fn get_extrema_level(v: Vec<&AbiqDllite>, max_index: usize, get_max: bool) -> usize {
-        // for max or min
-        let mut extrema_level: usize = if get_max { 0 } else { usize::max_value() };
-
-        // this part is independent of max and min
-        let v_len = v.len();
-        let max_index = if (v_len - 1) >= max_index {
-            max_index
-        } else {
-            v_len
-        };
-
-        for i in 0..max_index {
-            if get_max {
-                extrema_level = extrema_level.max(v.get(i).unwrap().level);
-            } else {
-                extrema_level = extrema_level.min(v.get(i).unwrap().level);
-            }
-        }
-
-        extrema_level
-    }
-
-     */
 }

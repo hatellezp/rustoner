@@ -16,6 +16,7 @@ use crate::kb::knowledge_base::{ABox, ABoxItem, AbRule, Item, SymbolDict, TBox, 
 use crate::kb::types::{ConflictType, DLType, CR};
 
 use petgraph::{Directed, Graph};
+use std::cmp::Ordering;
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct AbqDllite {
@@ -768,22 +769,20 @@ impl AbqDllite {
 
                     match (index_i_op, index_j_op) {
                         (Some(index_i), Some(index_j)) => {
-                            if w_ij > 0 {
-                                // i is implied by j
-                                graph.add_edge(*index_j, *index_i, true); // an arrow from j to i
-                            } else {
-                                // i is refuted by j
-                                graph.add_edge(*index_j, *index_i, false); // an arrow from j to i
+                            match w_ij.cmp(&0) {
+                                Ordering::Less => {
+                                    // i is refuted by j
+                                    graph.add_edge(*index_j, *index_i, false); // an arrow from j to i
+                                }
+                                Ordering::Greater => {
+                                    // i is implied by j
+                                    graph.add_edge(*index_j, *index_i, true); // an arrow from j to i
+                                }
+                                _ => (),
                             }
                         }
                         (_, _) => (), // passing
                     }
-                }
-
-                if conflict_matrix[virtual_i * dim + virtual_j] > 0 {
-                    // i is implied by j
-                } else if conflict_matrix[virtual_i * dim + virtual_j] < 0 {
-                    // i is refuted by j
                 }
             }
         }

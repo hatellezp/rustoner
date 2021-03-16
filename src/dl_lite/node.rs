@@ -197,10 +197,8 @@ impl Item for NodeDllite {
     }
 
     fn is_negated(&self) -> bool {
-        match self {
-            NodeDllite::T | NodeDllite::X(Mod::N, _) => true, // it is BOTTOM which is negated ! UPDATE: is Top which is negated now...
-            _ => false,
-        }
+        // it is BOTTOM which is negated ! UPDATE: is Top which is negated now...
+        matches!(self, NodeDllite::T | NodeDllite::X(Mod::N, _))
     }
 }
 
