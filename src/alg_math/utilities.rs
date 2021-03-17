@@ -1,5 +1,6 @@
 use nalgebra::{Complex, DMatrix, DVector};
 use std::f64::consts::PI;
+use std::cmp::Ordering;
 
 // creation of matrix and vectors
 
@@ -215,7 +216,7 @@ pub fn solve_system_wrapper(
 
 // for some simple statistics tasks
 // from rust nursery
-fn partition(data: &[i32]) -> Option<(Vec<i32>, i32, Vec<i32>)> {
+fn partition(data: &[f64]) -> Option<(Vec<f64>, f64, Vec<f64>)> {
     match data.len() {
         0 => None,
         _ => {
@@ -239,7 +240,7 @@ fn partition(data: &[i32]) -> Option<(Vec<i32>, i32, Vec<i32>)> {
     }
 }
 
-fn select(data: &[i32], k: usize) -> Option<i32> {
+fn select(data: &[f64], k: usize) -> Option<f64> {
     let part = partition(data);
 
     match part {
@@ -256,7 +257,7 @@ fn select(data: &[i32], k: usize) -> Option<i32> {
     }
 }
 
-fn median(data: &[i32]) -> Option<f32> {
+fn median(data: &[f64]) -> Option<f64> {
     let size = data.len();
 
     match size {
@@ -265,11 +266,11 @@ fn median(data: &[i32]) -> Option<f32> {
             let snd_med = select(data, even / 2);
 
             match (fst_med, snd_med) {
-                (Some(fst), Some(snd)) => Some((fst + snd) as f32 / 2.0),
+                (Some(fst), Some(snd)) => Some((fst + snd) / 2.0),
                 _ => None
             }
         },
-        odd => select(data, odd / 2).map(|x| x as f32)
+        odd => select(data, odd / 2).map(|x| x)
     }
 }
 
