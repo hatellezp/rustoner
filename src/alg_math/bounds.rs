@@ -2,10 +2,7 @@ use fftw::array::AlignedVec;
 use fftw::plan::*;
 use fftw::types::*;
 
-use crate::alg_math::utilities::{
-    create_unity_roots, matrix_is_zero_complex, matrix_subtraction, multiply_matrix_complex,
-    multiply_vector_complex,
-};
+use crate::alg_math::utilities::{create_unity_roots, matrix_is_zero_complex, matrix_subtraction, multiply_matrix_complex, multiply_vector_complex, round_to_15_f64};
 use nalgebra::Complex;
 use nalgebra::{DMatrix, DVector};
 
@@ -116,6 +113,14 @@ fn find_bound_complex(
             root = roots[ind_sample];
 
             // compute (un*1 - m)
+            println!("==================================================");
+            println!("this is the root: {}", &root);
+            println!("this is the indentity:\n{}", &identity);
+            println!("this is the matrix:\n{}", &matrix);
+            println!("this is the scaler:{}", scaler);
+            println!("==================================================");
+
+
             multiply_matrix_complex(&mut identity, root);
             matrix_subtraction(&mut identity, &matrix);
 
@@ -124,10 +129,15 @@ fn find_bound_complex(
                 DMatrix::from_vec(n, n, vec![Complex { re: 0., im: 0. }; n * n]);
             temp_identity.copy_from(&identity);
 
+            println!("temp identity:\n{}", &temp_identity);
+
             // solve the system and compute also the determinant
             let decomp = temp_identity.lu();
             x = decomp.solve(&right_vector).unwrap(); // usually this is always solvable
             det = decomp.determinant();
+
+            println!("x: {}", &x);
+            println!("det: {}", &det);
 
             /*
              now we have the x vector that keeps the solution
@@ -135,6 +145,8 @@ fn find_bound_complex(
              we perform det*x now
             */
             multiply_vector_complex(&mut x, det);
+
+            println!("x after mul: {}", &x);
 
             /*
              the vector x has the sample that we need to store in the pvalues array
@@ -145,6 +157,10 @@ fn find_bound_complex(
                 pvalues[n_samples * ind_sample + ind_vector + 1] = x[ind_vector].im;
             }
         }
+
+        println!("==========================================");
+        println!("pvalues: {:?}", &pvalues);
+        println!("========================================");
 
         /*
             we finished populate the pvalues array, now we need to compute each polynomial using the fftw3 plan
@@ -171,9 +187,37 @@ fn find_bound_complex(
                     in_vector[ind_sample] = c64::new(real, imag);
                 }
 
+                println!("================================================");
+                println!("================================================");
+
+                println!("============ in vector before fft!!");
+                print!("===== [");
+                for i in 0..n_samples {
+                    print!("{}, ", (&in_vector)[i]);
+                }
+                println!("]");
+
                 // execute the plan
                 plan.c2c(&mut in_vector, &mut out_vector).unwrap(); // TODO: is this safe ??
                                                                     // not out_vector has the result
+
+                println!("============ out vector");
+                print!("===== [");
+                for i in 0..n_samples {
+                    print!("{}, ", (&out_vector)[i]);
+                }
+                println!("]");
+
+                println!("================");
+
+                println!("============ in vector");
+                print!("===== [");
+                for i in 0..n_samples {
+                    print!("{}, ", (&in_vector)[i]);
+                }
+                println!("]");
+
+
 
                 // now the answer is stored in out
                 // I'm reusing the current_max double
@@ -186,7 +230,15 @@ fn find_bound_complex(
                 max_coeff = tolerance / 2.;
 
                 for i in 0..n_samples {
-                    possible_coeff_real = out_vector[n_samples - i - 1].re / (n_samples as f64);
+                    // possible_coeff_real = out_vector[n_samples - i - 1].re / (n_samples as f64);
+
+                    // this scaling is unnecessary
+                    possible_coeff_real = out_vector[n_samples - i - 1].re;
+
+                    /*
+                    also here I'm introducing the rounding
+                     */
+                    possible_coeff_real = round_to_15_f64(possible_coeff_real);
 
                     if possible_coeff_real.abs() > tolerance {
                         real_degree = Some(n_samples - i - 1);
@@ -197,6 +249,11 @@ fn find_bound_complex(
                     }
                 }
 
+                println!("========= real degree: {:?}", &real_degree);
+                println!("========= possible coeff real: {}", &possible_coeff_real);
+                println!("========= max coef: {}", max_coeff);
+
+
                 // recast real_degree
                 let real_degree = real_degree.unwrap_or(0); // something bad happenend here
 
@@ -204,10 +261,22 @@ fn find_bound_complex(
                 // where the max comprehend all polynomials
                 for i in 0..real_degree {
                     let real_value_coeff: f64 = -out_vector[i].re;
-                    current_max = current_max.max(real_value_coeff / max_coeff);
+                    let result = real_value_coeff / max_coeff;
+
+                    println!("                                   the result of dividing real vauel coeff: {} by max coeff: {} is :{}", real_value_coeff, max_coeff, result);
+
+                    current_max = current_max.max(result);
+
+                    println!("                                    current max is: {}", current_max);
                 }
+
+                println!("=======================-------------------------=========================");
+                println!("=======================-------------------------=========================");
+
             }
         }
+
+        println!("                                 current max: {} b_transkate: {}, prov_scaler: {}", current_max, b_translate, prov_scaler);
 
         // now unscale and deplace
         let bound = (current_max + b_translate) * (1. * prov_scaler);
