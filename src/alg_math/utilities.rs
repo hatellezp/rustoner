@@ -3,6 +3,15 @@ use std::f64::consts::PI;
 
 // creation of matrix and vectors
 
+/*
+    I found that there several prescision errors when computing division,
+    this is a working solution
+ */
+const PRESCISION_ROUNDER: f64 = 1000000000000000.;
+pub fn round_to_15_f64(v: f64) -> f64 {
+    (v * PRESCISION_ROUNDER).round() / PRESCISION_ROUNDER
+}
+
 pub fn create_indetity_matrix_complex(n: usize) -> DMatrix<Complex<f64>> {
     // creates a matrix of size n*n
     // be aware of this
@@ -26,6 +35,10 @@ pub fn create_unity_roots(v: &mut DVector<Complex<f64>>, n: usize, inverse: bool
             arg = (t * (2. * PI * (k as f64))) / n64;
             re = arg.cos();
             im = arg.sin();
+
+            re = round_to_15_f64(re);
+            im = round_to_15_f64(im);
+
             new_complex = Complex { re, im };
             v[k] = new_complex;
         }
