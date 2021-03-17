@@ -11,6 +11,8 @@ use petgraph::graph::EdgeReference;
 use petgraph::Graph;
 use std::collections::HashMap;
 
+type RankRemainder = (Vec<i8>, HashMap<usize, usize>, HashMap<usize, ConflictType>);
+
 pub fn rank_abox(
     onto: &OntologyDllite,
     abq: &mut AbqDllite,
@@ -20,7 +22,7 @@ pub fn rank_abox(
     m_scaler: f64,
     b_translate: f64,
     verbose: bool,
-) -> (Vec<i8>, HashMap<usize, usize>, HashMap<usize, ConflictType>) {
+) -> RankRemainder {
     let (before_matrix, real_to_virtual, virtual_to_real) =
         onto.conflict_matrix(abq, deduction_tree, verbose);
 
@@ -40,7 +42,7 @@ pub fn rank_abox(
 
     // you can verify here done matrix already
     if done_matrix.is_empty() {
-        for (_key, value) in &virtual_to_real {
+        for value in virtual_to_real.values() {
             // nothing else to do
             if *value < abq_len {
                 // verify index out of bounds problems
@@ -50,22 +52,24 @@ pub fn rank_abox(
 
         // alg for creating viewer of what is a conflict and what not
         let mut virtual_index_op: Option<usize>;
-        let mut virtual_index: usize;
+        let _virtual_index: usize;
         for i in 0..abq_len {
             virtual_index_op = *real_to_virtual.get(&i).unwrap();
 
-            if virtual_index_op.is_none() {
-                conflict_type.insert(i, ConflictType::SelfConflict);
-            } else {
-                virtual_index = virtual_index_op.unwrap();
-
-                if before_to_done_matrix.get(&virtual_index).unwrap().is_none() {
+            if let Some(some_virtual_index) = virtual_index_op {
+                if before_to_done_matrix
+                    .get(&some_virtual_index)
+                    .unwrap()
+                    .is_none()
+                {
                     // clean one
                     conflict_type.insert(i, ConflictType::Clean);
                 } else {
                     // clean one
                     conflict_type.insert(i, ConflictType::Conflict);
                 }
+            } else {
+                conflict_type.insert(i, ConflictType::SelfConflict);
             }
         }
 
@@ -98,8 +102,8 @@ pub fn rank_abox(
 
                 // we need to upscale in the case that some value is not conflicting, from it we can get the 1 value
                 // you can upscale if the clean index is not none, simply as that
-                if clean_index_tuple_op.is_some() {
-                    let (new_clean_index, _old_clean_index) = clean_index_tuple_op.unwrap();
+                if let Some(some_clean_index) = clean_index_tuple_op {
+                    let (new_clean_index, _old_clean_index) = some_clean_index;
 
                     // get the rank of the clean fact
                     let clean_rank = rank[new_clean_index];
@@ -112,7 +116,7 @@ pub fn rank_abox(
                     // otherwise we done something else
                     // take the median value of the rank
                     // and normalize for that one
-                    ()
+                    // TODO: come here and finish normalization
                 }
 
                 // now that we have upscale if possible, we put the value in the abox
@@ -131,26 +135,24 @@ pub fn rank_abox(
 
                 // alg for creating viewer of what is a conflict and what not
                 let mut virtual_index_op: Option<usize>;
-                let mut virtual_index: usize;
                 let mut clean_index_done = false;
 
                 for i in 0..abq_len {
                     virtual_index_op = *real_to_virtual.get(&i).unwrap();
 
-                    if virtual_index_op.is_none() {
-                        conflict_type.insert(i, ConflictType::SelfConflict);
-                    } else {
-                        virtual_index = virtual_index_op.unwrap();
-
-                        if before_to_done_matrix.get(&virtual_index).unwrap().is_none() {
+                    if let Some(some_virtual_index) = virtual_index_op {
+                        if before_to_done_matrix
+                            .get(&some_virtual_index)
+                            .unwrap()
+                            .is_none()
+                        {
                             // clean one
                             conflict_type.insert(i, ConflictType::Clean);
                         } else {
                             // clean one
                             if !clean_index_done {
-                                if clean_index_tuple_op.is_some() {
-                                    let (_new_clean_index, new_old_index) =
-                                        clean_index_tuple_op.unwrap();
+                                if let Some(some_clean_index_tuple) = clean_index_tuple_op {
+                                    let (_new_clean_index, new_old_index) = some_clean_index_tuple;
 
                                     if new_old_index == i {
                                         conflict_type.insert(i, ConflictType::Clean);
@@ -165,6 +167,8 @@ pub fn rank_abox(
                                 conflict_type.insert(i, ConflictType::Conflict);
                             }
                         }
+                    } else {
+                        conflict_type.insert(i, ConflictType::SelfConflict);
                     }
                 }
 
@@ -188,7 +192,7 @@ pub fn node_attr(_g: &Graph<String, bool>, _ni: (petgraph::prelude::NodeIndex, &
     String::from("")
 }
 
-pub fn pretty_print_matrix(v: &Vec<i8>) {
+pub fn pretty_print_matrix(v: &[i8]) {
     let n = (v.len() as f64).sqrt() as usize;
 
     for i in 0..n {

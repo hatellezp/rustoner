@@ -126,10 +126,8 @@ pub fn parse_symbols_native(filename: &str, verbose: bool) -> io::Result<SymbolD
                                     }
                                 }
                             }
-                        } else {
-                            if verbose {
-                                println!(" -- native_utilities::parse_symbols_native: line won't be parsed, not in between 'BEGINSYMBOL' and 'ENDSYMBOL' bounds");
-                            }
+                        } else if verbose {
+                            println!(" -- native_utilities::parse_symbols_native: line won't be parsed, not in between 'BEGINSYMBOL' and 'ENDSYMBOL' bounds");
                         }
                     }
                 }
@@ -287,10 +285,8 @@ pub fn parse_tbox_native(
                                     }
                                 }
                             }
-                        } else {
-                            if verbose {
-                                println!(" -- native_utilities::parse_tbox_native: line won't be parsed, not in between 'BEGINTBOX' and 'ENDTBOX' bounds");
-                            }
+                        } else if verbose {
+                            println!(" -- native_utilities::parse_tbox_native: line won't be parsed, not in between 'BEGINTBOX' and 'ENDTBOX' bounds");
                         }
                     }
                 }

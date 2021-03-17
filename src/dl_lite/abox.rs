@@ -86,7 +86,7 @@ impl fmt::Display for AbqDllite {
                 s.push_str(", ");
             }
 
-            s.push_str("]");
+            s.push(']');
 
             write!(f, "{}", s)
         }
@@ -128,10 +128,7 @@ impl AbqDllite {
 
     // create an abox from a vec of index, will help when finding conflicts in a database
     pub fn sub_abox(&self, index: Vec<usize>, name: Option<&str>) -> Option<AbqDllite> {
-        let name = match name {
-            Option::None => "tmp",
-            Some(s) => s,
-        };
+        let name = name.unwrap_or("tmp");
 
         let mut sub_abox = AbqDllite::new(name);
 
@@ -361,7 +358,7 @@ impl AbqDllite {
         type T = TbiDllite;
         type A = AbiqDllite;
 
-        if self.items.len() == 0 {
+        if self.items.is_empty() {
             if verbose {
                 println!(" -- ABQ::complete: the abox is empty, nothing to complete");
             }
@@ -552,7 +549,7 @@ impl AbqDllite {
                                     deduction_tree,
                                 );
 
-                                for optional_vec in vec![&new_item_vec3] {
+                                for optional_vec in &[&new_item_vec3] {
                                     // if the rule succeeded
 
                                     // println!("--- in abox complete, optional vec is : {:?}", &optional_vec);
@@ -710,10 +707,10 @@ impl AbqDllite {
         levels
     }
 
-    pub fn create_graph_dot<'a>(
+    pub fn create_graph_dot(
         &self,
         symbols: &SymbolDict,
-        conflict_matrix: &Vec<i8>,
+        conflict_matrix: &[i8],
         real_to_virtual: &HashMap<usize, usize>,
         conflict_type: &HashMap<usize, ConflictType>,
     ) -> Graph<String, bool, Directed, u32> {

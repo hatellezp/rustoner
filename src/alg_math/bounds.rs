@@ -35,7 +35,7 @@ fn find_bound_complex(
 
         // if the matrix is null the bound is 1.
         if matrix_is_zero_complex(&matrix) {
-            return Some(1. as f64);
+            return Some(1_f64);
         }
 
         // we can begin computation
@@ -198,10 +198,7 @@ fn find_bound_complex(
                 }
 
                 // recast real_degree
-                let real_degree = match real_degree {
-                    Option::None => 0,
-                    Some(rd) => rd,
-                }; // something bad happenend here
+                let real_degree = real_degree.unwrap_or(0); // something bad happenend here
 
                 // now that we have the real degree we compute the bound
                 // where the max comprehend all polynomials
@@ -238,7 +235,6 @@ pub fn find_bound_complex_wrapper(
         let matrix: DMatrix<f64> = DMatrix::from_vec(n, n, v);
         let matrix: DMatrix<Complex<f64>> = matrix.cast::<Complex<f64>>();
 
-        let result = find_bound_complex(matrix, tolerance, m_scaler, b_translate);
-        result
+        find_bound_complex(matrix, tolerance, m_scaler, b_translate)
     }
 }

@@ -54,7 +54,7 @@ pub fn matrix_is_zero_complex(m: &DMatrix<Complex<f64>>) -> bool {
         }
     }
 
-    return true;
+    true
 }
 
 pub fn matrix_subtraction(receiver: &mut DMatrix<Complex<f64>>, minus: &DMatrix<Complex<f64>>) {
@@ -63,7 +63,7 @@ pub fn matrix_subtraction(receiver: &mut DMatrix<Complex<f64>>, minus: &DMatrix<
     } else {
         for r in 0..receiver.nrows() {
             for n in 0..receiver.ncols() {
-                receiver[(r, n)] = receiver[(r, n)] - minus[(r, n)]
+                receiver[(r, n)] -= minus[(r, n)];
             }
         }
     }
@@ -131,7 +131,7 @@ pub fn solve_system(
         multiply_matrix_complex(&mut copy_matrix, matrix_mod);
 
         // now receiver has the form : identity_mod * 1 - matrix_mod * m
-        receiver_matrix = receiver_matrix - copy_matrix;
+        receiver_matrix -= copy_matrix;
 
         // first test in-place modification
         // mutliply vector
