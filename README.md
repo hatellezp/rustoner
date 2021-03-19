@@ -446,6 +446,10 @@ rembember that you can always write to a file with
 ```
 
 #### rank abox
+
+It is heavily encouraged to go to [Graphviz](https://graphviz.org/) and setup
+the dot binary if you want automated generation of graph images.
+
 If your abox has some inconsistencies that are not self contradiction (thus not
 trivially false) it might be difficult to decide what is better and what is worts.
 You can help yourself by ranking the assertions in the abox in terms of their inner
