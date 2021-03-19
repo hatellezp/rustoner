@@ -311,17 +311,20 @@ impl AbqDllite {
                             // println!("------------------negated_{} is {}", j, &negated_j);
 
                             if abiq_j.item().is_negation(abiq_i.item()) {
-                                println!("  --  found contradiction without tbi: abiq_{}: {}, abiq_{}: {}", i, abiq_i, j, abiq_j);
-                                return true;
+                                // println!("  --  found contradiction without tbi: abiq_{}: {}, abiq_{}: {}", i, abiq_i, j, abiq_j);
+                                return true
                             }
                         }
 
                         if is_match {
+                            /*
                             println!(
                                 "  --  found contradiction: abiq_i: {}, abiq_j: {}, tbi: {}",
                                 abiq_i, abiq_j, tbi
                             );
-                            return true;
+
+                             */
+                            return true
                         }
                     }
                 }
@@ -713,6 +716,7 @@ impl AbqDllite {
         conflict_matrix: &[i8],
         real_to_virtual: &HashMap<usize, usize>,
         conflict_type: &HashMap<usize, ConflictType>,
+        only_conflicts: bool
     ) -> Graph<String, bool, Directed, u32> {
         let mut graph: Graph<String, bool> = Graph::new();
         let mut string_op: Option<String>;
@@ -726,11 +730,27 @@ impl AbqDllite {
         // first add all the nodes
         for i in 0..self.len() {
             abiq = self.items.get(i).unwrap();
-            conft = *(conflict_type.get(&i).unwrap());
+            let conft = conflict_type.get(&i).unwrap_or(&ConflictType::Conflict);
 
             match conft {
                 ConflictType::SelfConflict => (),
-                ConflictType::Clean => (),
+                ConflictType::Clean => {
+                    if !only_conflicts {
+                        string_op = abi_to_string(abiq.abi(), symbols);
+
+                        string_node = match string_op {
+                            Option::None => {
+                                format!("{}, v: {}", abiq.abi(), abiq.value().unwrap_or(1.))
+                            }
+                            Some(s) => {
+                                format!("{}, v: {}", s, abiq.value().unwrap_or(1.))
+                            }
+                        };
+
+                        let index = graph.add_node(string_node);
+                        index_dict.insert(i, index);
+                    }
+                },
                 ConflictType::Conflict => {
                     string_op = abi_to_string(abiq.abi(), symbols);
 

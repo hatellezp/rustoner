@@ -5,11 +5,15 @@ use crate::kb::knowledge_base::{ABox, AggrFn};
 use crate::kb::types::ConflictType;
 
 use crate::alg_math::bounds::find_bound_complex_wrapper;
-use crate::alg_math::utilities::solve_system_wrapper_only_id_mod;
+use crate::alg_math::utilities::{solve_system_wrapper_only_id_mod, median};
 
 use petgraph::graph::EdgeReference;
 use petgraph::Graph;
 use std::collections::HashMap;
+use std::fmt::Display;
+use std::ops::{DivAssign};
+use std::process::Command;
+use std::io::ErrorKind;
 
 type RankRemainder = (Vec<i8>, HashMap<usize, usize>, HashMap<usize, ConflictType>);
 
@@ -23,17 +27,20 @@ pub fn rank_abox(
     b_translate: f64,
     verbose: bool,
 ) -> RankRemainder {
+
+    // before everything we need to normalize
+    let mut prevalues = abq.items().iter().map(|x| x.prevalue()).collect::<Vec<f64>>();
+    let normalization_scaler = normalize_vector(&mut prevalues);
+    for i in 0..abq.len() {
+        let mut abqi = abq.get_mut(i).unwrap();
+        abqi.set_prevalue(prevalues[i]);
+    }
+
     let (before_matrix, real_to_virtual, virtual_to_real) =
         onto.conflict_matrix(abq, deduction_tree, verbose);
 
     let (done_matrix, before_to_done_matrix, _done_to_before_matrix, clean_index_tuple_op) =
         OntologyDllite::from_conflict_to_clean_matrix(&before_matrix, verbose).unwrap();
-
-    pretty_print_matrix(&done_matrix);
-    println!(
-        "from rank abox {:?}\n{:?}\n{:?}",
-        &before_to_done_matrix, &_done_to_before_matrix, &clean_index_tuple_op
-    );
 
     let mut conflict_type: HashMap<usize, ConflictType> = HashMap::new();
 
@@ -96,7 +103,8 @@ pub fn rank_abox(
 
                 let mut rank: Vec<f64> = vec![0.; dim];
 
-                solve_system_wrapper_only_id_mod(aggr_matrix, &mut rank, bound);
+                // let aggr_matrix_clone = aggr_matrix.clone();
+                solve_system_wrapper_only_id_mod(&aggr_matrix, &mut rank, bound);
 
                 // now I have the rank, I can begin to put the information inside abq!!
 
@@ -109,7 +117,7 @@ pub fn rank_abox(
                     let clean_rank = rank[new_clean_index];
                     rank = rank
                         .iter()
-                        .map(|x| x * (1. / clean_rank))
+                        .map(|x| x / clean_rank)
                         .collect::<Vec<f64>>();
                     rank[new_clean_index] = 1.;
                 } else {
@@ -117,6 +125,43 @@ pub fn rank_abox(
                     // take the median value of the rank
                     // and normalize for that one
                     // TODO: come here and finish normalization
+
+                    // first see if at least one value is clean inside
+                    let mut some_clean_fact: Option<usize> = Option::None;
+
+                    for i in 0..dim {
+                        let mut is_clean = true;
+                        for j in 0..dim {
+                            is_clean = is_clean && (done_matrix[i*dim + j] == 0);
+                            if !is_clean {
+                                break;
+                            }
+                        }
+
+                        if is_clean {
+                            some_clean_fact = Some(i);
+                            break;
+                        }
+                    }
+
+                    // if we found some fact not implied nor contradict we take
+                    if let Some(clean_fact_index) = some_clean_fact {
+                        let clean_rank = rank[clean_fact_index];
+
+                        for item in rank.iter_mut().take(dim) {
+                            item.div_assign(clean_rank)
+                        }
+
+                        rank[clean_fact_index] = 1.;
+
+                    } else {
+                        // then all facts have some kind of implication or contradiction
+                        let rank_for_median = rank.iter().copied().collect::<Vec<f64>>();
+                        let median = median(&rank_for_median).unwrap_or(1.);
+
+                        rank = rank.iter().map(|x| x / median).collect();
+                    }
+
                 }
 
                 // now that we have upscale if possible, we put the value in the abox
@@ -132,6 +177,18 @@ pub fn rank_abox(
                         abq.get_mut(real_index).unwrap().set_value(rank[value]);
                     }
                 }
+
+                // once every value is in the abox, we upscale by the normalization factor
+                for i in 0..abq.len() {
+                    let mut abqi = abq.get_mut(i).unwrap();
+                    let prevalue = abqi.prevalue();
+                    let value = abqi.value().unwrap();
+
+                    abqi.set_prevalue(prevalue * normalization_scaler);
+                    abqi.set_value(value * normalization_scaler);
+                }
+
+
 
                 // alg for creating viewer of what is a conflict and what not
                 let mut virtual_index_op: Option<usize>;
@@ -182,7 +239,7 @@ pub fn rank_abox(
 // create functions for att
 pub fn edge_attr(_g: &Graph<String, bool>, e: EdgeReference<bool>) -> String {
     if *e.weight() {
-        String::from("color=\"blue\"")
+        String::from("color=\"green\"")
     } else {
         String::from("color=\"red\"")
     }
@@ -192,7 +249,8 @@ pub fn node_attr(_g: &Graph<String, bool>, _ni: (petgraph::prelude::NodeIndex, &
     String::from("")
 }
 
-pub fn pretty_print_matrix(v: &[i8]) {
+/*
+pub fn pretty_print_matrix<T: Display>(v: &[T]) {
     let n = (v.len() as f64).sqrt() as usize;
 
     for i in 0..n {
@@ -200,5 +258,29 @@ pub fn pretty_print_matrix(v: &[i8]) {
             print!("{}, ", v[n * i + j]);
         }
         println!();
+    }
+}
+
+ */
+
+pub fn normalize_vector(mut v: &mut Vec<f64>) -> f64 {
+    if !v.is_empty() {
+        let mut initial = v[0];
+        let max_value = v.iter().fold(initial, |a , &b| f64::max(a, b));
+
+        for item in v {
+            item.div_assign(max_value)
+        }
+
+        max_value
+    } else {
+        1_f64
+    }
+}
+
+pub fn command_exists(name: &str) -> bool {
+    match Command::new(name).spawn() {
+        Ok(_) => true,
+        Err(e) => !(matches!(e.kind(), ErrorKind::NotFound)),
     }
 }

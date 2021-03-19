@@ -12,6 +12,11 @@ use std::io::{BufRead, BufReader, Error, ErrorKind};
 
 use crate::kb::knowledge_base::{ABox, SymbolDict, TBox, TBoxItem};
 
+/*
+    in my opinion this functions are too differents to try and do only one,
+    what can I do is try to accelerate them
+ */
+
 pub fn parse_symbols_native(filename: &str, verbose: bool) -> io::Result<SymbolDict> {
     let file_result = File::open(filename);
 
@@ -27,7 +32,7 @@ pub fn parse_symbols_native(filename: &str, verbose: bool) -> io::Result<SymbolD
             Result::Err(e)
         }
         Ok(file) => {
-            let reader = BufReader::new(file);
+            let mut reader = BufReader::new(file);
 
             let mut begin_symbol_encountered = false;
             let mut end_symbol_encountered = false;
@@ -35,102 +40,130 @@ pub fn parse_symbols_native(filename: &str, verbose: bool) -> io::Result<SymbolD
             let mut symbols: SymbolDict = HashMap::new();
             let mut unsorted_symbols: Vec<PS> = Vec::new();
 
-            for line_result in reader.lines() {
-                match line_result {
-                    Err(e) => {
-                        if verbose {
-                            println!(
-                                " -- native_utilities::parse_symbols_native: passing this line: {}",
-                                e
-                            );
-                        }
-                    }
-                    Ok(line) => {
-                        if verbose {
-                            println!(
-                                " -- native_utilities::parse_symbols_native: trying to parse: {}",
-                                &line
-                            );
-                        }
+            let mut buffer = String::new();
 
-                        let line_trimmed = line.trim();
+            loop {
+                match reader.read_line(&mut buffer) {
+                    Ok(bytes_read) => {
+                        // if end of file break!
+                        if bytes_read == 0 {
+                            break
+                        } else {
 
-                        if line_trimmed == "BEGINSYMBOL" {
-                            begin_symbol_encountered = true;
-
+                            let mut line = &buffer;
+                            // all the code goes here
                             if verbose {
-                                println!(" -- native_utilities::parse_symbols_native: 'BEGINSYMBOL' found, begin parsing");
+                                println!(
+                                    " -- native_utilities::parse_symbols_native: trying to parse: {}",
+                                    &line
+                                );
                             }
 
-                            continue;
-                        }
+                            // let line_trimmed = line.trim();
+                            let line_trimmed = buffer.trim();
 
-                        if line_trimmed == "ENDSYMBOL" {
-                            end_symbol_encountered = true;
 
-                            if verbose {
-                                println!(" -- native_utilities::parse_symbols_native: 'ENDSYMBOL' found, ending parsing");
-                            }
-                            continue;
-                        }
-
-                        if begin_symbol_encountered && !end_symbol_encountered {
-                            let vec: Vec<&str> = line_trimmed.split("//").collect();
-
-                            let not_ignored = vec[0].trim();
-
-                            if not_ignored == "BEGINSYMBOL" {
+                            if line_trimmed == "BEGINSYMBOL" {
                                 begin_symbol_encountered = true;
 
                                 if verbose {
                                     println!(" -- native_utilities::parse_symbols_native: 'BEGINSYMBOL' found, begin parsing");
                                 }
 
+                                // clean the buffer here
+                                buffer.clear();
                                 continue;
                             }
 
-                            if not_ignored == "ENDSYMBOL" {
+                            if line_trimmed == "ENDSYMBOL" {
                                 end_symbol_encountered = true;
 
                                 if verbose {
                                     println!(" -- native_utilities::parse_symbols_native: 'ENDSYMBOL' found, ending parsing");
                                 }
-                                continue;
+
+                                // clean the buffer
+                                buffer.clear();
+                                // end the parsing
+                                break;
+                                // continue;
                             }
 
-                            if verbose {
-                                let ignored: String = String::from(vec[1..].join("//").trim());
+                            if begin_symbol_encountered && !end_symbol_encountered {
+                                let vec: Vec<&str> = line_trimmed.split("//").collect();
 
-                                if !ignored.is_empty() {
-                                    println!(" -- native_utilities::parse_symbols_native: this comment will be ignored: {}", &ignored);
-                                }
-                            }
+                                let not_ignored = vec[0].trim();
 
-                            let parsed: io::Result<(&str, DLType)> = string_to_symbol(not_ignored);
-
-                            match parsed {
-                                Ok((name, t)) => {
-                                    let new_ps = PS::new(String::from(name), t);
-                                    unsorted_symbols.push(new_ps);
+                                if not_ignored == "BEGINSYMBOL" {
+                                    begin_symbol_encountered = true;
 
                                     if verbose {
-                                        println!(
-                                            " -- native_utilities::parse_symbols_native: result of parsing:   name: {}, type: {}",
-                                            name, t
-                                        );
+                                        println!(" -- native_utilities::parse_symbols_native: 'BEGINSYMBOL' found, begin parsing");
                                     }
+
+                                    buffer.clear();
+                                    continue;
                                 }
-                                Err(e) => {
+
+                                if not_ignored == "ENDSYMBOL" {
+                                    end_symbol_encountered = true;
+
                                     if verbose {
-                                        println!(" -- native_utilities::parse_symbols_native: couldn't parse: {}", e);
+                                        println!(" -- native_utilities::parse_symbols_native: 'ENDSYMBOL' found, ending parsing");
+                                    }
+
+                                    buffer.clear();
+                                    // we should end parse here
+                                    // continue;
+                                    break;
+                                }
+
+                                if verbose {
+                                    let ignored: String = String::from(vec[1..].join("//").trim());
+
+                                    if !ignored.is_empty() {
+                                        println!(" -- native_utilities::parse_symbols_native: this comment will be ignored: {}", &ignored);
                                     }
                                 }
+
+                                let parsed: io::Result<(&str, DLType)> = string_to_symbol(not_ignored);
+
+                                match parsed {
+                                    Ok((name, t)) => {
+                                        let new_ps = PS::new(String::from(name), t);
+                                        unsorted_symbols.push(new_ps);
+
+                                        if verbose {
+                                            println!(
+                                                " -- native_utilities::parse_symbols_native: result of parsing:   name: {}, type: {}",
+                                                name, t
+                                            );
+                                        }
+                                    }
+                                    Err(e) => {
+                                        if verbose {
+                                            println!(" -- native_utilities::parse_symbols_native: couldn't parse: {}", e);
+                                        }
+                                    }
+                                }
+                            } else if verbose {
+                                println!(" -- native_utilities::parse_symbols_native: line won't be parsed, not in between 'BEGINSYMBOL' and 'ENDSYMBOL' bounds");
                             }
-                        } else if verbose {
-                            println!(" -- native_utilities::parse_symbols_native: line won't be parsed, not in between 'BEGINSYMBOL' and 'ENDSYMBOL' bounds");
+
                         }
-                    }
+
+                        // clean the buffer !!!!
+                        buffer.clear();
+                    },
+                    Err(e) => {
+                        if verbose {
+                            buffer.clear();
+                            println!("passing because of error: {}", e);
+                        }
+                    },
                 }
+
+                buffer.clear();
             }
 
             if !end_symbol_encountered {
@@ -190,106 +223,122 @@ pub fn parse_tbox_native(
             Result::Err(e)
         }
         Ok(file) => {
-            let reader = BufReader::new(file);
+            let mut reader = BufReader::new(file);
 
             let mut begin_tbox_encountered = false;
             let mut end_tbox_encountered = false;
 
             let mut tb = TBDllite::new();
 
-            for line_result in reader.lines() {
-                match line_result {
-                    Err(e) => {
-                        if verbose {
-                            println!(
-                                " -- native_utilities::parse_tbox_native: passing this line: {}",
-                                e
-                            );
-                        }
-                    }
-                    Ok(line) => {
-                        if verbose {
-                            println!(
-                                " -- native_utilities::parse_tbox_native: trying to parse: {}",
-                                &line
-                            );
-                        }
+            let mut buffer = String::new();
 
-                        let line_trimmed = line.trim();
+            loop {
+                match reader.read_line(&mut buffer) {
+                    Ok(bytes_read) => {
+                        // end of line
+                        if bytes_read == 0 {
+                            break;
+                        } else {
 
-                        if line_trimmed == "BEGINTBOX" {
-                            begin_tbox_encountered = true;
+                            let line = &buffer;
 
                             if verbose {
-                                println!(" -- native_utilities::parse_tbox_native: 'BEGINTBOX' found, begin parsing");
+                                println!(
+                                    " -- native_utilities::parse_tbox_native: trying to parse: {}",
+                                    &line
+                                );
                             }
 
-                            continue;
-                        }
+                            let line_trimmed = line.trim();
 
-                        if line_trimmed == "ENDTBOX" {
-                            end_tbox_encountered = true;
-
-                            if verbose {
-                                println!(" -- native_utilities::parse_tbox_native: 'ENDTBOX' found, ending parsing");
-                            }
-                            continue;
-                        }
-
-                        if begin_tbox_encountered && !end_tbox_encountered {
-                            let vec: Vec<&str> = line_trimmed.split("//").collect();
-
-                            let not_ignored = vec[0].trim();
-
-                            if not_ignored == "BEGINTBOX" {
+                            if line_trimmed == "BEGINTBOX" {
                                 begin_tbox_encountered = true;
 
                                 if verbose {
                                     println!(" -- native_utilities::parse_tbox_native: 'BEGINTBOX' found, begin parsing");
                                 }
 
+                                // clean after you
+                                buffer.clear();
                                 continue;
                             }
 
-                            if not_ignored == "ENDTBOX" {
+                            if line_trimmed == "ENDTBOX" {
                                 end_tbox_encountered = true;
 
                                 if verbose {
                                     println!(" -- native_utilities::parse_tbox_native: 'ENDTBOX' found, ending parsing");
                                 }
-                                continue;
+                                buffer.clear();
+                                break;
+                                // continue;
                             }
 
-                            if verbose {
-                                let ignored: String = String::from(vec[1..].join("//").trim());
+                            if begin_tbox_encountered && !end_tbox_encountered {
+                                let vec: Vec<&str> = line_trimmed.split("//").collect();
 
-                                if !ignored.is_empty() {
-                                    println!(" -- native_utilities::parse_tbox_native: this comment will be ignored: {}", &ignored);
+                                let not_ignored = vec[0].trim();
+
+                                if not_ignored == "BEGINTBOX" {
+                                    begin_tbox_encountered = true;
+
+                                    if verbose {
+                                        println!(" -- native_utilities::parse_tbox_native: 'BEGINTBOX' found, begin parsing");
+                                    }
+                                    buffer.clear();
+                                    continue;
                                 }
-                            }
 
-                            let parsed = string_to_tbi(not_ignored, symbols);
+                                if not_ignored == "ENDTBOX" {
+                                    end_tbox_encountered = true;
 
-                            match parsed {
-                                Ok(mut tbi_vec) => {
-                                    if !(&tbi_vec).is_empty() {
-                                        while !(&tbi_vec).is_empty() {
-                                            let tbi = tbi_vec.pop().unwrap();
-                                            tb.add(tbi);
+                                    if verbose {
+                                        println!(" -- native_utilities::parse_tbox_native: 'ENDTBOX' found, ending parsing");
+                                    }
+                                    buffer.clear();
+                                    break;
+                                    // continue;
+                                }
+
+                                if verbose {
+                                    let ignored: String = String::from(vec[1..].join("//").trim());
+
+                                    if !ignored.is_empty() {
+                                        println!(" -- native_utilities::parse_tbox_native: this comment will be ignored: {}", &ignored);
+                                    }
+                                }
+
+                                let parsed = string_to_tbi(not_ignored, symbols);
+
+                                match parsed {
+                                    Ok(mut tbi_vec) => {
+                                        if !(&tbi_vec).is_empty() {
+                                            while !(&tbi_vec).is_empty() {
+                                                let tbi = tbi_vec.pop().unwrap();
+                                                tb.add(tbi);
+                                            }
+                                        }
+                                    }
+                                    Err(e) => {
+                                        if verbose {
+                                            println!(" -- native_utilities::parse_tbox_native: couldn't parse: {}", &e);
                                         }
                                     }
                                 }
-                                Err(e) => {
-                                    if verbose {
-                                        println!(" -- native_utilities::parse_tbox_native: couldn't parse: {}", &e);
-                                    }
-                                }
+                            } else if verbose {
+                                println!(" -- native_utilities::parse_tbox_native: line won't be parsed, not in between 'BEGINTBOX' and 'ENDTBOX' bounds");
                             }
-                        } else if verbose {
-                            println!(" -- native_utilities::parse_tbox_native: line won't be parsed, not in between 'BEGINTBOX' and 'ENDTBOX' bounds");
+                        }
+                        buffer.clear();
+                    },
+                    Err(e) => {
+                        if verbose {
+                            println!(" -- native_utilities::parse_tbox_native: couldn't read the line: {}", e);
+                            buffer.clear();
                         }
                     }
                 }
+                buffer.clear();
             }
 
             if !end_tbox_encountered {
@@ -392,7 +441,7 @@ pub fn parse_abox_native_quantum(
             Result::Err(e)
         }
         Ok(file) => {
-            let reader = BufReader::new(file);
+            let mut reader = BufReader::new(file);
 
             let ab_name = parse_name_from_filename(filename);
 
@@ -404,80 +453,92 @@ pub fn parse_abox_native_quantum(
 
             let mut ab = AbqDllite::new(ab_name);
 
-            for line_result in reader.lines() {
-                if verbose {
-                    println!("now parsing: {:?}", line_result);
-                }
+            let mut buffer = String::new();
 
-                match line_result {
+            loop {
+                match reader.read_line(&mut buffer) {
                     Err(e) => {
-                        if verbose {
-                            println!("passing this line because of: {}", &e);
-                        }
-                    }
-                    Ok(line) => {
-                        let line_trimmed = line.trim();
+                        println!(" -- native_utilities::parse_abox_native:: passing this line: {:?}",e);
+                        buffer.clear();
+                        continue;
+                    },
+                    Ok(bytes_read) => {
+                        if bytes_read == 0 {
+                            break;
+                        } else {
 
-                        if line_trimmed == "BEGINABOX" {
-                            begin_abox_encountered = true;
+                            let line = &buffer;
+                            let line_trimmed = line.trim();
 
-                            if verbose {
-                                println!("'BEGINABOX' found, begin parsing");
-                            }
+                            if line_trimmed == "BEGINABOX" {
+                                begin_abox_encountered = true;
 
-                            continue;
-                        }
-
-                        if line_trimmed == "ENDABOX" {
-                            end_abox_encountered = true;
-
-                            if verbose {
-                                println!("'ENDABOX' found, ending parsing");
-                            }
-                            continue;
-                        }
-
-                        if begin_abox_encountered && !end_abox_encountered {
-                            let vec: Vec<&str> = line_trimmed.split("//").collect();
-
-                            let not_ignored = vec[0];
-
-                            if verbose {
-                                let ignored: String = String::from(vec[1..].join("//").trim());
-
-                                if !ignored.is_empty() {
-                                    println!("this comment will be ignored: {}", &ignored);
+                                if verbose {
+                                    println!("'BEGINABOX' found, begin parsing");
                                 }
+
+                                buffer.clear();
+                                continue;
                             }
 
-                            let (parsed_result, current_id_result) =
-                                string_to_abiq(not_ignored, symbols, current_id, false); // parsing from file should be a new abox
-                            current_id = current_id_result;
+                            if line_trimmed == "ENDABOX" {
+                                end_abox_encountered = true;
 
-                            match parsed_result {
-                                Ok((abi, mut to_be_added)) => {
-                                    ab.add(abi);
+                                if verbose {
+                                    println!("'ENDABOX' found, ending parsing");
+                                }
+                                buffer.clear();
+                                break;
+                                // continue;
+                            }
 
-                                    if !to_be_added.is_empty() {
-                                        while !(&to_be_added).is_empty() {
-                                            let (s, (id, dltype)) = to_be_added.pop().unwrap();
+                            if begin_abox_encountered && !end_abox_encountered {
+                                let vec: Vec<&str> = line_trimmed.split("//").collect();
 
-                                            symbols.insert(s, (id, dltype));
+                                let not_ignored = vec[0];
+
+                                if verbose {
+                                    let ignored: String = String::from(vec[1..].join("//").trim());
+
+                                    if !ignored.is_empty() {
+                                        println!("this comment will be ignored: {}", &ignored);
+                                    }
+                                }
+
+                                let (parsed_result, current_id_result) =
+                                    string_to_abiq(not_ignored, symbols, current_id, false); // parsing from file should be a new abox
+                                current_id = current_id_result;
+
+                                match parsed_result {
+                                    Ok((abi, mut to_be_added)) => {
+                                        ab.add(abi);
+
+                                        if !to_be_added.is_empty() {
+                                            while !(&to_be_added).is_empty() {
+                                                let (s, (id, dltype)) = to_be_added.pop().unwrap();
+
+                                                symbols.insert(s, (id, dltype));
+                                            }
+                                        }
+                                    }
+                                    Err(e) => {
+                                        if verbose {
+                                            println!("couldn't parse: {}", &e);
                                         }
                                     }
                                 }
-                                Err(e) => {
-                                    if verbose {
-                                        println!("couldn't parse: {}", &e);
-                                    }
-                                }
+                            } else if verbose {
+                                println!("line won't be parsed, not in between 'BEGINTBOX' and 'ENDTBOX' bounds");
                             }
-                        } else if verbose {
-                            println!("line won't be parsed, not in between 'BEGINTBOX' and 'ENDTBOX' bounds");
+
+                            buffer.clear();
                         }
-                    }
+                        buffer.clear();
+                    },
                 }
+                buffer.clear();
             }
+
 
             if !end_abox_encountered {
                 if verbose {

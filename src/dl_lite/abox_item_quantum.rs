@@ -186,7 +186,11 @@ impl AbiqDllite {
     }
 
     pub fn set_value(&mut self, v: f64) {
-        self.value = Some(v)
+        self.value = Some(v);
+    }
+
+    pub fn set_prevalue(&mut self, v:f64) {
+        self.prevalue = v;
     }
 
     pub fn value(&self) -> Option<f64> {

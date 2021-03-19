@@ -8,12 +8,12 @@ use std::cmp::Ordering;
     I found that there several prescision errors when computing division,
     this is a working solution
  */
-const PRESCISION_ROUNDER: f64 = 1000000000000000.;
+const PRECISION_ROUNDER: f64 = 1000000000000000.;
 pub fn round_to_15_f64(v: f64) -> f64 {
-    (v * PRESCISION_ROUNDER).round() / PRESCISION_ROUNDER
+    (v * PRECISION_ROUNDER).round() / PRECISION_ROUNDER
 }
 
-pub fn create_indetity_matrix_complex(n: usize) -> DMatrix<Complex<f64>> {
+pub fn create_indentity_matrix_complex(n: usize) -> DMatrix<Complex<f64>> {
     // creates a matrix of size n*n
     // be aware of this
     let id: DMatrix<Complex<f64>> =
@@ -117,7 +117,7 @@ pub fn solve_system(
         let global_size = rows; // to avoid misunderstandings
 
         // let mut receiver_matrix = create_indetity_matrix_complex(global_size);
-        let mut copy_matrix = create_indetity_matrix_complex(global_size);
+        // let mut copy_matrix = create_indentity_matrix_complex(global_size);
 
         // this idea allocate to vector, we are going to put everyting in solution
         // let mut vector = create_all_units_vector_complex(global_size);
@@ -136,7 +136,8 @@ pub fn solve_system(
         }
 
         // copy content from matrxi to copy_matrix
-        copy_matrix.copy_from(matrix);
+        let mut copy_matrix = matrix.clone();
+        // copy_matrix.copy_from(matrix);
 
         // receiver = receiver * identity_mod
         multiply_matrix_complex(&mut receiver_matrix, identity_mod);
@@ -164,12 +165,12 @@ pub fn solve_system(
 }
 
 // wrappers
-pub fn solve_system_wrapper_only_id_mod(v: Vec<f64>, receiver: &mut Vec<f64>, id_mod: f64) -> bool {
+pub fn solve_system_wrapper_only_id_mod(v: &[f64], receiver: &mut Vec<f64>, id_mod: f64) -> bool {
     solve_system_wrapper(v, receiver, id_mod, 1., 1.)
 }
 
 pub fn solve_system_wrapper(
-    v: Vec<f64>,
+    v: &[f64],
     receiver: &mut Vec<f64>,
     id_mod: f64,
     ma_mod: f64,
@@ -192,8 +193,10 @@ pub fn solve_system_wrapper(
         );
         false
     } else {
-        let matrix: DMatrix<f64> = DMatrix::from_vec(n, n, v);
-        let matrix: DMatrix<Complex<f64>> = matrix.cast::<Complex<f64>>();
+
+        let v_c64 = v.iter().map(|x| Complex { re: *x, im: 0.}).collect::<Vec<Complex<f64>>>();
+        let mut matrix: DMatrix<Complex<f64>> = DMatrix::from_vec(n, n, v_c64);
+        matrix.transpose_mut();
 
         let identity_mod: Complex<f64> = Complex { re: id_mod, im: 0. };
         let matrix_mod: Complex<f64> = Complex { re: ma_mod, im: 0. };
@@ -257,7 +260,7 @@ fn select(data: &[f64], k: usize) -> Option<f64> {
     }
 }
 
-fn median(data: &[f64]) -> Option<f64> {
+pub fn median(data: &[f64]) -> Option<f64> {
     let size = data.len();
 
     match size {
@@ -270,7 +273,17 @@ fn median(data: &[f64]) -> Option<f64> {
                 _ => None
             }
         },
-        odd => select(data, odd / 2).map(|x| x)
+        odd => select(data, odd / 2)
     }
 }
 
+// TODO: find a way to generalize to every numeric type: integer, float, complex...
+pub fn null_vector(v: &[i8]) -> bool {
+    for item in v {
+        if *item != 0 {
+            return false
+        }
+    }
+
+    true
+}

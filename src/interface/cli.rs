@@ -70,24 +70,15 @@ pub struct Cli {
     #[structopt(
         short = "t",
         long = "task",
-        help = "describes the wanted task, (init|ctb|cab|rank), 'init' to initialize your ontology on a sqlite database, 'ctb' for complete tbox, 'cab' for complete abox and 'rank' for ranking of abox assertions"
+        help = "describes the wanted task, (vertb|gencontb|ctb|verab|genconab|cleanab|cab|rankab)"
     )]
     pub task: Task,
 
     #[structopt(long = "verbose")]
     pub verbose: bool,
 
-    #[structopt(long = "silent")]
+    #[structopt(long = "silent", help="almost no prompt discussion")]
     pub silent: bool,
-
-    #[structopt(
-        long = "ephemere",
-        help = "if specified will work everything in memory and no database trace will be kept"
-    )]
-    pub ephemere: bool,
-
-    #[structopt(parse(from_os_str), long = "db", help = "path to the database file")]
-    pub path_db: Option<std::path::PathBuf>,
 
     #[structopt(parse(from_os_str), long = "tbox", help = "path to the tbox file")]
     pub path_tbox: Option<std::path::PathBuf>,
@@ -105,13 +96,13 @@ pub struct Cli {
     #[structopt(
         parse(from_os_str),
         long = "symbols",
-        help = "optional, if present will parse symbols from this file instead od symbols in the tbox file"
+        help = "optional, if present will parse symbols from this file instead on symbols in the tbox file"
     )]
     pub path_symbols: Option<std::path::PathBuf>,
 
     #[structopt(
         long = "aggr",
-        help = "choose a function to aggregate during conflict graph computing: (sum|min|max|count)"
+        help = "choose a function to aggregate during conflict graph computing: (sum|min|max|count|mean)"
     )]
     pub aggr: Option<AggrName>,
 }

@@ -18,7 +18,7 @@ use crate::dl_lite::ontology::OntologyDllite;
 
 use crate::dl_lite::abox::AbqDllite;
 use crate::dl_lite::abox_item_quantum::AbiqDllite;
-use crate::dl_lite::native_filetype_utilities::tbox_to_native_string;
+use crate::dl_lite::native_filetype_utilities::{tbox_to_native_string, abox_to_native_string_quantum};
 use crate::dl_lite::string_formatter::{
     create_string_for_gencontb, create_string_for_unravel_conflict_abox,
     create_string_for_unravel_conflict_tbox, pretty_print_abiq_conflict, tbi_to_string,
@@ -34,20 +34,23 @@ use crate::interface::cli::{AggrName, Cli, Task};
 use crate::interface::utilities::{get_filetype, parse_name_from_filename, write_str_to_file};
 
 // to ask basic questions
-use crate::helper::{edge_attr, node_attr};
-use crate::helper::{pretty_print_matrix, rank_abox};
+use crate::helper::{edge_attr, node_attr, command_exists};
+use crate::helper::{rank_abox};
 use petgraph::dot::{Config, Dot};
 
 use question::{Answer, Question};
 
 use std::process::Command;
 use tempfile::NamedTempFile;
+use crate::alg_math::utilities::null_vector;
 
 // constants for the bound computing
-// const TOLERANCE: f64 = 0.000001;
-const TOLERANCE: f64 = 0.;
+const TOLERANCE: f64 = 0.0000000000000001;
 const M_SCALER: f64 = 1.1;
 const B_TRANSLATE: f64 = 1.;
+const DOT_COMMAND_LINUX: &str = "dot";
+const DOT_COMMAND_WINDOWS: &str = "dot.exe";
+
 
 // the main function
 pub fn main() {
@@ -426,10 +429,10 @@ pub fn main() {
                                     }
                                 }
                                 Task::CLEANAB => {
-                                    let clean_name = "clean";
-                                    let dirty_name = "dirty";
-                                    let mut clean_ab = AbqDllite::new(clean_name);
-                                    let mut dirty_ab = AbqDllite::new(dirty_name);
+                                    let clean_name = format!("{}_clean", &ab_name);
+                                    let dirty_name = format!("{}_dirty", &ab_name);
+                                    let mut clean_ab = AbqDllite::new(&clean_name);
+                                    let mut dirty_ab = AbqDllite::new(&dirty_name);
 
                                     let orig_ab_op = onto.abox();
 
@@ -482,41 +485,60 @@ pub fn main() {
                                             }
 
                                             // now write to file
-                                            let clean_name = format!("{}_{}", &ab_name, clean_name);
-                                            let dirty_name = format!("{}_{}", &ab_name, dirty_name);
+                                            let clean_name = clean_ab.name();
+                                            let dirty_name = dirty_ab.name();
                                             dont_write_trivial = true;
 
                                             // write to both files
                                             if !clean_is_empty {
-                                                onto.abox_to_file(
-                                                    &clean_name,
-                                                    FileType::NATIVE,
-                                                    dont_write_trivial,
-                                                );
+                                                let clean_output_ab = abox_to_native_string_quantum(&clean_ab, onto.symbols(), dont_write_trivial);
 
-                                                if !silent {
-                                                    println!(
-                                                        " -- wrote clean abox to {}",
-                                                        &clean_name
-                                                    );
+                                                match clean_output_ab {
+                                                    Option::None => {
+                                                        if !silent {
+                                                            println!(" -- couldn't create clean abox!");
+                                                        }
+                                                    },
+                                                    Some(output_ab) => {
+                                                        write_str_to_file(&output_ab, &clean_name);
+
+                                                        if !silent {
+                                                            println!(
+                                                                " -- wrote clean abox to {}",
+                                                                &clean_name
+                                                            );
+                                                        }
+
+                                                    }
                                                 }
+
                                             } else if !silent {
                                                 println!(" -- no clean abox was written, as there is nothing to wrote");
                                             }
 
                                             if !dirty_is_empty {
-                                                onto.abox_to_file(
-                                                    &dirty_name,
-                                                    FileType::NATIVE,
-                                                    dont_write_trivial,
-                                                );
 
-                                                if !silent {
-                                                    println!(
-                                                        " -- wrote dirty elements to {}",
-                                                        &dirty_name
-                                                    );
+                                                let dirty_output_ab = abox_to_native_string_quantum(&dirty_ab, onto.symbols(), dont_write_trivial);
+
+                                                match dirty_output_ab {
+                                                    Option::None => {
+                                                        if !silent {
+                                                            println!(" -- couldn't create dirty abox!");
+                                                        }
+                                                    },
+                                                    Some(output_ab) => {
+                                                        write_str_to_file(&output_ab, &dirty_name);
+
+                                                        if !silent {
+                                                            println!(
+                                                                " -- wrote clean abox to {}",
+                                                                &dirty_name
+                                                            );
+                                                        }
+
+                                                    }
                                                 }
+
                                             } else if !silent {
                                                 println!(
                                                     " -- no dirty element found to be written"
@@ -586,17 +608,9 @@ pub fn main() {
                                     );
                                     // now the abox is ranked
 
-                                    println!("{}", &onto);
-
-                                    pretty_print_matrix(&before_matrix);
-                                    println!(
-                                        "virtual to real:\n{:?}\nconflict type:\n{:?}\n",
-                                        &virtual_to_real, &conflict_type
-                                    );
-
                                     if !silent {
                                         let question_print =
-                                            " -- do you see the output?".to_string();
+                                            " -- do you want to see the output?".to_string();
 
                                         let print_output = Question::new(&question_print)
                                             .default(Answer::YES)
@@ -617,17 +631,21 @@ pub fn main() {
                                             dont_write_trivial = true;
 
                                             // add the abis
-                                            onto.add_abis_from_abox(&abox_completed);
-                                            onto.abox_to_file(
-                                                &filename,
-                                                FileType::NATIVE,
-                                                dont_write_trivial,
-                                            );
+                                            let abox_ranked_string_op = abox_to_native_string_quantum(&abox, onto.symbols(), dont_write_trivial);
 
-                                            if !silent {
-                                                println!(" -- abox written to {}", &filename);
+                                            match abox_ranked_string_op {
+                                                Option::None => {
+                                                    println!("  -- couldn't create an output string!");
+                                                },
+                                                Some(ranked_string) => {
+                                                    let wrote = write_str_to_file(&ranked_string, &filename);
+                                                    if wrote && !silent {
+                                                        println!(" -- ranked abox written to {}", &filename);
+                                                    }
+                                                }
                                             }
-                                        }
+
+                                        },
                                         Option::None => (),
                                     }
 
@@ -641,12 +659,26 @@ pub fn main() {
                                         .confirm();
 
                                     if print_output == Answer::YES {
+
+                                        if null_vector(&before_matrix) {
+                                            println!(" -- no conflicts where found, the conflict graph will be empty, passing");
+                                            std::process::exit(exitcode::OK)
+                                        }
+
+                                        // here ask later for only conflicts or not
+                                        let only_conflicts_graph = true;
+
                                         let graph = abox.create_graph_dot(
                                             onto.symbols(),
                                             &before_matrix,
                                             &virtual_to_real,
                                             &conflict_type,
+                                            only_conflicts_graph,
                                         );
+
+                                        if !silent {
+                                            println!(" -- conflict graph created");
+                                        }
 
                                         let get_edge = edge_attr;
                                         let get_node = node_attr;
@@ -677,6 +709,15 @@ pub fn main() {
                                             if !silent {
                                                 println!(" -- dot file created: {}", &filename);
                                             }
+                                        }
+
+                                        // here verify that the command exists
+                                        let dot_command_name = if cfg!(windows) { DOT_COMMAND_WINDOWS } else { DOT_COMMAND_LINUX };
+                                        let dot_exists = command_exists(dot_command_name);
+
+                                        if !dot_exists {
+                                            println!(" -- {} not found, can't generate visual output", dot_command_name);
+                                            std::process::exit(exitcode::OK)
                                         }
 
                                         // now show graph
@@ -720,12 +761,16 @@ pub fn main() {
                                                                 path_to_temp,
                                                             );
 
+                                                            let dot_output_format = "pdf";
+
                                                             let name_output_file = format!(
-                                                                "{}_conflict_graph.pdf",
-                                                                &abox.name()
+                                                                "{}_conflict_graph.{}",
+                                                                &abox.name(),
+                                                                dot_output_format
                                                             );
                                                             let command = format!(
-                                                                "dot -Tpdf {} -o {}",
+                                                                "dot -T{} {} -o {}",
+                                                                dot_output_format,
                                                                 path_to_temp, &name_output_file
                                                             );
 

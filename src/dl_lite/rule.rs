@@ -288,25 +288,30 @@ pub fn dl_lite_rule_five(vec: Vec<&TbiDllite>, deduction_tree: bool) -> Option<V
 
         let big_level = tbi.level();
 
-        if tbi.lside().t() == DLType::ExistsConcept && tbi_rside_child.is_some() {
-            if &tbi.lside() == tbi_rside_child.unwrap().get(0).unwrap() {
-                let role = NodeDllite::child(Some(tbi.lside()), 1).unwrap()[0].clone();
+        if tbi.lside().t() == DLType::ExistsConcept {
 
-                let not_role = (&role).clone().negate();
-                let inv_role = (&role).clone().inverse().unwrap();
-                let exists = (&inv_role).clone().exists().unwrap();
-                let not_exists = inv_role.exists().unwrap().negate();
+            if let Some(some_child) = tbi_rside_child {
+               if tbi.lside() == some_child[0] {
+                   let role = NodeDllite::child(Some(tbi.lside()), 1).unwrap()[0].clone();
 
-                let mut new_tbi1 = TbiDllite::new(role, not_role, big_level + 1).unwrap();
-                let mut new_tbi2 = TbiDllite::new(exists, not_exists, big_level + 1).unwrap();
+                   let not_role = (&role).clone().negate();
+                   let inv_role = (&role).clone().inverse().unwrap();
+                   let exists = (&inv_role).clone().exists().unwrap();
+                   let not_exists = inv_role.exists().unwrap().negate();
 
-                if deduction_tree {
-                    let v = vec![tbi.clone()];
-                    new_tbi1.add_to_implied_by(v.clone());
-                    new_tbi2.add_to_implied_by(v);
-                }
+                   let mut new_tbi1 = TbiDllite::new(role, not_role, big_level + 1).unwrap();
+                   let mut new_tbi2 = TbiDllite::new(exists, not_exists, big_level + 1).unwrap();
 
-                Some(vec![new_tbi1, new_tbi2])
+                   if deduction_tree {
+                       let v = vec![tbi.clone()];
+                       new_tbi1.add_to_implied_by(v.clone());
+                       new_tbi2.add_to_implied_by(v);
+                   }
+
+                   Some(vec![new_tbi1, new_tbi2])
+               } else {
+                   Option::None
+               }
             } else {
                 Option::None
             }

@@ -429,13 +429,6 @@ fn __parse_string_to_node_helper(
     splitted: Vec<&str>,
     symbols: &SymbolDict,
 ) -> io::Result<NodeDllite> {
-    // two auxiliary functions to do everything more tidy
-    fn option_negate(n: NodeDllite) -> Option<NodeDllite> {
-        Some(n.negate())
-    }
-    fn none_default(_: NodeDllite) -> Option<NodeDllite> {
-        Option::None
-    }
 
     match splitted.len() {
         1 => {
@@ -465,10 +458,10 @@ fn __parse_string_to_node_helper(
                 EXISTS r
              */
             let function_to_call = match splitted[0] {
-                "NOT" => option_negate,
+                "NOT" => |x: NodeDllite| Some(x.negate()),
                 "INV" => NodeDllite::inverse,
                 "EXISTS" => NodeDllite::exists,
-                _ => none_default,
+                _ => |_: NodeDllite| Option::None,
             };
 
             let base_node_result = __parse_string_to_node_helper(vec![splitted[1]], symbols);
@@ -501,9 +494,9 @@ fn __parse_string_to_node_helper(
             EXISTS INV r
              */
             let function_to_call = match splitted[0] {
-                "NOT" => option_negate,
+                "NOT" => |x: NodeDllite| Some(x.negate()),
                 "EXISTS" => NodeDllite::exists,
-                _ => none_default,
+                _ => |_: NodeDllite| Option::None,
             };
             let base_node_result =
                 __parse_string_to_node_helper(vec![splitted[1], splitted[2]], symbols);
@@ -529,8 +522,8 @@ fn __parse_string_to_node_helper(
             NOT EXISTS INV r
              */
             let function_to_call = match splitted[0] {
-                "NOT" => option_negate,
-                _ => none_default,
+                "NOT" => |x: NodeDllite| Some(x.negate()),
+                _ => |_: NodeDllite| Option::None,
             };
             let base_node_result =
                 __parse_string_to_node_helper(vec![splitted[1], splitted[2], splitted[3]], symbols);

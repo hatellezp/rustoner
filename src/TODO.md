@@ -1,10 +1,9 @@
 
 ### to do:
  - quoi qu'il arrive finir **l'interface!!!** 
-    - if the conflict graph is empty then do nothing! for rankab 
-    - ajouter option pour différents types de output de dot
-    - vérifier que dot et dot.exe existent
-    - ajouter aide
+    - pas besoin: ajouter option pour différents types de output de dot
+    - [x] vérifier que dot et dot.exe existent
+    - [x] ajouter aide
     - verifier que chaque tache fonctionne
     - ajouter support pour windows
     - ajouter examples !!!
