@@ -270,12 +270,19 @@ and you get:
 ```
 
 __Note__: this is valid for all tasks that produce an output.
-You can dedice to dump the result to a file with the option ```commandline --output name_of_my_file```
+You can dedice to dump the result to a file with the option 
+  ```commandline 
+  --output name_of_my_file
+  ```
 somewhere in you command, for example:
 ```commandline
 ./rustoner_dllite --task ctb --tbox are_men_mortals --output are_men_mortals_complete --silent
 ```
-the ```commandline --silent``` option avoid all prompting.
+the 
+  ```commandline
+   --silent
+   ``` 
+option avoid all prompting.
 
 #### verify abox
 You can verify the consistency of you abox too.
