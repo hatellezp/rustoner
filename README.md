@@ -38,6 +38,7 @@ analysis.
 While support is being added for other syntax, the more easy one is the native one.
 To declare a tbox write a file (for example) __are_me_mortals__:
 ```
+// this file is: are_men_mortals
 BEGINSYMBOL
 concept : Man // concepts are unary relations
 concept : Human
@@ -101,6 +102,7 @@ Resuming:
 The notation for aboxes is the same, only that, because aboxes are relative to a tbox,
 no need for symbol declaration:
 ```
+// this file is: a_man
 BEGINABOX
 Socrates: Man
 Socrates, Apple: eats
@@ -128,6 +130,7 @@ You have a variety of tasks:
 
 Suppose you have the following tbox:
 ```
+// this file is: are_men_mortals_contradiction
 BEGINSYMBOL
 concept: Man
 concept: Human
@@ -182,6 +185,7 @@ the original axioms.
 #### generate tree
 Same as before take the following tbox (the one from the initial example):
 ```
+// this file is: are_men_mortals
 BEGINSYMBOL
 concept : Man // concept are unary relations
 concept : Human
@@ -288,6 +292,7 @@ option avoid all prompting.
 You can verify the consistency of you abox too.
 Always the same tbox and the abox:
 ```
+// this file is: a_man_contradiction
 BEGINABOX
 Socrates: Man
 Featherless_biped: Man
@@ -351,6 +356,7 @@ and if you answer yes to every prompt you get the long output:
 #### clean abox
 Look a this ontology:
 ``` 
+// this file is: university_tbox
 BEGINSYMBOL
 concept: Person
 concept: Professor
@@ -365,7 +371,9 @@ EXISTS teaches < Professor
 EXISTS INV teaches < Course
 ENDTBOX
 ```
+with the abox:
 ``` 
+// this file is: university_abox_self_contradicting
 BEGINABOX
 Ava: Professor
 John, John: teaches
@@ -412,6 +420,7 @@ You can complete an abox using:
 ```
 using the abox:
 ```
+// this file is: a_man
 BEGINABOX
 Socrates: Man
 Socrates, Apple: eats
@@ -431,7 +440,10 @@ you should get the output:
      : Socrates,Apple : eats (pv: 1, v: NC)
     }
 ```
-rembember that you can always write to a file with ```commandline --output name_of_my_file```.
+rembember that you can always write to a file with 
+```commandline
+ --output name_of_my_file
+```
 
 #### rank abox
 If your abox has some inconsistencies that are not self contradiction (thus not
@@ -440,6 +452,7 @@ You can help yourself by ranking the assertions in the abox in terms of their in
 interactions.
 Take the following tbox:
 ``` 
+// this file is: university_tbox
 BEGINSYMBOL
 concept: Person
 concept: Professor
@@ -462,6 +475,7 @@ ENDTBOX
 ```
 and the following abox (which have several contradictions):
 ```
+// this file is: university_abox
 BEGINABOX
 John: Professor
 Ava: Student
@@ -529,6 +543,7 @@ Several things to note:
 - you can give different _a priori_ value to your assertions in a way that reflects 
   your trust in each fact:
   ```
+  // this file is: university_abox_scaled
   BEGINABOX
   John: Professor, 100
   Ava: Student, 100
