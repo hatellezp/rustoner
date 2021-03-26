@@ -312,7 +312,7 @@ impl AbqDllite {
 
                             if abiq_j.item().is_negation(abiq_i.item()) {
                                 // println!("  --  found contradiction without tbi: abiq_{}: {}, abiq_{}: {}", i, abiq_i, j, abiq_j);
-                                return true
+                                return true;
                             }
                         }
 
@@ -324,7 +324,7 @@ impl AbqDllite {
                             );
 
                              */
-                            return true
+                            return true;
                         }
                     }
                 }
@@ -716,13 +716,13 @@ impl AbqDllite {
         conflict_matrix: &[i8],
         real_to_virtual: &HashMap<usize, usize>,
         conflict_type: &HashMap<usize, ConflictType>,
-        only_conflicts: bool
+        only_conflicts: bool,
     ) -> Graph<String, bool, Directed, u32> {
         let mut graph: Graph<String, bool> = Graph::new();
         let mut string_op: Option<String>;
         let mut string_node: String;
         let mut abiq: &AbiqDllite;
-        let mut conft: ConflictType;
+        let _conft: ConflictType;
 
         // dict for index
         let mut index_dict = HashMap::new();
@@ -750,7 +750,7 @@ impl AbqDllite {
                         let index = graph.add_node(string_node);
                         index_dict.insert(i, index);
                     }
-                },
+                }
                 ConflictType::Conflict => {
                     string_op = abi_to_string(abiq.abi(), symbols);
 

@@ -13,9 +13,9 @@ use std::io::{BufRead, BufReader, Error, ErrorKind};
 use crate::kb::knowledge_base::{ABox, SymbolDict, TBox, TBoxItem};
 
 /*
-    in my opinion this functions are too differents to try and do only one,
-    what can I do is try to accelerate them
- */
+   in my opinion this functions are too differents to try and do only one,
+   what can I do is try to accelerate them
+*/
 
 pub fn parse_symbols_native(filename: &str, verbose: bool) -> io::Result<SymbolDict> {
     let file_result = File::open(filename);
@@ -47,10 +47,9 @@ pub fn parse_symbols_native(filename: &str, verbose: bool) -> io::Result<SymbolD
                     Ok(bytes_read) => {
                         // if end of file break!
                         if bytes_read == 0 {
-                            break
+                            break;
                         } else {
-
-                            let mut line = &buffer;
+                            let line = &buffer;
                             // all the code goes here
                             if verbose {
                                 println!(
@@ -61,7 +60,6 @@ pub fn parse_symbols_native(filename: &str, verbose: bool) -> io::Result<SymbolD
 
                             // let line_trimmed = line.trim();
                             let line_trimmed = buffer.trim();
-
 
                             if line_trimmed == "BEGINSYMBOL" {
                                 begin_symbol_encountered = true;
@@ -126,7 +124,8 @@ pub fn parse_symbols_native(filename: &str, verbose: bool) -> io::Result<SymbolD
                                     }
                                 }
 
-                                let parsed: io::Result<(&str, DLType)> = string_to_symbol(not_ignored);
+                                let parsed: io::Result<(&str, DLType)> =
+                                    string_to_symbol(not_ignored);
 
                                 match parsed {
                                     Ok((name, t)) => {
@@ -149,18 +148,17 @@ pub fn parse_symbols_native(filename: &str, verbose: bool) -> io::Result<SymbolD
                             } else if verbose {
                                 println!(" -- native_utilities::parse_symbols_native: line won't be parsed, not in between 'BEGINSYMBOL' and 'ENDSYMBOL' bounds");
                             }
-
                         }
 
                         // clean the buffer !!!!
                         buffer.clear();
-                    },
+                    }
                     Err(e) => {
                         if verbose {
                             buffer.clear();
                             println!("passing because of error: {}", e);
                         }
-                    },
+                    }
                 }
 
                 buffer.clear();
@@ -239,7 +237,6 @@ pub fn parse_tbox_native(
                         if bytes_read == 0 {
                             break;
                         } else {
-
                             let line = &buffer;
 
                             if verbose {
@@ -330,7 +327,7 @@ pub fn parse_tbox_native(
                             }
                         }
                         buffer.clear();
-                    },
+                    }
                     Err(e) => {
                         if verbose {
                             println!(" -- native_utilities::parse_tbox_native: couldn't read the line: {}", e);
@@ -458,15 +455,17 @@ pub fn parse_abox_native_quantum(
             loop {
                 match reader.read_line(&mut buffer) {
                     Err(e) => {
-                        println!(" -- native_utilities::parse_abox_native:: passing this line: {:?}",e);
+                        println!(
+                            " -- native_utilities::parse_abox_native:: passing this line: {:?}",
+                            e
+                        );
                         buffer.clear();
                         continue;
-                    },
+                    }
                     Ok(bytes_read) => {
                         if bytes_read == 0 {
                             break;
                         } else {
-
                             let line = &buffer;
                             let line_trimmed = line.trim();
 
@@ -534,11 +533,10 @@ pub fn parse_abox_native_quantum(
                             buffer.clear();
                         }
                         buffer.clear();
-                    },
+                    }
                 }
                 buffer.clear();
             }
-
 
             if !end_abox_encountered {
                 if verbose {

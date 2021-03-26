@@ -5,15 +5,15 @@ use crate::kb::knowledge_base::{ABox, AggrFn};
 use crate::kb::types::ConflictType;
 
 use crate::alg_math::bounds::find_bound_complex_wrapper;
-use crate::alg_math::utilities::{solve_system_wrapper_only_id_mod, median};
+use crate::alg_math::utilities::{median, solve_system_wrapper_only_id_mod};
 
 use petgraph::graph::EdgeReference;
 use petgraph::Graph;
 use std::collections::HashMap;
-use std::fmt::Display;
-use std::ops::{DivAssign};
-use std::process::Command;
+
 use std::io::ErrorKind;
+use std::ops::DivAssign;
+use std::process::Command;
 
 type RankRemainder = (Vec<i8>, HashMap<usize, usize>, HashMap<usize, ConflictType>);
 
@@ -27,12 +27,16 @@ pub fn rank_abox(
     b_translate: f64,
     verbose: bool,
 ) -> RankRemainder {
-
     // before everything we need to normalize
-    let mut prevalues = abq.items().iter().map(|x| x.prevalue()).collect::<Vec<f64>>();
+    let mut prevalues = abq
+        .items()
+        .iter()
+        .map(|x| x.prevalue())
+        .collect::<Vec<f64>>();
     let normalization_scaler = normalize_vector(&mut prevalues);
+
     for i in 0..abq.len() {
-        let mut abqi = abq.get_mut(i).unwrap();
+        let abqi = abq.get_mut(i).unwrap();
         abqi.set_prevalue(prevalues[i]);
     }
 
@@ -115,10 +119,7 @@ pub fn rank_abox(
 
                     // get the rank of the clean fact
                     let clean_rank = rank[new_clean_index];
-                    rank = rank
-                        .iter()
-                        .map(|x| x / clean_rank)
-                        .collect::<Vec<f64>>();
+                    rank = rank.iter().map(|x| x / clean_rank).collect::<Vec<f64>>();
                     rank[new_clean_index] = 1.;
                 } else {
                     // otherwise we done something else
@@ -132,7 +133,7 @@ pub fn rank_abox(
                     for i in 0..dim {
                         let mut is_clean = true;
                         for j in 0..dim {
-                            is_clean = is_clean && (done_matrix[i*dim + j] == 0);
+                            is_clean = is_clean && (done_matrix[i * dim + j] == 0);
                             if !is_clean {
                                 break;
                             }
@@ -153,7 +154,6 @@ pub fn rank_abox(
                         }
 
                         rank[clean_fact_index] = 1.;
-
                     } else {
                         // then all facts have some kind of implication or contradiction
                         let rank_for_median = rank.iter().copied().collect::<Vec<f64>>();
@@ -161,7 +161,6 @@ pub fn rank_abox(
 
                         rank = rank.iter().map(|x| x / median).collect();
                     }
-
                 }
 
                 // now that we have upscale if possible, we put the value in the abox
@@ -180,15 +179,13 @@ pub fn rank_abox(
 
                 // once every value is in the abox, we upscale by the normalization factor
                 for i in 0..abq.len() {
-                    let mut abqi = abq.get_mut(i).unwrap();
+                    let abqi = abq.get_mut(i).unwrap();
                     let prevalue = abqi.prevalue();
                     let value = abqi.value().unwrap();
 
                     abqi.set_prevalue(prevalue * normalization_scaler);
                     abqi.set_value(value * normalization_scaler);
                 }
-
-
 
                 // alg for creating viewer of what is a conflict and what not
                 let mut virtual_index_op: Option<usize>;
@@ -263,10 +260,10 @@ pub fn pretty_print_matrix<T: Display>(v: &[T]) {
 
  */
 
-pub fn normalize_vector(mut v: &mut Vec<f64>) -> f64 {
+pub fn normalize_vector(v: &mut Vec<f64>) -> f64 {
     if !v.is_empty() {
-        let mut initial = v[0];
-        let max_value = v.iter().fold(initial, |a , &b| f64::max(a, b));
+        let initial = v[0];
+        let max_value = v.iter().fold(initial, |a, &b| f64::max(a, b));
 
         for item in v {
             item.div_assign(max_value)

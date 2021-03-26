@@ -77,7 +77,7 @@ pub struct Cli {
     #[structopt(long = "verbose")]
     pub verbose: bool,
 
-    #[structopt(long = "silent", help="almost no prompt discussion")]
+    #[structopt(long = "silent", help = "almost no prompt discussion")]
     pub silent: bool,
 
     #[structopt(parse(from_os_str), long = "tbox", help = "path to the tbox file")]

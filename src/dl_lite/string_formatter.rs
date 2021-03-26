@@ -429,7 +429,6 @@ fn __parse_string_to_node_helper(
     splitted: Vec<&str>,
     symbols: &SymbolDict,
 ) -> io::Result<NodeDllite> {
-
     match splitted.len() {
         1 => {
             /*
@@ -853,14 +852,14 @@ pub fn create_string_for_gencontb(
                     let len_impliers = impliers.len();
 
                     let mut implier_string =
-                        pretty_vector_tbi_to_string(impliers.get(0).unwrap(), symbols);
+                        pretty_vector_tbi_to_string(&(impliers.get(0).unwrap().1), symbols);
 
                     temp_s = format!("      impliers: {}\n", &implier_string);
                     s.push_str(&temp_s);
 
                     for i in 1..len_impliers {
                         implier_string =
-                            pretty_vector_tbi_to_string(impliers.get(i).unwrap(), symbols);
+                            pretty_vector_tbi_to_string(&(impliers.get(i).unwrap().1), symbols);
 
                         temp_s = format!("                {}\n", &implier_string);
                         s.push_str(&temp_s);
@@ -894,13 +893,14 @@ pub fn create_string_for_unravel_conflict_tbi(
     let len_impliers = impliers.len();
 
     if len_impliers > 0 {
-        let mut implier_string = pretty_vector_tbi_to_string(impliers.get(0).unwrap(), symbols);
+        let mut implier_string =
+            pretty_vector_tbi_to_string(&(impliers.get(0).unwrap().1), symbols);
 
         temp_s = format!("{}impliers: {}\n", space_string(pad + 6), &implier_string);
         s.push_str(&temp_s);
 
         for i in 1..len_impliers {
-            implier_string = pretty_vector_tbi_to_string(impliers.get(i).unwrap(), symbols);
+            implier_string = pretty_vector_tbi_to_string(&(impliers.get(i).unwrap().1), symbols);
 
             temp_s = format!("{}{}\n", space_string(pad + 16), &implier_string);
             s.push_str(&temp_s);
@@ -910,7 +910,7 @@ pub fn create_string_for_unravel_conflict_tbi(
             // here this is bad, we must first create the string to put in
             let mut implier_s = String::from("");
             let this_impliers = impliers.get(i).unwrap();
-            for implier in this_impliers {
+            for implier in &(this_impliers.1) {
                 if implier.level() > 0 {
                     // if not, no need to unravel a grounded axiom
                     temp_s = create_string_for_unravel_conflict_tbi(implier, symbols, pad + 4);
@@ -987,8 +987,8 @@ pub fn create_string_for_unravel_conflict_abiq(
 
     if len_impliers > 0 {
         let mut current_implier = impliers.get(0).unwrap();
-        let mut tbis = &current_implier.0;
-        let mut abis = &current_implier.1;
+        let mut tbis = &current_implier.1;
+        let mut abis = &current_implier.2;
 
         let mut tbis_string = pretty_vector_tbi_to_string(tbis, symbols);
         let mut abis_string = pretty_vector_abiq_to_string(abis, symbols);
@@ -1007,8 +1007,8 @@ pub fn create_string_for_unravel_conflict_abiq(
 
         for i in 1..len_impliers {
             current_implier = impliers.get(i).unwrap();
-            tbis = &current_implier.0;
-            abis = &current_implier.1;
+            tbis = &current_implier.1;
+            abis = &current_implier.2;
             tbis_string = pretty_vector_tbi_to_string(tbis, symbols);
             abis_string = pretty_vector_abiq_to_string(abis, symbols);
 
@@ -1028,7 +1028,7 @@ pub fn create_string_for_unravel_conflict_abiq(
             // here this is bad, we must first create the string to put in
             let mut implier_s = String::from("");
             let this_impliers = impliers.get(i).unwrap();
-            let abis = &this_impliers.1;
+            let abis = &this_impliers.2;
             for implier in abis {
                 if implier.level() > 0 {
                     // if not, no need to unravel a grounded axiom

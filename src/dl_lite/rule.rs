@@ -3,7 +3,7 @@ use crate::dl_lite::abox_item_quantum::AbiqDllite;
 use crate::dl_lite::node::NodeDllite;
 use crate::dl_lite::tbox_item::TbiDllite;
 use crate::kb::knowledge_base::{Implier, Item, TBoxItem};
-use crate::kb::types::DLType;
+use crate::kb::types::{DLType, CR};
 
 /*
    I'm changing the rule philosophy, now they (if they can) take the first
@@ -55,10 +55,10 @@ pub fn dl_lite_rule_zero(vec: Vec<&TbiDllite>, deduction_tree: bool) -> Option<V
                             if deduction_tree {
                                 let impliers = vec![tbi.clone()];
 
-                                b1.add_to_implied_by(impliers.clone());
-                                b2.add_to_implied_by(impliers.clone());
-                                t1.add_to_implied_by(impliers.clone());
-                                t2.add_to_implied_by(impliers);
+                                b1.add_to_implied_by((CR::Zero, impliers.clone()));
+                                b2.add_to_implied_by((CR::Zero, impliers.clone()));
+                                t1.add_to_implied_by((CR::Zero, impliers.clone()));
+                                t2.add_to_implied_by((CR::Zero, impliers));
                             }
 
                             Some(vec![b1, b2, t1, t2])
@@ -92,7 +92,7 @@ pub fn dl_lite_rule_one(vec: Vec<&TbiDllite>, deduction_tree: bool) -> Option<Ve
             let mut tbi_reversed = tbi.reverse_negation(add_level).unwrap();
 
             if deduction_tree {
-                tbi_reversed.add_to_implied_by(vec![tbi.clone()]);
+                tbi_reversed.add_to_implied_by((CR::First, vec![tbi.clone()]));
             }
 
             Some(vec![tbi_reversed])
@@ -130,7 +130,7 @@ pub fn dl_lite_rule_two(vec: Vec<&TbiDllite>, deduction_tree: bool) -> Option<Ve
             .unwrap();
 
             if deduction_tree {
-                new_tbi.add_to_implied_by(vec![tbi1.clone(), tbi2.clone()]);
+                new_tbi.add_to_implied_by((CR::Second, vec![tbi1.clone(), tbi2.clone()]));
             }
 
             Some(vec![new_tbi])
@@ -143,7 +143,7 @@ pub fn dl_lite_rule_two(vec: Vec<&TbiDllite>, deduction_tree: bool) -> Option<Ve
             .unwrap();
 
             if deduction_tree {
-                new_tbi.add_to_implied_by(vec![tbi1.clone(), tbi2.clone()]);
+                new_tbi.add_to_implied_by((CR::Second, vec![tbi1.clone(), tbi2.clone()]));
             }
 
             Some(vec![new_tbi])
@@ -196,8 +196,8 @@ pub fn dl_lite_rule_three(vec: Vec<&TbiDllite>, deduction_tree: bool) -> Option<
                         if deduction_tree {
                             let v = vec![tbi1.clone(), tbi2.clone()];
 
-                            new_tbi1.add_to_implied_by(v.clone());
-                            new_tbi2.add_to_implied_by(v);
+                            new_tbi1.add_to_implied_by((CR::Third, v.clone()));
+                            new_tbi2.add_to_implied_by((CR::Third, v));
                         }
 
                         Some(vec![new_tbi1, new_tbi2])
@@ -261,7 +261,8 @@ pub fn dl_lite_rule_four(vec: Vec<&TbiDllite>, deduction_tree: bool) -> Option<V
 
                         // added impliers
                         if deduction_tree {
-                            new_tbi.add_to_implied_by(vec![tbi1.clone(), tbi2.clone()]);
+                            new_tbi
+                                .add_to_implied_by((CR::Fourth, vec![tbi1.clone(), tbi2.clone()]));
                         }
 
                         Some(vec![new_tbi])
@@ -289,29 +290,28 @@ pub fn dl_lite_rule_five(vec: Vec<&TbiDllite>, deduction_tree: bool) -> Option<V
         let big_level = tbi.level();
 
         if tbi.lside().t() == DLType::ExistsConcept {
-
             if let Some(some_child) = tbi_rside_child {
-               if tbi.lside() == some_child[0] {
-                   let role = NodeDllite::child(Some(tbi.lside()), 1).unwrap()[0].clone();
+                if tbi.lside() == some_child[0] {
+                    let role = NodeDllite::child(Some(tbi.lside()), 1).unwrap()[0].clone();
 
-                   let not_role = (&role).clone().negate();
-                   let inv_role = (&role).clone().inverse().unwrap();
-                   let exists = (&inv_role).clone().exists().unwrap();
-                   let not_exists = inv_role.exists().unwrap().negate();
+                    let not_role = (&role).clone().negate();
+                    let inv_role = (&role).clone().inverse().unwrap();
+                    let exists = (&inv_role).clone().exists().unwrap();
+                    let not_exists = inv_role.exists().unwrap().negate();
 
-                   let mut new_tbi1 = TbiDllite::new(role, not_role, big_level + 1).unwrap();
-                   let mut new_tbi2 = TbiDllite::new(exists, not_exists, big_level + 1).unwrap();
+                    let mut new_tbi1 = TbiDllite::new(role, not_role, big_level + 1).unwrap();
+                    let mut new_tbi2 = TbiDllite::new(exists, not_exists, big_level + 1).unwrap();
 
-                   if deduction_tree {
-                       let v = vec![tbi.clone()];
-                       new_tbi1.add_to_implied_by(v.clone());
-                       new_tbi2.add_to_implied_by(v);
-                   }
+                    if deduction_tree {
+                        let v = vec![tbi.clone()];
+                        new_tbi1.add_to_implied_by((CR::Fifth, v.clone()));
+                        new_tbi2.add_to_implied_by((CR::Fifth, v));
+                    }
 
-                   Some(vec![new_tbi1, new_tbi2])
-               } else {
-                   Option::None
-               }
+                    Some(vec![new_tbi1, new_tbi2])
+                } else {
+                    Option::None
+                }
             } else {
                 Option::None
             }
@@ -364,8 +364,8 @@ pub fn dl_lite_rule_seven(vec: Vec<&TbiDllite>, deduction_tree: bool) -> Option<
                     if deduction_tree {
                         let v = vec![tbi.clone()];
 
-                        new_tbi1.add_to_implied_by(v.clone());
-                        new_tbi2.add_to_implied_by(v);
+                        new_tbi1.add_to_implied_by((CR::Seventh, v.clone()));
+                        new_tbi2.add_to_implied_by((CR::Seventh, v));
                     }
 
                     Some(vec![new_tbi1, new_tbi2])
@@ -405,8 +405,8 @@ pub fn dl_lite_rule_eight(vec: Vec<&TbiDllite>, deduction_tree: bool) -> Option<
                 if deduction_tree {
                     let v = vec![tbi.clone()];
 
-                    new_tbi1.add_to_implied_by(v.clone());
-                    new_tbi2.add_to_implied_by(v);
+                    new_tbi1.add_to_implied_by((CR::Eight, v.clone()));
+                    new_tbi2.add_to_implied_by((CR::Eight, v));
                 }
 
                 Some(vec![new_tbi1, new_tbi2])
@@ -454,8 +454,8 @@ pub fn dl_lite_abox_rule_one(
                             AbiqDllite::new(b_erinv, Option::None, Option::None, big_level + 1);
 
                         if deduction_tree {
-                            a_er_q.add_to_implied_by((vec![], vec![abis[0].clone()]));
-                            b_erinv_q.add_to_implied_by((vec![], vec![abis[0].clone()]));
+                            a_er_q.add_to_implied_by((CR::First, vec![], vec![abis[0].clone()]));
+                            b_erinv_q.add_to_implied_by((CR::First, vec![], vec![abis[0].clone()]));
                         }
 
                         v.push(a_er_q);
@@ -492,7 +492,11 @@ pub fn dl_lite_abox_rule_two(
                         AbiqDllite::new(new_ra.unwrap(), Option::None, Option::None, big_level + 1);
 
                     if deduction_tree {
-                        new_ra_q.add_to_implied_by((vec![tbi.clone()], vec![abis[0].clone()]));
+                        new_ra_q.add_to_implied_by((
+                            CR::Second,
+                            vec![tbi.clone()],
+                            vec![abis[0].clone()],
+                        ));
                     }
 
                     let v = vec![new_ra_q];
@@ -528,7 +532,11 @@ pub fn dl_lite_abox_rule_three(
                         AbiqDllite::new(new_ca.unwrap(), Option::None, Option::None, big_level + 1);
 
                     if deduction_tree {
-                        new_ca_q.add_to_implied_by((vec![tbi.clone()], vec![abis[0].clone()]));
+                        new_ca_q.add_to_implied_by((
+                            CR::Third,
+                            vec![tbi.clone()],
+                            vec![abis[0].clone()],
+                        ));
                     }
 
                     let v = vec![new_ca_q];

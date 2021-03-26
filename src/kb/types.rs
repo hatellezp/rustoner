@@ -1,3 +1,8 @@
+use crate::interface::format_constants::{
+    UNICODE_BOT, UNICODE_EXISTS, UNICODE_NEG, UNICODE_RIGHTARROW, UNICODE_SQSUBSETEQ,
+    UNICODE_SUBSETEQ, UNICODE_TOP,
+};
+use std::cmp::Ordering;
 use std::fmt;
 use std::fmt::Display;
 
@@ -183,6 +188,210 @@ pub enum CR {
     Eight,
 }
 
+impl CR {
+    pub fn to_usize(&self) -> usize {
+        match self {
+            CR::Zero => 0,
+            CR::First => 1,
+            CR::Second => 2,
+            CR::Third => 3,
+            CR::Fourth => 4,
+            CR::Fifth => 5,
+            CR::Sixth => 6,
+            CR::Seventh => 7,
+            CR::Eight => 8,
+        }
+    }
+
+    // true for tbi, false for abi
+    pub fn description(&self, for_tbi: bool) -> String {
+        match self {
+            CR::Zero => {
+                if for_tbi {
+                    format!(
+                        "{}: X {} X{}{}, {}{}X",
+                        self.identifier(),
+                        UNICODE_RIGHTARROW,
+                        UNICODE_SQSUBSETEQ,
+                        UNICODE_TOP,
+                        UNICODE_BOT,
+                        UNICODE_SQSUBSETEQ
+                    )
+                } else {
+                    String::from("R0: NONE")
+                }
+            }
+            CR::First => {
+                if for_tbi {
+                    format!(
+                        "{}: X{}{}Y {} Y{}{}X",
+                        self.identifier(),
+                        UNICODE_SQSUBSETEQ,
+                        UNICODE_NEG,
+                        UNICODE_RIGHTARROW,
+                        UNICODE_SQSUBSETEQ,
+                        UNICODE_NEG
+                    )
+                } else {
+                    // if (a,b):r then a:Er and b:Er^⁻
+                    format!(
+                        "{}: (a,b):r {} a:{}r, b:{}r^-",
+                        self.identifier(),
+                        UNICODE_RIGHTARROW,
+                        UNICODE_EXISTS,
+                        UNICODE_EXISTS,
+                    )
+                }
+            }
+            CR::Second => {
+                if for_tbi {
+                    format!(
+                        "{}: X{}Y, Y{}Z {} X{}Z",
+                        self.identifier(),
+                        UNICODE_SQSUBSETEQ,
+                        UNICODE_SQSUBSETEQ,
+                        UNICODE_RIGHTARROW,
+                        UNICODE_SQSUBSETEQ
+                    )
+                } else {
+                    // if (a,b):r and r < s then (a,b):s
+                    format!(
+                        "{}: (a,b):r, r{}s {} (a,b):s",
+                        self.identifier(),
+                        UNICODE_SUBSETEQ,
+                        UNICODE_RIGHTARROW,
+                    )
+                }
+            }
+            CR::Third => {
+                // third rule: r1=>r2 and B=>notExists_r2 then B=>notExists_r1 and Exists_r1=>notB
+                if for_tbi {
+                    format!(
+                        "{}: r{}s, X{}{}{}s {} X{}{}{}r, {}r{}{}X",
+                        self.identifier(),
+                        UNICODE_SUBSETEQ,
+                        UNICODE_SQSUBSETEQ,
+                        UNICODE_NEG,
+                        UNICODE_EXISTS,
+                        UNICODE_RIGHTARROW,
+                        UNICODE_SQSUBSETEQ,
+                        UNICODE_NEG,
+                        UNICODE_EXISTS,
+                        UNICODE_EXISTS,
+                        UNICODE_SQSUBSETEQ,
+                        UNICODE_NEG
+                    )
+                } else {
+                    // if a:c and c < d then a:d
+                    format!(
+                        "{}: a:X, X{}Y {} a:Y",
+                        self.identifier(),
+                        UNICODE_SQSUBSETEQ,
+                        UNICODE_RIGHTARROW,
+                    )
+                }
+            }
+            CR::Fourth => {
+                // fourth rule: r1=>r2 and B=>notExists_r2_inv then B=>notExists_r1_inv
+                if for_tbi {
+                    format!(
+                        "{}: r{}s, X{}{}{}s^- {} X{}{}{}r^-",
+                        self.identifier(),
+                        UNICODE_SUBSETEQ,
+                        UNICODE_SQSUBSETEQ,
+                        UNICODE_NEG,
+                        UNICODE_EXISTS,
+                        UNICODE_RIGHTARROW,
+                        UNICODE_SQSUBSETEQ,
+                        UNICODE_NEG,
+                        UNICODE_EXISTS,
+                    )
+                } else {
+                    String::from("R4: NONE")
+                }
+            }
+            CR::Fifth => {
+                // fifth rule: Exists_r=>notExists_r then r=>not_r and Exists_r_inv=>notExists_r_inv
+                if for_tbi {
+                    format!(
+                        "{}: {}r{}{}{}r {} r{}{}r, {}r^-{}{}{}r^-",
+                        self.identifier(),
+                        UNICODE_EXISTS,
+                        UNICODE_SQSUBSETEQ,
+                        UNICODE_NEG,
+                        UNICODE_EXISTS,
+                        UNICODE_RIGHTARROW,
+                        UNICODE_SUBSETEQ,
+                        UNICODE_NEG,
+                        UNICODE_EXISTS,
+                        UNICODE_SQSUBSETEQ,
+                        UNICODE_NEG,
+                        UNICODE_EXISTS,
+                    )
+                } else {
+                    String::from("R5: NONE")
+                }
+            }
+            CR::Sixth => String::from("R6: NONE"),
+            CR::Seventh => {
+                // seventh rule: r=>not_r then Exists_r=>notExists_r and Exists_r_inv=>notExists_r_inv
+                if for_tbi {
+                    format!(
+                        "{}: r{}{}r {} {}r{}{}{}r, {}r^-{}{}{}r^-",
+                        self.identifier(),
+                        UNICODE_SUBSETEQ,
+                        UNICODE_NEG,
+                        UNICODE_RIGHTARROW,
+                        UNICODE_EXISTS,
+                        UNICODE_SQSUBSETEQ,
+                        UNICODE_NEG,
+                        UNICODE_EXISTS,
+                        UNICODE_EXISTS,
+                        UNICODE_SQSUBSETEQ,
+                        UNICODE_NEG,
+                        UNICODE_EXISTS
+                    )
+                } else {
+                    String::from("R7: NONE")
+                }
+            }
+            CR::Eight => {
+                // eight rule: r1=>r2 then r1_inv=>r2_inv and Exists_r1=>Exists_r2
+                if for_tbi {
+                    format!(
+                        "{}: r{}s {} r^-{}s^-, {}r{}{}s ",
+                        self.identifier(),
+                        UNICODE_SUBSETEQ,
+                        UNICODE_RIGHTARROW,
+                        UNICODE_SUBSETEQ,
+                        UNICODE_EXISTS,
+                        UNICODE_SQSUBSETEQ,
+                        UNICODE_EXISTS
+                    )
+                } else {
+                    String::from("R8: NONE")
+                }
+            }
+        }
+    }
+
+    pub fn identifier(&self) -> String {
+        format!("R{}", &self.to_usize())
+    }
+}
+
+impl PartialOrd for CR {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.to_usize().partial_cmp(&other.to_usize())
+    }
+}
+
+impl Ord for CR {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.to_usize().cmp(&other.to_usize())
+    }
+}
+
 impl Display for CR {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -193,7 +402,7 @@ impl Display for CR {
             CR::Fourth => write!(f, "fourth"),
             CR::Fifth => write!(f, "fifth"),
             CR::Sixth => write!(f, "sixth"),
-            CR::Seventh => write!(f, "sevent"),
+            CR::Seventh => write!(f, "seventh"),
             CR::Eight => write!(f, "eight"),
         }
     }

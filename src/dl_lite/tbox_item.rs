@@ -3,7 +3,7 @@ use std::fmt;
 use crate::dl_lite::node::NodeDllite;
 use crate::kb::knowledge_base::{Implier, TbRule};
 use crate::kb::knowledge_base::{Item, TBoxItem};
-use crate::kb::types::DLType;
+use crate::kb::types::{DLType, CR};
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 
@@ -12,7 +12,7 @@ pub struct TbiDllite {
     lside: NodeDllite,
     rside: NodeDllite,
     level: usize,
-    impliers: Vec<Vec<TbiDllite>>,
+    impliers: Vec<(CR, Vec<TbiDllite>)>,
 }
 
 impl PartialEq for TbiDllite {
@@ -56,15 +56,15 @@ impl Ord for TbiDllite {
 }
 
 impl Implier for TbiDllite {
-    type Imp = Vec<TbiDllite>;
+    type Imp = (CR, Vec<TbiDllite>);
 
-    fn implied_by(&self) -> &Vec<Vec<TbiDllite>> {
+    fn implied_by(&self) -> &Vec<(CR, Vec<TbiDllite>)> {
         &(self.impliers)
     }
 
-    fn cmp_imp(imp1: &Vec<TbiDllite>, imp2: &Vec<TbiDllite>) -> Option<Ordering> {
-        let len1 = imp1.len();
-        let len2 = imp2.len();
+    fn cmp_imp(imp1: &(CR, Vec<TbiDllite>), imp2: &(CR, Vec<TbiDllite>)) -> Option<Ordering> {
+        let len1 = (&imp1.1).len();
+        let len2 = (&imp2.1).len();
         let mut all_good = true;
         let mut tbi1: &TbiDllite;
         let mut tbi2: &TbiDllite;
@@ -75,8 +75,8 @@ impl Implier for TbiDllite {
         };
 
         for i in 0..lenght {
-            tbi1 = imp1.get(i).unwrap();
-            tbi2 = imp2.get(i).unwrap();
+            tbi1 = (&imp1.1).get(i).unwrap();
+            tbi2 = (&imp2.1).get(i).unwrap();
 
             all_good = all_good && (tbi1 == tbi2);
         }
@@ -87,17 +87,17 @@ impl Implier for TbiDllite {
         }
     }
 
-    fn add_to_implied_by(&mut self, mut implier: Vec<TbiDllite>) {
+    fn add_to_implied_by(&mut self, mut implier: (CR, Vec<TbiDllite>)) {
         // before everything, here in DLlite we can negation implies reverse negation
         // we must avoid to add an element as self implier
-        if !&implier.contains(&self) {
-            implier.sort();
+        if !(&implier.1).contains(&self) {
+            implier.1.sort();
             let contains = self.contains_implier(&implier);
 
             match contains {
                 Option::Some(Ordering::Less) => {
                     let mut cmpd: Option<Ordering>;
-                    let mut inner_implier: &Vec<TbiDllite>;
+                    let mut inner_implier: &(CR, Vec<TbiDllite>);
                     let lenght: usize = self.impliers.len();
 
                     for index in 0..lenght {
@@ -144,7 +144,7 @@ impl TbiDllite {
         {
             Option::None
         } else {
-            let implied_by: Vec<Vec<TbiDllite>> = Vec::new();
+            let implied_by: Vec<(CR, Vec<TbiDllite>)> = Vec::new();
 
             Some(TbiDllite {
                 lside,

@@ -1,13 +1,13 @@
 use nalgebra::{Complex, DMatrix, DVector};
-use std::f64::consts::PI;
 use std::cmp::Ordering;
+use std::f64::consts::PI;
 
 // creation of matrix and vectors
 
 /*
-    I found that there several prescision errors when computing division,
-    this is a working solution
- */
+   I found that there several prescision errors when computing division,
+   this is a working solution
+*/
 const PRECISION_ROUNDER: f64 = 1000000000000000.;
 pub fn round_to_15_f64(v: f64) -> f64 {
     (v * PRECISION_ROUNDER).round() / PRECISION_ROUNDER
@@ -193,8 +193,10 @@ pub fn solve_system_wrapper(
         );
         false
     } else {
-
-        let v_c64 = v.iter().map(|x| Complex { re: *x, im: 0.}).collect::<Vec<Complex<f64>>>();
+        let v_c64 = v
+            .iter()
+            .map(|x| Complex { re: *x, im: 0. })
+            .collect::<Vec<Complex<f64>>>();
         let mut matrix: DMatrix<Complex<f64>> = DMatrix::from_vec(n, n, v_c64);
         matrix.transpose_mut();
 
@@ -216,7 +218,6 @@ pub fn solve_system_wrapper(
     }
 }
 
-
 // for some simple statistics tasks
 // from rust nursery
 fn partition(data: &[f64]) -> Option<(Vec<f64>, f64, Vec<f64>)> {
@@ -225,18 +226,17 @@ fn partition(data: &[f64]) -> Option<(Vec<f64>, f64, Vec<f64>)> {
         _ => {
             let (pivot_slice, tail) = data.split_at(1);
             let pivot = pivot_slice[0];
-            let (left, right) = tail.iter()
-                .fold((vec![], vec![]), |mut splits, next| {
-                    {
-                        let (ref mut left, ref mut right) = &mut splits;
-                        if next < &pivot {
-                            left.push(*next);
-                        } else {
-                            right.push(*next);
-                        }
+            let (left, right) = tail.iter().fold((vec![], vec![]), |mut splits, next| {
+                {
+                    let (ref mut left, ref mut right) = &mut splits;
+                    if next < &pivot {
+                        left.push(*next);
+                    } else {
+                        right.push(*next);
                     }
-                    splits
-                });
+                }
+                splits
+            });
 
             Some((left, pivot, right))
         }
@@ -256,7 +256,7 @@ fn select(data: &[f64], k: usize) -> Option<f64> {
                 Ordering::Greater => select(&left, k),
                 Ordering::Less => select(&right, k - (pivot_idx + 1)),
             }
-        },
+        }
     }
 }
 
@@ -270,10 +270,10 @@ pub fn median(data: &[f64]) -> Option<f64> {
 
             match (fst_med, snd_med) {
                 (Some(fst), Some(snd)) => Some((fst + snd) / 2.0),
-                _ => None
+                _ => None,
             }
-        },
-        odd => select(data, odd / 2)
+        }
+        odd => select(data, odd / 2),
     }
 }
 
@@ -281,7 +281,7 @@ pub fn median(data: &[f64]) -> Option<f64> {
 pub fn null_vector(v: &[i8]) -> bool {
     for item in v {
         if *item != 0 {
-            return false
+            return false;
         }
     }
 

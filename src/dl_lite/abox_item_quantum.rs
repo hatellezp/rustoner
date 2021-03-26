@@ -6,9 +6,10 @@ use crate::kb::knowledge_base::{AbRule, Implier};
 
 use crate::dl_lite::abox_item::AbiDllite;
 use crate::kb::knowledge_base::ABoxItem;
-use crate::kb::types::DLType;
+use crate::kb::types::{DLType, CR};
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
+use std::ops::Deref;
 
 /*
    remember that only base roles and base concepts are allowed here !!
@@ -19,7 +20,7 @@ pub struct AbiqDllite {
     prevalue: f64,
     value: Option<f64>,
     level: usize,
-    impliers: Vec<(Vec<TbiDllite>, Vec<AbiqDllite>)>,
+    impliers: Vec<(CR, Vec<TbiDllite>, Vec<AbiqDllite>)>,
 }
 
 // TODO: this might apport some unseen problems... :(
@@ -58,27 +59,28 @@ impl Ord for AbiqDllite {
 }
 
 impl Implier for AbiqDllite {
-    type Imp = (Vec<TbiDllite>, Vec<AbiqDllite>);
+    type Imp = (CR, Vec<TbiDllite>, Vec<AbiqDllite>);
 
-    fn implied_by(&self) -> &Vec<(Vec<TbiDllite>, Vec<AbiqDllite>)> {
+    fn implied_by(&self) -> &Vec<(CR, Vec<TbiDllite>, Vec<AbiqDllite>)> {
         &self.impliers
     }
 
-    fn add_to_implied_by(&mut self, implier: (Vec<TbiDllite>, Vec<AbiqDllite>)) {
-        let mut tb = implier.0;
-        let mut ab = implier.1;
+    fn add_to_implied_by(&mut self, mut implier: (CR, Vec<TbiDllite>, Vec<AbiqDllite>)) {
+        let r = implier.0;
+        let mut tb = implier.1;
+        let mut ab = implier.2;
 
         // sorting always needed
         tb.sort();
         ab.sort();
-        let implier = (tb, ab);
+        let implier = (r, tb, ab);
 
         let contains = self.contains_implier(&implier);
 
         match contains {
             Option::Some(Ordering::Less) => {
                 let mut cmpd: Option<Ordering>;
-                let mut inner_implier: &(Vec<TbiDllite>, Vec<AbiqDllite>);
+                let mut inner_implier: &(CR, Vec<TbiDllite>, Vec<AbiqDllite>);
                 let lenght: usize = self.impliers.len();
 
                 for index in 0..lenght {
@@ -97,12 +99,14 @@ impl Implier for AbiqDllite {
     }
 
     fn cmp_imp(imp1: &Self::Imp, imp2: &Self::Imp) -> Option<Ordering> {
-        let tb1 = &imp1.0;
-        let tb2 = &imp2.0;
-        let ab1 = &imp1.1;
-        let ab2 = &imp2.1;
+        let r1 = &imp1.0;
+        let r2 = &imp2.0;
+        let tb1 = (&imp1.1).clone();
+        let tb2 = (&imp2.1).clone();
+        let ab1 = &imp1.2;
+        let ab2 = &imp2.2;
 
-        let tb_cmp = TbiDllite::cmp_imp(tb1, tb2);
+        let tb_cmp = TbiDllite::cmp_imp(&(*r1, tb1), &(*r2, tb2));
         let ab_cmp = AbiqDllite::compare_two_vectors(ab1, ab2);
 
         match (tb_cmp, ab_cmp) {
@@ -166,7 +170,7 @@ impl AbiqDllite {
             _ => 1.0,
         };
 
-        let impliers: Vec<(Vec<TbiDllite>, Vec<AbiqDllite>)> = Vec::new();
+        let impliers: Vec<(CR, Vec<TbiDllite>, Vec<AbiqDllite>)> = Vec::new();
 
         AbiqDllite {
             abi,
@@ -189,7 +193,7 @@ impl AbiqDllite {
         self.value = Some(v);
     }
 
-    pub fn set_prevalue(&mut self, v:f64) {
+    pub fn set_prevalue(&mut self, v: f64) {
         self.prevalue = v;
     }
 

@@ -2,7 +2,10 @@ use fftw::array::AlignedVec;
 use fftw::plan::*;
 use fftw::types::*;
 
-use crate::alg_math::utilities::{create_unity_roots, matrix_is_zero_complex, matrix_subtraction, multiply_matrix_complex, multiply_vector_complex, round_to_15_f64};
+use crate::alg_math::utilities::{
+    create_unity_roots, matrix_is_zero_complex, matrix_subtraction, multiply_matrix_complex,
+    multiply_vector_complex, round_to_15_f64,
+};
 use nalgebra::Complex;
 use nalgebra::{DMatrix, DVector};
 
@@ -171,11 +174,11 @@ fn find_bound_complex(
                 // execute the plan
                 plan.c2c(&mut in_vector, &mut out_vector).unwrap(); // TODO: is this safe ??
                                                                     // not out_vector has the result
-                // now the answer is stored in out
-                // I'm reusing the current_max double
-                // find the real degree of the polynomial
-                // I think these updates are not necessary ...
-                // tolerance is there to avoid 0 related problems
+                                                                    // now the answer is stored in out
+                                                                    // I'm reusing the current_max double
+                                                                    // find the real degree of the polynomial
+                                                                    // I think these updates are not necessary ...
+                                                                    // tolerance is there to avoid 0 related problems
                 let mut real_degree: Option<usize> = Option::None;
 
                 possible_coeff_real = tolerance / 2.;
