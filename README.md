@@ -249,6 +249,52 @@ you should get:
 and you can see all consequences generated from the initials axioms (level 0) and 
 which axioms generate each one of them.
 
+You can also generate a graph (__dot__ notation) if you want:
+```commandline
+ -- do you want to create a deduction graph by dot notation? (Y/n) 
+ -- dot file created: are_men_mortals_consequences.dot
+```
+the file look like this:
+```
+digraph {
+    0 [ label = "\"LV2: Chicken ⊑ ¬ Man\"" ]
+    1 [ label = "\"R1: X⊑¬Y → Y⊑¬X\"" shape=square color=red]
+    2 [ label = "\"R1\"" shape=square color=red]
+    3 [ label = "\"LV1: Man ⊑ ¬ Chicken\"" ]
+    4 [ label = "\"LV1: Chicken ⊑ ¬ Human\"" ]
+    5 [ label = "\"R1\"" shape=square color=red]
+    6 [ label = "\"LV0: Human ⊑ ¬ Chicken\"" ]
+    7 [ label = "\"R2: X⊑Y, Y⊑Z → X⊑Z\"" shape=square color=red]
+    8 [ label = "\"R2\"" shape=square color=red]
+    9 [ label = "\"LV0: Man ⊑ Human\"" ]
+    10 [ label = "\"LV1: Man ⊑ Mortal\"" ]
+    11 [ label = "\"R2\"" shape=square color=red]
+    12 [ label = "\"LV0: Human ⊑ Mortal\"" ]
+    13 [ label = "\"LV0: Chicken ⊑ Mortal\"" ]
+    2 -> 0 [ color="black"]
+    3 -> 2 [ color="black"]
+    5 -> 4 [ color="black"]
+    6 -> 5 [ color="black"]
+    8 -> 3 [ color="black"]
+    6 -> 8 [ color="black"]
+    9 -> 8 [ color="black"]
+    11 -> 10 [ color="black"]
+    12 -> 11 [ color="black"]
+    9 -> 11 [ color="black"]
+}
+```
+
+if you have the __dot__ binary (or executable) _compiled with Cairo_,
+then you can generate yourself an output:
+```commandline
+ -- do you want see a generate a visual output? (Y/n) 
+ -- file generated: are_men_mortals_consequences.pdf
+```
+be __careful__ however, it can be a easily understandable graph as:
+![alt text](readme_data/are_men_mortals_consequences.png)
+has it can be a nightmare!!:
+![alt text](readme_data/university_tbox_consequences.png)
+
 #### complete tbox
 Most of the work for abox related task is done dynamically, in the sense that tbox
 induced axioms are not generated and only used when necessary, nevertheless you can
