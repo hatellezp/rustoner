@@ -9,7 +9,7 @@ use crate::kb::knowledge_base::ABoxItem;
 use crate::kb::types::{DLType, CR};
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
-use std::ops::Deref;
+
 
 /*
    remember that only base roles and base concepts are allowed here !!
@@ -65,7 +65,7 @@ impl Implier for AbiqDllite {
         &self.impliers
     }
 
-    fn add_to_implied_by(&mut self, mut implier: (CR, Vec<TbiDllite>, Vec<AbiqDllite>)) {
+    fn add_to_implied_by(&mut self, implier: (CR, Vec<TbiDllite>, Vec<AbiqDllite>)) {
         let r = implier.0;
         let mut tb = implier.1;
         let mut ab = implier.2;

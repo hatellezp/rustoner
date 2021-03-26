@@ -44,7 +44,9 @@ use petgraph::dot::{Config, Dot};
 use question::{Answer, Question};
 
 use crate::alg_math::utilities::null_vector;
-use crate::graph_maker::{create_graph_for_tbox_unraveling, edge_attr_tbox_unraveling, node_attr_tbox_unraveling};
+use crate::graph_maker::{
+    create_graph_for_tbox_unraveling, edge_attr_tbox_unraveling, node_attr_tbox_unraveling,
+};
 use std::process::Command;
 use tempfile::NamedTempFile;
 
@@ -205,7 +207,6 @@ pub fn main() {
                                         println!("{}", &pretty_string);
                                     }
 
-
                                     // here to dot notation and graph stuff
                                     let question_print =
                                         " -- do you want to create a deduction graph by dot notation?".to_string();
@@ -217,8 +218,10 @@ pub fn main() {
 
                                     if print_output == Answer::YES {
                                         // TODO: I'm here
-                                        let graph =
-                                            create_graph_for_tbox_unraveling(&new_tb, onto.symbols());
+                                        let graph = create_graph_for_tbox_unraveling(
+                                            &new_tb,
+                                            onto.symbols(),
+                                        );
 
                                         let get_edge = edge_attr_tbox_unraveling;
                                         let get_node = node_attr_tbox_unraveling;
@@ -232,8 +235,7 @@ pub fn main() {
 
                                         let dot_notation_output = format!("{:?}", dot_notation);
 
-                                        let filename =
-                                            format!("{}_consequences.dot", tb_name);
+                                        let filename = format!("{}_consequences.dot", tb_name);
                                         write_str_to_file(&dot_notation_output, &filename);
 
                                         if !silent {
@@ -302,8 +304,7 @@ pub fn main() {
 
                                                             let name_output_file = format!(
                                                                 "{}_consequences.{}",
-                                                                tb_name,
-                                                                dot_output_format
+                                                                tb_name, dot_output_format
                                                             );
                                                             let command = format!(
                                                                 "dot -T{} {} -o {}",
@@ -332,7 +333,7 @@ pub fn main() {
                                                                             std::str::from_utf8(
                                                                                 &o.stdout,
                                                                             )
-                                                                                .unwrap();
+                                                                            .unwrap();
                                                                         println!(
                                                                             " -- file generated: {}",
                                                                             &name_output_file
@@ -382,7 +383,8 @@ pub fn main() {
                         // here we put the generation of the graph
                         // here to dot notation and graph stuff
                         let question_print =
-                            " -- do you want to create a deduction graph by dot notation?".to_string();
+                            " -- do you want to create a deduction graph by dot notation?"
+                                .to_string();
 
                         let print_output = Question::new(&question_print)
                             .default(Answer::YES)
@@ -391,8 +393,7 @@ pub fn main() {
 
                         if print_output == Answer::YES {
                             // TODO: I'm here
-                            let graph =
-                                create_graph_for_tbox_unraveling(&new_tb, onto.symbols());
+                            let graph = create_graph_for_tbox_unraveling(&new_tb, onto.symbols());
 
                             let get_edge = edge_attr_tbox_unraveling;
                             let get_node = node_attr_tbox_unraveling;
@@ -406,8 +407,7 @@ pub fn main() {
 
                             let dot_notation_output = format!("{:?}", dot_notation);
 
-                            let filename =
-                                format!("{}_consequences.dot", tb_name);
+                            let filename = format!("{}_consequences.dot", tb_name);
                             write_str_to_file(&dot_notation_output, &filename);
 
                             if !silent {
@@ -433,8 +433,7 @@ pub fn main() {
 
                             // now show graph
                             let question_print =
-                                " -- do you want see a generate a visual output?"
-                                    .to_string();
+                                " -- do you want see a generate a visual output?".to_string();
 
                             let print_output = Question::new(&question_print)
                                 .default(Answer::YES)
@@ -448,15 +447,11 @@ pub fn main() {
                                 match temp_dot_file_res {
                                     Err(e) => {
                                         if !silent {
-                                            println!(
-                                                "could not generate output: {}",
-                                                e
-                                            );
+                                            println!("could not generate output: {}", e);
                                         }
                                     }
                                     Ok(temp_dot) => {
-                                        let path_to_temp_dot =
-                                            (&temp_dot).path().to_str();
+                                        let path_to_temp_dot = (&temp_dot).path().to_str();
 
                                         match path_to_temp_dot {
                                             Option::None => {
@@ -476,8 +471,7 @@ pub fn main() {
 
                                                 let name_output_file = format!(
                                                     "{}_consequences.{}",
-                                                    tb_name,
-                                                    dot_output_format
+                                                    tb_name, dot_output_format
                                                 );
                                                 let command = format!(
                                                     "dot -T{} {} -o {}",
@@ -495,17 +489,12 @@ pub fn main() {
 
                                                 match output {
                                                     Err(e) => {
-                                                        println!(
-                                                            "couldn't create output: {}",
-                                                            &e
-                                                        );
+                                                        println!("couldn't create output: {}", &e);
                                                     }
                                                     Ok(o) => {
                                                         if !silent {
                                                             let _std_out =
-                                                                std::str::from_utf8(
-                                                                    &o.stdout,
-                                                                )
+                                                                std::str::from_utf8(&o.stdout)
                                                                     .unwrap();
                                                             println!(
                                                                 " -- file generated: {}",

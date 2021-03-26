@@ -1,4 +1,4 @@
-use crate::dl_lite::abox_item_quantum::AbiqDllite;
+
 use crate::dl_lite::string_formatter::tbi_to_string;
 use crate::dl_lite::tbox::TBDllite;
 use crate::dl_lite::tbox_item::TbiDllite;
@@ -6,11 +6,11 @@ use crate::interface::format_constants::{
     UNICODE_EXISTS, UNICODE_NEG, UNICODE_SQSUBSETEQ, UNICODE_SUBSETEQ,
 };
 use crate::kb::knowledge_base::{Implier, Item, SymbolDict, TBox, TBoxItem};
-use crate::kb::types::{ConflictType, DLType, CR};
+use crate::kb::types::{DLType, CR};
 use petgraph::graph::EdgeReference;
 use petgraph::prelude::NodeIndex;
 use petgraph::{Directed, Graph};
-use std::cmp::max;
+
 use std::collections::HashMap;
 
 // identifier for the rules
@@ -26,17 +26,7 @@ const RULE_IDS: [CR; 9] = [
     CR::Eight,
 ];
 
-const RULE_STR_IDS: [&str; 9] = [
-    "R0",
-    "R1",
-    "R2",
-    "R3",
-    "R4",
-    "R5",
-    "R6",
-    "R7",
-    "R8",
-];
+const RULE_STR_IDS: [&str; 9] = ["R0", "R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8"];
 
 // first function: create graph from tbox with impliers
 // in this function true for edges stand for tbi and false stand for rule
@@ -51,7 +41,6 @@ pub fn create_graph_for_tbox_unraveling(
     let tbis_by_level = tbox.get_tbis_by_level(only_conflicts);
 
     let mut added: HashMap<String, NodeIndex<u32>> = HashMap::new();
-
 
     let mut rules_added: Vec<usize> = Vec::new();
     let for_tbi = true;
@@ -146,15 +135,14 @@ pub fn node_attr_tbox_unraveling(
 
     for r_str in &RULE_STR_IDS {
         if s.contains(*r_str) {
-            return String::from("shape=square color=red")
+            return String::from("shape=square color=red");
         }
     }
 
     String::from("")
-
 }
 
-pub fn transform_tbi_for_graph(tbi: &TbiDllite, mut tbi_string: String) -> String {
+pub fn transform_tbi_for_graph(tbi: &TbiDllite, tbi_string: String) -> String {
     let subset = if DLType::all_concepts(tbi.lside().t(), tbi.rside().t()) {
         UNICODE_SQSUBSETEQ
     } else {
