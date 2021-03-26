@@ -493,6 +493,13 @@ rembember that you can always write to a file with
 
 #### rank abox
 
+Even if this section is relatively small compared to others, __tbox: generate tree__
+for example, is here where the magic happens.
+The algorithm behind the abox ranking is capable of grasping the implicit structure
+induced by a tbox acting over an abox and produce an quantitative assessment of
+quality that is relatively independent of the subjective opinion of trust given by
+the user, if you have doubts about your data, then this section is for __you__.
+
 It is heavily encouraged to go to [Graphviz](https://graphviz.org/) and setup
 the dot binary if you want automated generation of graph images.
 
