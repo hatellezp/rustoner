@@ -1,3 +1,22 @@
+/*
+UMONS 2021
+Horacio Alejandro Tellez Perez
+
+LICENSE GPLV3+:
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see https://www.gnu.org/licenses/.
+*/
+
 use crate::dl_lite::abox_item::AbiDllite;
 use crate::dl_lite::json_filetype_utilities::{parse_symbols_json, parse_tbox_json};
 use crate::dl_lite::node::{Mod, NodeDllite};
@@ -7,12 +26,9 @@ use crate::kb::types::DLType;
 use crate::kb::types::FileType;
 
 use std::collections::{HashMap, HashSet};
-// use serde_json::Value;
 use std::fmt;
 use std::fs::File;
 use std::io::Write;
-// use std::iter::Map;
-// use crate::dl_lite::abox::AB;
 use crate::dl_lite::native_filetype_utilities::{
     abox_to_native_string_quantum, parse_abox_native_quantum, parse_symbols_native,
     parse_tbox_native,

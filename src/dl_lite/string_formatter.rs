@@ -1,3 +1,22 @@
+/*
+UMONS 2021
+Horacio Alejandro Tellez Perez
+
+LICENSE GPLV3+:
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see https://www.gnu.org/licenses/.
+*/
+
 use crate::dl_lite::abox_item::AbiDllite;
 use crate::dl_lite::abox_item_quantum::AbiqDllite;
 use crate::dl_lite::json_filetype_utilities::{invalid_data_result, result_from_error};
@@ -949,8 +968,8 @@ pub fn create_string_for_unravel_conflict_tbox(
         actual_level = max_level - lev;
 
         if tbis_by_level[actual_level] > 0 {
-            temp_s = format!("  level {}: {{\n", actual_level);
-            s.push_str(&temp_s);
+
+            let mut inner_temp = String::new();
 
             for tbi in tb.items() {
                 if (tbi.level() == actual_level)
@@ -958,10 +977,17 @@ pub fn create_string_for_unravel_conflict_tbox(
                     && !tbi.is_trivial()
                 {
                     temp_s = create_string_for_unravel_conflict_tbi(tbi, symbols, pad);
-                    s.push_str(&temp_s);
+                    inner_temp.push_str(&temp_s);
                 }
             }
-            s.push_str("  },\n");
+
+            if !inner_temp.is_empty() {
+                temp_s = format!("  level {}: {{\n", actual_level);
+                s.push_str(&temp_s);
+
+                s.push_str(&inner_temp);
+                s.push_str("  },\n");
+            }
         }
     }
 
@@ -993,16 +1019,30 @@ pub fn create_string_for_unravel_conflict_abiq(
         let mut tbis_string = pretty_vector_tbi_to_string(tbis, symbols);
         let mut abis_string = pretty_vector_abiq_to_string(abis, symbols);
 
-        temp_s = format!(
-            "{}impliers:\n{}{}: tbis: {}\n{}{}: abis: {}\n",
-            space_string(pad + 6),
-            space_string(pad + 12),
-            1,
-            &tbis_string,
-            space_string(pad + 12),
-            1,
-            &abis_string
-        );
+        temp_s = match (&tbis_string).as_str()  {
+            "[]" => {
+                format!(
+                    "{}impliers:\n{}{}: abis: {}\n",
+                    space_string(pad + 6),
+                    space_string(pad + 12),
+                    1,
+                    &abis_string
+                )
+            },
+            _ => {
+                format!(
+                    "{}impliers:\n{}{}: tbis: {}\n{}{}: abis: {}\n",
+                    space_string(pad + 6),
+                    space_string(pad + 12),
+                    1,
+                    &tbis_string,
+                    space_string(pad + 12),
+                    1,
+                    &abis_string
+                )
+            },
+        };
+
         s.push_str(&temp_s);
 
         for i in 1..len_impliers {
@@ -1012,15 +1052,30 @@ pub fn create_string_for_unravel_conflict_abiq(
             tbis_string = pretty_vector_tbi_to_string(tbis, symbols);
             abis_string = pretty_vector_abiq_to_string(abis, symbols);
 
-            temp_s = format!(
-                "{}{}: tbis: {}\n{}{}: abis: {}\n",
-                space_string(pad + 12),
-                i + 1,
-                &tbis_string,
-                space_string(pad + 12),
-                i + 1,
-                &abis_string
-            );
+            temp_s = match (&tbis_string).as_str()  {
+                "[]" => {
+                    format!(
+                        "{}impliers:\n{}{}: abis: {}\n",
+                        space_string(pad + 6),
+                        space_string(pad + 12),
+                        1,
+                        &abis_string
+                    )
+                },
+                _ => {
+                    format!(
+                        "{}impliers:\n{}{}: tbis: {}\n{}{}: abis: {}\n",
+                        space_string(pad + 6),
+                        space_string(pad + 12),
+                        1,
+                        &tbis_string,
+                        space_string(pad + 12),
+                        1,
+                        &abis_string
+                    )
+                },
+            };
+
             s.push_str(&temp_s);
         }
 
