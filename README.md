@@ -291,9 +291,9 @@ then you can generate yourself an output:
  -- file generated: are_men_mortals_consequences.pdf
 ```
 be __careful__ however, it can be a easily understandable graph as the following:
-![alt text](readme_data/are_men_mortals_consequences.png)
+![alt text](readme_data/are_men_mortals_consequences.jpg)
 as it can be a nightmare!!:
-![alt text](readme_data/university_tbox_consequences.png)
+![alt text](readme_data/university_tbox_consequences.jpg)
 
 #### complete tbox
 Most of the work for abox related task is done dynamically, in the sense that tbox
