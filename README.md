@@ -646,3 +646,7 @@ You can compile yourself the project or simply take the binary in ```bin```.
 - implement solver for __SHIQ__ logic
 - build a minimal graphic interface
 - make available through [crates.io](https://crates.io/)
+
+### LICENSE
+
+[GPLV3+](LICENSE)
