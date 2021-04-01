@@ -884,30 +884,149 @@ pub fn main() {
                                     let tb_output = create_string_for_unravel_conflict_tbox(&new_tb, onto.symbols(), only_conflicts);
                                     let ab_output = create_string_for_unravel_conflict_abox(&new_tb, &abox_completed, onto.symbols(), only_conflicts, &[]);
 
-                                    println!("{}", tb_output);
-                                    println!("{}", ab_output);
+                                    if !silent {
+                                        println!("{}", ab_output);
+                                    }
 
+                                    // here we put the generation of the graph
+                                    // here to dot notation and graph stuff
+                                    let question_print =
+                                        " -- do you want to create a deduction graph by dot notation?"
+                                            .to_string();
 
-                                    println!("{:?}", &abox_completed);
+                                    let print_output = Question::new(&question_print)
+                                        .default(Answer::YES)
+                                        .show_defaults()
+                                        .confirm();
 
-                                    // TODO: I'm here
-                                    let graph = create_graph_for_aboxq_unraveling(&abox_completed, &new_tb, onto.symbols());
+                                    if print_output == Answer::YES {
+                                        // TODO: I'm here
+                                        let graph = create_graph_for_aboxq_unraveling(&abox_completed, &new_tb, onto.symbols());
 
-                                    let get_edge = edge_attr_tbox_unraveling;
-                                    let get_node = node_attr_abox_unraveling;
+                                        let get_edge = edge_attr_tbox_unraveling;
+                                        let get_node = node_attr_abox_unraveling;
 
-                                    let dot_notation = Dot::with_attr_getters(
-                                        &graph,
-                                        &[Config::EdgeNoLabel],
-                                        &get_edge,
-                                        &get_node,
-                                    );
+                                        let dot_notation = Dot::with_attr_getters(
+                                            &graph,
+                                            &[Config::EdgeNoLabel],
+                                            &get_edge,
+                                            &get_node,
+                                        );
 
-                                    let dot_notation_output = format!("{:?}", dot_notation);
+                                        let dot_notation_output = format!("{:?}", dot_notation);
 
-                                    println!("{}", dot_notation_output);
+                                        let filename = format!("{}_consequences.dot", &ab_name);
+                                        write_str_to_file(&dot_notation_output, &filename);
 
+                                        if !silent {
+                                            println!(" -- dot file created: {}", &filename);
+                                        }
 
+                                        //create graph here
+                                        // here verify that the command exists
+                                        let dot_command_name = if cfg!(windows) {
+                                            DOT_COMMAND_WINDOWS
+                                        } else {
+                                            DOT_COMMAND_LINUX
+                                        };
+                                        let dot_exists = command_exists(dot_command_name);
+
+                                        if !dot_exists {
+                                            println!(
+                                                " -- {} not found, can't generate visual output",
+                                                dot_command_name
+                                            );
+                                            std::process::exit(exitcode::OK)
+                                        }
+
+                                        // now show graph
+                                        let question_print =
+                                            " -- do you want see a generate a visual output?".to_string();
+
+                                        let print_output = Question::new(&question_print)
+                                            .default(Answer::YES)
+                                            .show_defaults()
+                                            .confirm();
+
+                                        if print_output == Answer::YES {
+                                            // here create a temporary file
+                                            let temp_dot_file_res = NamedTempFile::new();
+
+                                            match temp_dot_file_res {
+                                                Err(e) => {
+                                                    if !silent {
+                                                        println!("could not generate output: {}", e);
+                                                    }
+                                                }
+                                                Ok(temp_dot) => {
+                                                    let path_to_temp_dot = (&temp_dot).path().to_str();
+
+                                                    match path_to_temp_dot {
+                                                        Option::None => {
+                                                            println!(
+                                                                "path is not valid: {:?}",
+                                                                &path_to_temp_dot
+                                                            );
+                                                        }
+                                                        Some(path_to_temp) => {
+                                                            // write to temporary file
+                                                            write_str_to_file(
+                                                                &dot_notation_output,
+                                                                path_to_temp,
+                                                            );
+
+                                                            let dot_output_format = "pdf";
+
+                                                            let name_output_file = format!(
+                                                                "{}_consequences.{}",
+                                                                ab_name, dot_output_format
+                                                            );
+                                                            let command = format!(
+                                                                "dot -T{} {} -o {}",
+                                                                dot_output_format,
+                                                                path_to_temp,
+                                                                &name_output_file
+                                                            );
+
+                                                            // execute dot command
+                                                            // TODO: change this to be platform independent
+                                                            let output = Command::new("sh")
+                                                                .arg("-c")
+                                                                .arg(&command)
+                                                                .output();
+
+                                                            match output {
+                                                                Err(e) => {
+                                                                    println!("couldn't create output: {}", &e);
+                                                                }
+                                                                Ok(o) => {
+                                                                    if !silent {
+                                                                        let _std_out =
+                                                                            std::str::from_utf8(&o.stdout)
+                                                                                .unwrap();
+                                                                        println!(
+                                                                            " -- file generated: {}",
+                                                                            &name_output_file
+                                                                        );
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // consequences to file if presented
+                                    match path_output_op {
+                                        Some(path_output) => {
+                                            let filename = path_output.to_str().unwrap().to_string();
+
+                                            write_str_to_file(&ab_output, &filename);
+                                        }
+                                        Option::None => (),
+                                    }
                                 }
                                 Task::RNKAB => {
                                     // the current abox is not the completed one
