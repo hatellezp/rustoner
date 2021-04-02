@@ -42,7 +42,7 @@ this [link](https://graphviz.org/download/)
 #### FFTW
 The ranking algorithm use the [fftw](http://www.fftw.org/) library.
 You will need it.
-  - if in **linux** systems uses your package manager to install it, e.g.
+  - if in a **linux** system use your package manager to install it, e.g.
     Debian based system : ```apt install libfftw3-dev```
  - for **windows** if you compile from source the go to this 
    [link](http://www.fftw.org/install/windows.html) to know how to install and link the
