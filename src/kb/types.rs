@@ -126,71 +126,6 @@ impl DLType {
         DLType::all_roles(t1, t2) || DLType::all_concepts(t1, t2) || DLType::all_nominals(t1, t2)
     }
 
-    /*
-    pub fn types() -> [DLType; 9] {
-        [
-            DLType::Bottom,
-            DLType::Top,
-            DLType::BaseConcept,
-            DLType::BaseRole,
-            DLType::InverseRole,
-            DLType::NegatedRole,
-            DLType::ExistsConcept,
-            DLType::NegatedConcept,
-            DLType::Nominal,
-        ]
-    }
-
-     */
-
-    /*
-    pub fn to_usize_for_db(&self) -> usize {
-        match self {
-            DLType::Bottom => 0,
-            DLType::Top => 1,
-            DLType::BaseConcept => 2,
-            DLType::BaseRole => 3,
-            DLType::InverseRole => 4,
-            DLType::NegatedRole => 5,
-            DLType::ExistsConcept => 6,
-            DLType::NegatedConcept => 7,
-            DLType::Nominal => 8,
-        }
-    }
-
-    pub fn to_string_for_db(&self) -> String {
-        let res = match self {
-            DLType::Bottom => "bottom",
-            DLType::Top => "top",
-            DLType::BaseConcept => "baseconcept",
-            DLType::BaseRole => "baserole",
-            DLType::InverseRole => "inverserole",
-            DLType::NegatedRole => "negatedrole",
-            DLType::ExistsConcept => "existsconcept",
-            DLType::NegatedConcept => "negatedconcept",
-            DLType::Nominal => "nominal",
-        };
-
-        let res = String::from(res);
-        res
-    }
-
-    pub fn usize_type_from_usize_for_db(id: usize) -> Option<DLType> {
-        match id {
-            0 => Some(DLType::Bottom),
-            1 => Some(DLType::Top),
-            2 => Some(DLType::BaseConcept),
-            3 => Some(DLType::BaseRole),
-            4 => Some(DLType::InverseRole),
-            5 => Some(DLType::NegatedRole),
-            6 => Some(DLType::ExistsConcept),
-            7 => Some(DLType::NegatedConcept),
-            8 => Some(DLType::Nominal),
-            _ => Option::None,
-        }
-    }
-
-     */
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]
@@ -224,174 +159,245 @@ impl CR {
 
     // true for tbi, false for abi
     pub fn description(&self, for_tbi: bool) -> String {
-        match self {
-            CR::Zero => {
-                if for_tbi {
-                    format!(
-                        "{}: X {} X{}{}, {}{}X",
-                        self.identifier(),
-                        UNICODE_RIGHTARROW,
-                        UNICODE_SQSUBSETEQ,
-                        UNICODE_TOP,
-                        UNICODE_BOT,
-                        UNICODE_SQSUBSETEQ
-                    )
-                } else {
-                    String::from("R0: NONE")
+        if cfg!(target_os = "windows") {
+            match self {
+                CR::Zero => {
+                    if for_tbi {
+                        String::from("X -> BOTTOM < X, X < TOP")
+                    } else {
+                        String::from("R0: NONE")
+                    }
+                }
+                CR::First => {
+                    if for_tbi {
+                        String::from("X < NOT Y -> Y < NOT X")
+                    } else {
+                        // if (a,b):r then a:Er and b:Er^⁻
+                        String::from("(a,b): r -> a: Exists r, b: Exists r^-")
+                    }
+                }
+                CR::Second => {
+                    if for_tbi {
+                        String::from("X < Y, Y < Z -> X < Z")
+                    } else {
+                        // if (a,b):r and r < s then (a,b):s
+                        String::from("(a,b): r, r < s -> (a,b): s")
+                    }
+                }
+                CR::Third => {
+                    // third rule: r1=>r2 and B=>notExists_r2 then B=>notExists_r1 and Exists_r1=>notB
+                    if for_tbi {
+                        String::from("r < s, X < NOT EXISTS s -> X < NOT EXISTS r, EXISTS r < NOT X")
+                    } else {
+                        // if a:c and c < d then a:d
+                        String::from("a: X, X < Y -> a: Y")
+                    }
+                }
+                CR::Fourth => {
+                    // fourth rule: r1=>r2 and B=>notExists_r2_inv then B=>notExists_r1_inv
+                    if for_tbi {
+                        String::from("r < s, B < NOT EXISTS s^- -> X < NOT EXISTS r^-")
+                    } else {
+                        String::from("R4: NONE")
+                    }
+                }
+                CR::Fifth => {
+                    // fifth rule: Exists_r=>notExists_r then r=>not_r and Exists_r_inv=>notExists_r_inv
+                    if for_tbi {
+                        String::from("EXISTS r < NOT EXISTS r -> r < NOT r, EXISTS r^- < NOT EXISTS r^-")
+                    } else {
+                        String::from("R5: NONE")
+                    }
+                }
+                CR::Sixth => String::from("R6: NONE"),
+                CR::Seventh => {
+                    // seventh rule: r=>not_r then Exists_r=>notExists_r and Exists_r_inv=>notExists_r_inv
+                    if for_tbi {
+                        String::from("r < NOT r -> EXISTS r < NOT EXISTS r, EXISTS r^- < NOT EXISTS r^-")
+                    } else {
+                        String::from("R7: NONE")
+                    }
+                }
+                CR::Eight => {
+                    // eight rule: r1=>r2 then r1_inv=>r2_inv and Exists_r1=>Exists_r2
+                    if for_tbi {
+                        String::from("r < s -> r^- < s^-, EXISTS r < EXISTS s")
+                    } else {
+                        String::from("R8: NONE")
+                    }
                 }
             }
-            CR::First => {
-                if for_tbi {
-                    format!(
-                        "{}: X{}{}Y {} Y{}{}X",
-                        self.identifier(),
-                        UNICODE_SQSUBSETEQ,
-                        UNICODE_NEG,
-                        UNICODE_RIGHTARROW,
-                        UNICODE_SQSUBSETEQ,
-                        UNICODE_NEG
-                    )
-                } else {
-                    // if (a,b):r then a:Er and b:Er^⁻
-                    format!(
-                        "{}: (a,b):r {} a:{}r, b:{}r^-",
-                        self.identifier(),
-                        UNICODE_RIGHTARROW,
-                        UNICODE_EXISTS,
-                        UNICODE_EXISTS,
-                    )
+        } else {
+            match self {
+                CR::Zero => {
+                    if for_tbi {
+                        format!(
+                            "{}: X {} X{}{}, {}{}X",
+                            self.identifier(),
+                            UNICODE_RIGHTARROW,
+                            UNICODE_SQSUBSETEQ,
+                            UNICODE_TOP,
+                            UNICODE_BOT,
+                            UNICODE_SQSUBSETEQ
+                        )
+                    } else {
+                        String::from("R0: NONE")
+                    }
                 }
-            }
-            CR::Second => {
-                if for_tbi {
-                    format!(
-                        "{}: X{}Y, Y{}Z {} X{}Z",
-                        self.identifier(),
-                        UNICODE_SQSUBSETEQ,
-                        UNICODE_SQSUBSETEQ,
-                        UNICODE_RIGHTARROW,
-                        UNICODE_SQSUBSETEQ
-                    )
-                } else {
-                    // if (a,b):r and r < s then (a,b):s
-                    format!(
-                        "{}: (a,b):r, r{}s {} (a,b):s",
-                        self.identifier(),
-                        UNICODE_SUBSETEQ,
-                        UNICODE_RIGHTARROW,
-                    )
+                CR::First => {
+                    if for_tbi {
+                        format!(
+                            "{}: X{}{}Y {} Y{}{}X",
+                            self.identifier(),
+                            UNICODE_SQSUBSETEQ,
+                            UNICODE_NEG,
+                            UNICODE_RIGHTARROW,
+                            UNICODE_SQSUBSETEQ,
+                            UNICODE_NEG
+                        )
+                    } else {
+                        // if (a,b):r then a:Er and b:Er^⁻
+                        format!(
+                            "{}: (a,b):r {} a:{}r, b:{}r^-",
+                            self.identifier(),
+                            UNICODE_RIGHTARROW,
+                            UNICODE_EXISTS,
+                            UNICODE_EXISTS,
+                        )
+                    }
                 }
-            }
-            CR::Third => {
-                // third rule: r1=>r2 and B=>notExists_r2 then B=>notExists_r1 and Exists_r1=>notB
-                if for_tbi {
-                    format!(
-                        "{}: r{}s, X{}{}{}s {} X{}{}{}r, {}r{}{}X",
-                        self.identifier(),
-                        UNICODE_SUBSETEQ,
-                        UNICODE_SQSUBSETEQ,
-                        UNICODE_NEG,
-                        UNICODE_EXISTS,
-                        UNICODE_RIGHTARROW,
-                        UNICODE_SQSUBSETEQ,
-                        UNICODE_NEG,
-                        UNICODE_EXISTS,
-                        UNICODE_EXISTS,
-                        UNICODE_SQSUBSETEQ,
-                        UNICODE_NEG
-                    )
-                } else {
-                    // if a:c and c < d then a:d
-                    format!(
-                        "{}: a:X, X{}Y {} a:Y",
-                        self.identifier(),
-                        UNICODE_SQSUBSETEQ,
-                        UNICODE_RIGHTARROW,
-                    )
+                CR::Second => {
+                    if for_tbi {
+                        format!(
+                            "{}: X{}Y, Y{}Z {} X{}Z",
+                            self.identifier(),
+                            UNICODE_SQSUBSETEQ,
+                            UNICODE_SQSUBSETEQ,
+                            UNICODE_RIGHTARROW,
+                            UNICODE_SQSUBSETEQ
+                        )
+                    } else {
+                        // if (a,b):r and r < s then (a,b):s
+                        format!(
+                            "{}: (a,b):r, r{}s {} (a,b):s",
+                            self.identifier(),
+                            UNICODE_SUBSETEQ,
+                            UNICODE_RIGHTARROW,
+                        )
+                    }
                 }
-            }
-            CR::Fourth => {
-                // fourth rule: r1=>r2 and B=>notExists_r2_inv then B=>notExists_r1_inv
-                if for_tbi {
-                    format!(
-                        "{}: r{}s, X{}{}{}s^- {} X{}{}{}r^-",
-                        self.identifier(),
-                        UNICODE_SUBSETEQ,
-                        UNICODE_SQSUBSETEQ,
-                        UNICODE_NEG,
-                        UNICODE_EXISTS,
-                        UNICODE_RIGHTARROW,
-                        UNICODE_SQSUBSETEQ,
-                        UNICODE_NEG,
-                        UNICODE_EXISTS,
-                    )
-                } else {
-                    String::from("R4: NONE")
+                CR::Third => {
+                    // third rule: r1=>r2 and B=>notExists_r2 then B=>notExists_r1 and Exists_r1=>notB
+                    if for_tbi {
+                        format!(
+                            "{}: r{}s, X{}{}{}s {} X{}{}{}r, {}r{}{}X",
+                            self.identifier(),
+                            UNICODE_SUBSETEQ,
+                            UNICODE_SQSUBSETEQ,
+                            UNICODE_NEG,
+                            UNICODE_EXISTS,
+                            UNICODE_RIGHTARROW,
+                            UNICODE_SQSUBSETEQ,
+                            UNICODE_NEG,
+                            UNICODE_EXISTS,
+                            UNICODE_EXISTS,
+                            UNICODE_SQSUBSETEQ,
+                            UNICODE_NEG
+                        )
+                    } else {
+                        // if a:c and c < d then a:d
+                        format!(
+                            "{}: a:X, X{}Y {} a:Y",
+                            self.identifier(),
+                            UNICODE_SQSUBSETEQ,
+                            UNICODE_RIGHTARROW,
+                        )
+                    }
                 }
-            }
-            CR::Fifth => {
-                // fifth rule: Exists_r=>notExists_r then r=>not_r and Exists_r_inv=>notExists_r_inv
-                if for_tbi {
-                    format!(
-                        "{}: {}r{}{}{}r {} r{}{}r, {}r^-{}{}{}r^-",
-                        self.identifier(),
-                        UNICODE_EXISTS,
-                        UNICODE_SQSUBSETEQ,
-                        UNICODE_NEG,
-                        UNICODE_EXISTS,
-                        UNICODE_RIGHTARROW,
-                        UNICODE_SUBSETEQ,
-                        UNICODE_NEG,
-                        UNICODE_EXISTS,
-                        UNICODE_SQSUBSETEQ,
-                        UNICODE_NEG,
-                        UNICODE_EXISTS,
-                    )
-                } else {
-                    String::from("R5: NONE")
+                CR::Fourth => {
+                    // fourth rule: r1=>r2 and B=>notExists_r2_inv then B=>notExists_r1_inv
+                    if for_tbi {
+                        format!(
+                            "{}: r{}s, X{}{}{}s^- {} X{}{}{}r^-",
+                            self.identifier(),
+                            UNICODE_SUBSETEQ,
+                            UNICODE_SQSUBSETEQ,
+                            UNICODE_NEG,
+                            UNICODE_EXISTS,
+                            UNICODE_RIGHTARROW,
+                            UNICODE_SQSUBSETEQ,
+                            UNICODE_NEG,
+                            UNICODE_EXISTS,
+                        )
+                    } else {
+                        String::from("R4: NONE")
+                    }
                 }
-            }
-            CR::Sixth => String::from("R6: NONE"),
-            CR::Seventh => {
-                // seventh rule: r=>not_r then Exists_r=>notExists_r and Exists_r_inv=>notExists_r_inv
-                if for_tbi {
-                    format!(
-                        "{}: r{}{}r {} {}r{}{}{}r, {}r^-{}{}{}r^-",
-                        self.identifier(),
-                        UNICODE_SUBSETEQ,
-                        UNICODE_NEG,
-                        UNICODE_RIGHTARROW,
-                        UNICODE_EXISTS,
-                        UNICODE_SQSUBSETEQ,
-                        UNICODE_NEG,
-                        UNICODE_EXISTS,
-                        UNICODE_EXISTS,
-                        UNICODE_SQSUBSETEQ,
-                        UNICODE_NEG,
-                        UNICODE_EXISTS
-                    )
-                } else {
-                    String::from("R7: NONE")
+                CR::Fifth => {
+                    // fifth rule: Exists_r=>notExists_r then r=>not_r and Exists_r_inv=>notExists_r_inv
+                    if for_tbi {
+                        format!(
+                            "{}: {}r{}{}{}r {} r{}{}r, {}r^-{}{}{}r^-",
+                            self.identifier(),
+                            UNICODE_EXISTS,
+                            UNICODE_SQSUBSETEQ,
+                            UNICODE_NEG,
+                            UNICODE_EXISTS,
+                            UNICODE_RIGHTARROW,
+                            UNICODE_SUBSETEQ,
+                            UNICODE_NEG,
+                            UNICODE_EXISTS,
+                            UNICODE_SQSUBSETEQ,
+                            UNICODE_NEG,
+                            UNICODE_EXISTS,
+                        )
+                    } else {
+                        String::from("R5: NONE")
+                    }
                 }
-            }
-            CR::Eight => {
-                // eight rule: r1=>r2 then r1_inv=>r2_inv and Exists_r1=>Exists_r2
-                if for_tbi {
-                    format!(
-                        "{}: r{}s {} r^-{}s^-, {}r{}{}s ",
-                        self.identifier(),
-                        UNICODE_SUBSETEQ,
-                        UNICODE_RIGHTARROW,
-                        UNICODE_SUBSETEQ,
-                        UNICODE_EXISTS,
-                        UNICODE_SQSUBSETEQ,
-                        UNICODE_EXISTS
-                    )
-                } else {
-                    String::from("R8: NONE")
+                CR::Sixth => String::from("R6: NONE"),
+                CR::Seventh => {
+                    // seventh rule: r=>not_r then Exists_r=>notExists_r and Exists_r_inv=>notExists_r_inv
+                    if for_tbi {
+                        format!(
+                            "{}: r{}{}r {} {}r{}{}{}r, {}r^-{}{}{}r^-",
+                            self.identifier(),
+                            UNICODE_SUBSETEQ,
+                            UNICODE_NEG,
+                            UNICODE_RIGHTARROW,
+                            UNICODE_EXISTS,
+                            UNICODE_SQSUBSETEQ,
+                            UNICODE_NEG,
+                            UNICODE_EXISTS,
+                            UNICODE_EXISTS,
+                            UNICODE_SQSUBSETEQ,
+                            UNICODE_NEG,
+                            UNICODE_EXISTS
+                        )
+                    } else {
+                        String::from("R7: NONE")
+                    }
+                }
+                CR::Eight => {
+                    // eight rule: r1=>r2 then r1_inv=>r2_inv and Exists_r1=>Exists_r2
+                    if for_tbi {
+                        format!(
+                            "{}: r{}s {} r^-{}s^-, {}r{}{}s ",
+                            self.identifier(),
+                            UNICODE_SUBSETEQ,
+                            UNICODE_RIGHTARROW,
+                            UNICODE_SUBSETEQ,
+                            UNICODE_EXISTS,
+                            UNICODE_SQSUBSETEQ,
+                            UNICODE_EXISTS
+                        )
+                    } else {
+                        String::from("R8: NONE")
+                    }
                 }
             }
         }
+
     }
 
     pub fn identifier(&self) -> String {

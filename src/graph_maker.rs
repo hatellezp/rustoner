@@ -292,8 +292,12 @@ pub fn node_attr_tbox_unraveling(
 
 // quantum is used !!!!
 pub fn transform_abiq_for_graph(abiq: &AbiqDllite, abiq_string: String) -> String {
-    let abiq_string = abiq_string.replace("EXISTS", UNICODE_EXISTS);
-    let abiq_string = abiq_string.replace("NOT", UNICODE_NEG);
+
+    if !cfg!(target_os = "windows") {
+        let abiq_string = abiq_string.replace("EXISTS", UNICODE_EXISTS);
+        let abiq_string = abiq_string.replace("NOT", UNICODE_NEG);
+
+    }
 
     let abiq_string = format!("<abi>LV{}  {}", abiq.level(), &abiq_string);
     abiq_string
@@ -306,10 +310,12 @@ pub fn transform_tbi_for_graph(tbi: &TbiDllite, tbi_string: String, is_for_abox:
         UNICODE_SUBSETEQ
     };
 
-    let tbi_string = tbi_string.replace("EXISTS", UNICODE_EXISTS);
-    let tbi_string = tbi_string.replace("<", subset);
-    // let tbi_string = tbi_string.replace("-", UNICODE_NEG);
-    let tbi_string = tbi_string.replace("NOT", UNICODE_NEG);
+    if !cfg!(target_os = "windows") {
+        let tbi_string = tbi_string.replace("EXISTS", UNICODE_EXISTS);
+        let tbi_string = tbi_string.replace("<", subset);
+        // let tbi_string = tbi_string.replace("-", UNICODE_NEG);
+        let tbi_string = tbi_string.replace("NOT", UNICODE_NEG);
+    }
 
     let tbi_string = match is_for_abox {
         true => format!("<tbi>LV{}  {}", tbi.level(), &tbi_string),
