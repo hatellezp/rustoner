@@ -1,5 +1,4 @@
 # rustoner: a Description Logic reasoner written in rust
-**it works now**
 
 ## Description 
 
