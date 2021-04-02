@@ -1,5 +1,5 @@
 /*
-UMONS 2021
+© - 2021 – UMONS
 Horacio Alejandro Tellez Perez
 
 LICENSE GPLV3+:
@@ -16,10 +16,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see https://www.gnu.org/licenses/.
 */
-
-
-
-
 
 /*
 TODO: I'm making a big choice here, top will be the negated one, that way we respect that no

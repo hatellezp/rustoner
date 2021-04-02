@@ -1,5 +1,5 @@
 /*
-UMONS 2021
+© - 2021 – UMONS
 Horacio Alejandro Tellez Perez
 
 LICENSE GPLV3+:
@@ -25,14 +25,14 @@ use crate::dl_lite::tbox_item::TbiDllite;
 use crate::kb::types::DLType;
 use crate::kb::types::FileType;
 
-use std::collections::{HashMap, HashSet};
-use std::fmt;
-use std::fs::File;
-use std::io::Write;
 use crate::dl_lite::native_filetype_utilities::{
     abox_to_native_string_quantum, parse_abox_native_quantum, parse_symbols_native,
     parse_tbox_native,
 };
+use std::collections::{HashMap, HashSet};
+use std::fmt;
+use std::fs::File;
+use std::io::Write;
 
 // use rusqlite::{Connection, Result};
 

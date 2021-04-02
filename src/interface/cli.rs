@@ -1,5 +1,5 @@
 /*
-UMONS 2021
+© - 2021 – UMON
 Horacio Alejandro Tellez Perez
 
 LICENSE GPLV3+:

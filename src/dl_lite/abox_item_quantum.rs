@@ -29,7 +29,6 @@ use crate::kb::types::{DLType, CR};
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 
-
 /*
    remember that only base roles and base concepts are allowed here !!
 */

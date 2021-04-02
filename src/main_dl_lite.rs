@@ -1,5 +1,5 @@
 /*
-UMONS 2021
+© - 2021 – UMONS
 Horacio Alejandro Tellez Perez
 
 LICENSE GPLV3+:
@@ -63,7 +63,10 @@ use petgraph::dot::{Config, Dot};
 use question::{Answer, Question};
 
 use crate::alg_math::utilities::null_vector;
-use crate::graph_maker::{create_graph_for_tbox_unraveling, edge_attr_tbox_unraveling, node_attr_tbox_unraveling, create_graph_for_aboxq_unraveling, node_attr_abox_unraveling};
+use crate::graph_maker::{
+    create_graph_for_aboxq_unraveling, create_graph_for_tbox_unraveling, edge_attr_tbox_unraveling,
+    node_attr_abox_unraveling, node_attr_tbox_unraveling,
+};
 use std::process::Command;
 use tempfile::NamedTempFile;
 
@@ -881,8 +884,18 @@ pub fn main() {
                                 }
                                 Task::GENCONAB => {
                                     let only_conflicts = false;
-                                    let tb_output = create_string_for_unravel_conflict_tbox(&new_tb, onto.symbols(), only_conflicts);
-                                    let ab_output = create_string_for_unravel_conflict_abox(&new_tb, &abox_completed, onto.symbols(), only_conflicts, &[]);
+                                    let _tb_output = create_string_for_unravel_conflict_tbox(
+                                        &new_tb,
+                                        onto.symbols(),
+                                        only_conflicts,
+                                    );
+                                    let ab_output = create_string_for_unravel_conflict_abox(
+                                        &new_tb,
+                                        &abox_completed,
+                                        onto.symbols(),
+                                        only_conflicts,
+                                        &[],
+                                    );
 
                                     if !silent {
                                         println!("{}", ab_output);
@@ -901,7 +914,11 @@ pub fn main() {
 
                                     if print_output == Answer::YES {
                                         // TODO: I'm here
-                                        let graph = create_graph_for_aboxq_unraveling(&abox_completed, &new_tb, onto.symbols());
+                                        let graph = create_graph_for_aboxq_unraveling(
+                                            &abox_completed,
+                                            &new_tb,
+                                            onto.symbols(),
+                                        );
 
                                         let get_edge = edge_attr_tbox_unraveling;
                                         let get_node = node_attr_abox_unraveling;
@@ -941,7 +958,8 @@ pub fn main() {
 
                                         // now show graph
                                         let question_print =
-                                            " -- do you want see a generate a visual output?".to_string();
+                                            " -- do you want see a generate a visual output?"
+                                                .to_string();
 
                                         let print_output = Question::new(&question_print)
                                             .default(Answer::YES)
@@ -955,11 +973,15 @@ pub fn main() {
                                             match temp_dot_file_res {
                                                 Err(e) => {
                                                     if !silent {
-                                                        println!("could not generate output: {}", e);
+                                                        println!(
+                                                            "could not generate output: {}",
+                                                            e
+                                                        );
                                                     }
                                                 }
                                                 Ok(temp_dot) => {
-                                                    let path_to_temp_dot = (&temp_dot).path().to_str();
+                                                    let path_to_temp_dot =
+                                                        (&temp_dot).path().to_str();
 
                                                     match path_to_temp_dot {
                                                         Option::None => {
@@ -1002,8 +1024,10 @@ pub fn main() {
                                                                 Ok(o) => {
                                                                     if !silent {
                                                                         let _std_out =
-                                                                            std::str::from_utf8(&o.stdout)
-                                                                                .unwrap();
+                                                                            std::str::from_utf8(
+                                                                                &o.stdout,
+                                                                            )
+                                                                            .unwrap();
                                                                         println!(
                                                                             " -- file generated: {}",
                                                                             &name_output_file
@@ -1021,7 +1045,8 @@ pub fn main() {
                                     // consequences to file if presented
                                     match path_output_op {
                                         Some(path_output) => {
-                                            let filename = path_output.to_str().unwrap().to_string();
+                                            let filename =
+                                                path_output.to_str().unwrap().to_string();
 
                                             write_str_to_file(&ab_output, &filename);
                                         }

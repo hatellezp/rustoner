@@ -1,5 +1,5 @@
 /*
-UMONS 2021
+ © - 2021 – UMONS
 Horacio Alejandro Tellez Perez
 
 LICENSE GPLV3+:
@@ -17,23 +17,22 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
-
-use crate::dl_lite::string_formatter::{tbi_to_string, abi_to_string};
+use crate::dl_lite::string_formatter::{abi_to_string, tbi_to_string};
 use crate::dl_lite::tbox::TBDllite;
 use crate::dl_lite::tbox_item::TbiDllite;
 use crate::interface::format_constants::{
     UNICODE_EXISTS, UNICODE_NEG, UNICODE_SQSUBSETEQ, UNICODE_SUBSETEQ,
 };
-use crate::kb::knowledge_base::{Implier, Item, SymbolDict, TBox, TBoxItem, ABox};
+use crate::kb::knowledge_base::{ABox, Implier, Item, SymbolDict, TBox, TBoxItem};
 use crate::kb::types::{DLType, CR};
 use petgraph::graph::EdgeReference;
 use petgraph::prelude::NodeIndex;
 use petgraph::{Directed, Graph};
 
 use std::collections::HashMap;
-use crate::dl_lite::abox_item::AbiDllite;
-use crate::dl_lite::abox_item_quantum::AbiqDllite;
+
 use crate::dl_lite::abox::AbqDllite;
+use crate::dl_lite::abox_item_quantum::AbiqDllite;
 
 // identifier for the rules
 const RULE_IDS: [CR; 9] = [
@@ -119,7 +118,8 @@ pub fn create_graph_for_tbox_unraveling(
                             let tbi_string = tbi_to_string(tbi_imp, symbols).unwrap();
 
                             // here we substitute for the right symbol
-                            let tbi_string = transform_tbi_for_graph(tbi_imp, tbi_string, is_for_abox);
+                            let tbi_string =
+                                transform_tbi_for_graph(tbi_imp, tbi_string, is_for_abox);
 
                             let imp_index: NodeIndex<u32>;
                             if added.contains_key(&tbi_string) {
@@ -151,7 +151,7 @@ pub fn create_graph_for_aboxq_unraveling(
 
     let only_conflicts = false;
     let tbis_by_level = tbox.get_tbis_by_level(only_conflicts);
-    let abis_by_level = abox.get_abis_by_level(tbox, only_conflicts, &[]);
+    let _abis_by_level = abox.get_abis_by_level(tbox, only_conflicts, &[]);
     let mut added: HashMap<String, NodeIndex<u32>> = HashMap::new();
 
     let mut rules_added: Vec<usize> = Vec::new();
@@ -203,7 +203,8 @@ pub fn create_graph_for_aboxq_unraveling(
                             let tbi_string = tbi_to_string(tbi_imp, symbols).unwrap();
 
                             // here we substitute for the right symbol
-                            let tbi_string = transform_tbi_for_graph(tbi_imp, tbi_string, is_for_abox);
+                            let tbi_string =
+                                transform_tbi_for_graph(tbi_imp, tbi_string, is_for_abox);
 
                             let imp_index: NodeIndex<u32>;
                             if added.contains_key(&tbi_string) {
@@ -240,10 +241,6 @@ pub fn create_graph_for_aboxq_unraveling(
 
     graph
 }
-
-
-
-
 
 // create graph for abox with impliers
 

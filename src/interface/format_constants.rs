@@ -1,5 +1,5 @@
 /*
-UMONS 2021
+© - 2021 – UMONS
 Horacio Alejandro Tellez Perez
 
 LICENSE GPLV3+:
@@ -16,8 +16,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see https://www.gnu.org/licenses/.
 */
-
-
 
 // symbol equivalent to latex rendering
 

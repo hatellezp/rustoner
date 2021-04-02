@@ -1,5 +1,5 @@
 /*
-UMONS 2021
+© - 2021 – UMONS
 Horacio Alejandro Tellez Perez
 
 LICENSE GPLV3+:
@@ -968,7 +968,6 @@ pub fn create_string_for_unravel_conflict_tbox(
         actual_level = max_level - lev;
 
         if tbis_by_level[actual_level] > 0 {
-
             let mut inner_temp = String::new();
 
             for tbi in tb.items() {
@@ -1019,7 +1018,7 @@ pub fn create_string_for_unravel_conflict_abiq(
         let mut tbis_string = pretty_vector_tbi_to_string(tbis, symbols);
         let mut abis_string = pretty_vector_abiq_to_string(abis, symbols);
 
-        temp_s = match (&tbis_string).as_str()  {
+        temp_s = match (&tbis_string).as_str() {
             "[]" => {
                 format!(
                     "{}impliers:\n{}{}: abis: {}\n",
@@ -1028,7 +1027,7 @@ pub fn create_string_for_unravel_conflict_abiq(
                     1,
                     &abis_string
                 )
-            },
+            }
             _ => {
                 format!(
                     "{}impliers:\n{}{}: tbis: {}\n{}{}: abis: {}\n",
@@ -1040,7 +1039,7 @@ pub fn create_string_for_unravel_conflict_abiq(
                     1,
                     &abis_string
                 )
-            },
+            }
         };
 
         s.push_str(&temp_s);
@@ -1052,7 +1051,7 @@ pub fn create_string_for_unravel_conflict_abiq(
             tbis_string = pretty_vector_tbi_to_string(tbis, symbols);
             abis_string = pretty_vector_abiq_to_string(abis, symbols);
 
-            temp_s = match (&tbis_string).as_str()  {
+            temp_s = match (&tbis_string).as_str() {
                 "[]" => {
                     format!(
                         "{}impliers:\n{}{}: abis: {}\n",
@@ -1061,7 +1060,7 @@ pub fn create_string_for_unravel_conflict_abiq(
                         1,
                         &abis_string
                     )
-                },
+                }
                 _ => {
                     format!(
                         "{}impliers:\n{}{}: tbis: {}\n{}{}: abis: {}\n",
@@ -1073,7 +1072,7 @@ pub fn create_string_for_unravel_conflict_abiq(
                         1,
                         &abis_string
                     )
-                },
+                }
             };
 
             s.push_str(&temp_s);
