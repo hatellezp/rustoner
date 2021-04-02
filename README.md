@@ -33,6 +33,16 @@ analysis.
 
 ## Use
 
+### Install
+
+If you go to the releases there is a ```bin``` directory with a binary that
+you can directly use. 
+
+If you want to compile from source then clone this 
+repository or download the release with ```src``` in its name. You will need 
+**rust** of course and **cargo** should itself deal with the dependencies. This
+README functions also as a tutorial and it's shipped with both types of releases.
+
 ### Notation
 
 While support is being added for other syntax, the more easy one is the native one.
