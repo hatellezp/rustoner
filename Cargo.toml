@@ -26,6 +26,7 @@ itertools = "*"
 
 # I'm implementing it again myself, for bound and rank computing
 fftw = "*"
+fftw-src = "*"
 num-complex = "0.4.0"
 nalgebra = "0.25.3"
 
