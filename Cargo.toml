@@ -8,7 +8,7 @@ edition = "2018"
 
 # this is the good one
 [[bin]]
-name = "rustoner_dllite"
+name = "rustoner_dlliter"
 path = "src/main_dl_lite.rs"
 
 [dependencies]
