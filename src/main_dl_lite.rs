@@ -76,6 +76,9 @@ const M_SCALER: f64 = 1.1;
 const B_TRANSLATE: f64 = 1.;
 const DOT_COMMAND_LINUX: &str = "dot";
 const DOT_COMMAND_WINDOWS: &str = "dot.exe";
+const COMMAND_SHELL_LINUX: &str = "sh";
+const COMMAND_SHELL_WINDOWS: &str = "cmd";
+
 
 // the main function
 pub fn main() {
@@ -327,7 +330,8 @@ pub fn main() {
                                                                 tb_name, dot_output_format
                                                             );
                                                             let command = format!(
-                                                                "dot -T{} {} -o {}",
+                                                                "{} -T{} {} -o {}",
+                                                                dot_command_name,
                                                                 dot_output_format,
                                                                 path_to_temp,
                                                                 &name_output_file
@@ -335,10 +339,24 @@ pub fn main() {
 
                                                             // execute dot command
                                                             // TODO: change this to be platform independent
+                                                            let output = if cfg!(target_os = "windows") {
+                                                                Command::new(COMMAND_SHELL_WINDOWS)
+                                                                    .arg("/C")
+                                                                    .arg(&command)
+                                                                    .output()
+                                                            } else {
+                                                                Command::new(COMMAND_SHELL_LINUX)
+                                                                    .arg("-c")
+                                                                    .arg(&command)
+                                                                    .output()
+                                                            };
+
+                                                            /*
                                                             let output = Command::new("sh")
                                                                 .arg("-c")
                                                                 .arg(&command)
                                                                 .output();
+                                                            */
 
                                                             match output {
                                                                 Err(e) => {
@@ -494,7 +512,8 @@ pub fn main() {
                                                     tb_name, dot_output_format
                                                 );
                                                 let command = format!(
-                                                    "dot -T{} {} -o {}",
+                                                    "{} -T{} {} -o {}",
+                                                    dot_command_name,
                                                     dot_output_format,
                                                     path_to_temp,
                                                     &name_output_file
@@ -502,10 +521,26 @@ pub fn main() {
 
                                                 // execute dot command
                                                 // TODO: change this to be platform independent
+
+                                                let output = if cfg!(target_os = "windows") {
+                                                    Command::new(COMMAND_SHELL_WINDOWS)
+                                                        .arg("/C")
+                                                        .arg(&command)
+                                                        .output()
+                                                } else {
+                                                    Command::new(COMMAND_SHELL_LINUX)
+                                                        .arg("-c")
+                                                        .arg(&command)
+                                                        .output()
+                                                };
+
+                                                /*
                                                 let output = Command::new("sh")
                                                     .arg("-c")
                                                     .arg(&command)
                                                     .output();
+
+                                                 */
 
                                                 match output {
                                                     Err(e) => {
@@ -1004,7 +1039,8 @@ pub fn main() {
                                                                 ab_name, dot_output_format
                                                             );
                                                             let command = format!(
-                                                                "dot -T{} {} -o {}",
+                                                                "{} -T{} {} -o {}",
+                                                                dot_command_name,
                                                                 dot_output_format,
                                                                 path_to_temp,
                                                                 &name_output_file
@@ -1012,10 +1048,26 @@ pub fn main() {
 
                                                             // execute dot command
                                                             // TODO: change this to be platform independent
+
+                                                            let output = if cfg!(target_os = "windows") {
+                                                                Command::new(COMMAND_SHELL_WINDOWS)
+                                                                    .arg("/C")
+                                                                    .arg(&command)
+                                                                    .output()
+                                                            } else {
+                                                                Command::new(COMMAND_SHELL_LINUX)
+                                                                    .arg("-c")
+                                                                    .arg(&command)
+                                                                    .output()
+                                                            };
+
+                                                            /*
                                                             let output = Command::new("sh")
                                                                 .arg("-c")
                                                                 .arg(&command)
                                                                 .output();
+
+                                                             */
 
                                                             match output {
                                                                 Err(e) => {
@@ -1262,7 +1314,8 @@ pub fn main() {
                                                                 dot_output_format
                                                             );
                                                             let command = format!(
-                                                                "dot -T{} {} -o {}",
+                                                                "{} -T{} {} -o {}",
+                                                                dot_command_name,
                                                                 dot_output_format,
                                                                 path_to_temp,
                                                                 &name_output_file
@@ -1270,10 +1323,25 @@ pub fn main() {
 
                                                             // execute dot command
                                                             // TODO: change this to be platform independent
+                                                            let output = if cfg!(target_os = "windows") {
+                                                                Command::new(COMMAND_SHELL_WINDOWS)
+                                                                    .arg("/C")
+                                                                    .arg(&command)
+                                                                    .output()
+                                                            } else {
+                                                                Command::new(COMMAND_SHELL_LINUX)
+                                                                    .arg("-c")
+                                                                    .arg(&command)
+                                                                    .output()
+                                                            };
+
+                                                            /*
                                                             let output = Command::new("sh")
                                                                 .arg("-c")
                                                                 .arg(&command)
                                                                 .output();
+
+                                                             */
 
                                                             match output {
                                                                 Err(e) => {
