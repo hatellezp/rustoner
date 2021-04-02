@@ -1,0 +1,11 @@
+BEGINSYMBOL
+concept: Man
+concept: Human
+concept: Mortal
+ENDSYMBOL
+
+BEGINTBOX
+Man < Human
+Human < Mortal
+Mortal < NOT Man
+ENDTBOX

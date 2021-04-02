@@ -1,0 +1,19 @@
+BEGINSYMBOL
+concept: Person
+concept: Professor
+concept: Student
+concept: Course
+role: teaches
+role: attends
+ENDSYMBOL
+
+BEGINTBOX
+Professor < Person
+Student < Person
+Person < NOT Course
+Student < NOT Professor
+EXISTS teaches < Professor
+EXISTS attends < Student
+EXISTS INV teaches < Course
+EXISTS INV attends < Course
+ENDTBOX

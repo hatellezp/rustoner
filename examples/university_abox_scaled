@@ -1,0 +1,10 @@
+BEGINABOX
+John: Professor, 100
+Ava: Student, 100
+DB2: Course, 100
+KR: Course, 100
+John, DB2: teaches, 100
+John, KR: attends, 80
+Ava, IA: attends, 110
+Bob, KR: attends, 100
+ENDABOX
