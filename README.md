@@ -32,14 +32,30 @@ analysis.
 
 ## Use
 
+### Requirements
+To compile and play with its code you will of course need **rust** and **git**.
+
+#### Graphviz
+You will need the **dot** tool, that you should install following
+this [link](https://graphviz.org/download/)
+
+#### FFTW
+The ranking algorithm use the [fftw](http://www.fftw.org/) library.
+You will need it.
+  - if in **linux** systems uses your package manager to install it, e.g.
+    Debian based system : ```apt install libfftw3-dev```
+ - for **windows** if you compile from source the go to this 
+   [link](http://www.fftw.org/install/windows.html) to know how to install and link the
+   library
+- for **windows** if you download the executable then there should be two files in the 
+  ```bin``` directory, the **rustoner** executable and also a **.dll** file. This is
+  the dynamic **fftw3** library and both executable and dll files should always be in the
+  same directory
+
 ### Install
 
-If you go to the releases there is a ```bin``` directory with a binary that
-you can directly use. 
-
-If you want to compile from source then clone this 
-repository or download the release with ```src``` in its name. You will need 
-**rust** of course and **cargo** should itself deal with the dependencies. This
+Simply **clone** the repository and compile the code yourself or go to one of the 
+releases to get the executable or binary file and do stuff. This
 README functions also as a tutorial and it's shipped with both types of releases.
 
 ### Notation
