@@ -26,7 +26,7 @@ along with this program.  If not, see https://www.gnu.org/licenses/.
 
 // Ontology and ABox (quantified) realizations for dl_lite
 use crate::dl_lite::ontology::OntologyDllite;
-use rustoner::dl_lite::abox::AbqDllite;
+use crate::dl_lite::abox::AbqDllite;
 // abstract structs and widely use types
 use crate::kb::knowledge_base::{ABox, AggrFn};
 use crate::kb::types::ConflictType;
