@@ -17,67 +17,107 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
-mod alg_math;
-mod dl_lite;
-mod graph_maker;
-mod helper;
-mod interface;
-mod kb;
 
-// for cli interface
+// =================================================================================================
+// MODULE DECLARATION
+
+mod alg_math; // this module is for computing the rank, matrix manipulation and interpolation are
+             // defined here
+mod dl_lite; // dl_lite reasoner is in this module
+mod graph_maker; // a module that is only a file, creates a graph from ontologies and alike
+mod helper;  // helper functions to parse files, update list and other
+mod interface;  // module with the cli interface
+mod kb;  // abstract structures and traits for knowledge bases are defined here
+
+// END OF MODULE DECLARATION
+// =================================================================================================
+
+
+// =================================================================================================
+// STRUCTS AND FUNCTION IMPORTS
+
+// for cli interface, need to import it so the interface module works
 use structopt::StructOpt;
 
-// from alg_math
 
-// from kb
-use crate::kb::knowledge_base::{ABox, SymbolDict, TBox, TBoxItem};
-use crate::kb::types::FileType;
+// import abstract traits from kb module
+use crate::kb::knowledge_base::{ABox, TBox, TBoxItem};
 
-// from the dl_lite module
-use crate::dl_lite::ontology::OntologyDllite;
+use crate::kb::knowledge_base::SymbolDict; // syntactic sugar for a really long type
+use crate::kb::types::FileType; // types of file, "JSON" or "NATIVE", for the moment only "NATIVE"
 
-use crate::dl_lite::abox::AbqDllite;
-use crate::dl_lite::abox_item_quantum::AbiqDllite;
+// several import from the dl_lite module
+use crate::dl_lite::ontology::OntologyDllite;  // Ontology realization for dl_lite
+use crate::dl_lite::abox::AbqDllite;  // ABox (quantified) realization for dl_lite
+use crate::dl_lite::abox_item_quantum::AbiqDllite; // ABox Item (quantified) for dl_lite
+use crate::dl_lite::tbox::TBDllite; // TBox realization for dl_lite
+use crate::dl_lite::tbox_item::TbiDllite; // TBox Item realization for dl_lite
+
+// utilities to transform ABoxes and TBoxes in dl_lite to strings (NATIVE format)
 use crate::dl_lite::native_filetype_utilities::{
     abox_to_native_string_quantum, tbox_to_native_string,
 };
+
+// pretty printers for cli interface
 use crate::dl_lite::string_formatter::{
     create_string_for_gencontb, create_string_for_unravel_conflict_abox,
     create_string_for_unravel_conflict_tbox, pretty_print_abiq_conflict, tbi_to_string,
 };
-use crate::dl_lite::tbox::TBDllite;
-use crate::dl_lite::tbox_item::TbiDllite;
 
+// aggregate operators for credibility of subsets in a ABox
+// (you should go read the paper of abox ranking...)
 use crate::kb::aggr_functions::{AGGR_COUNT, AGGR_MAX, AGGR_MEAN, AGGR_MIN, AGGR_SUM};
 
 // from the interface module
 use crate::interface::cli::{AggrName, Cli, Task};
-
 use crate::interface::utilities::{get_filetype, parse_name_from_filename, write_str_to_file};
 
-// to ask basic questions
-use crate::helper::rank_abox;
+use crate::helper::rank_abox; // wrapper function to rank aboxes
+
+// utilities to create graph, detect OS, verify dot exist and other
 use crate::helper::{command_exists, edge_attr, node_attr};
 use petgraph::dot::{Config, Dot};
 
-use question::{Answer, Question};
-
-use crate::alg_math::utilities::null_vector;
+// creates graphs for every situation (tbox, abox, conflicts ...)
 use crate::graph_maker::{
     create_graph_for_aboxq_unraveling, create_graph_for_tbox_unraveling, edge_attr_tbox_unraveling,
     node_attr_abox_unraveling, node_attr_tbox_unraveling,
 };
-use std::process::Command;
-use tempfile::NamedTempFile;
+
+// awesome lib for ask question in cli interfaces
+use question::{Answer, Question};
+
+// needed to verify trivial solution of the ranking
+use crate::alg_math::utilities::null_vector;
+
+use std::process::Command; // execute OS particular commands
+                           // (for dot -args blabla, create a pdf image)
+use tempfile::NamedTempFile; // used to create a temporary dot file and the pdf after, the dot
+                             // file then dissapears
+
+// END OF IMPORTS
+// =================================================================================================
+
+
+// =================================================================================================
+// SOME CONSTANTS
 
 // constants for the bound computing
-const TOLERANCE: f64 = 0.0000000000000001;
-const M_SCALER: f64 = 1.1;
-const B_TRANSLATE: f64 = 1.;
+// this values are not random, DO NOT TWEAK THEM  if you don't know what you're doing
+const TOLERANCE: f64 = 0.0000000000000001; // below this value we can consider values are equal
+                                           // computing sinus introduces rounding errors
+const M_SCALER: f64 = 1.1; // avoid singular matrices
+const B_TRANSLATE: f64 = 1.; // I found (not on the paper) that this value is superflous in
+                             // the particular case of FFT interpolation, thus is
+                             // set to the multiplicative indetity: 1
+
+// commands for executing dot command
 const DOT_COMMAND_LINUX: &str = "dot";
 const DOT_COMMAND_WINDOWS: &str = "dot.exe";
 const COMMAND_SHELL_LINUX: &str = "sh";
 const COMMAND_SHELL_WINDOWS: &str = "cmd";
+
+// =================================================================================================
 
 
 // the main function
@@ -339,17 +379,22 @@ pub fn main() {
 
                                                             // execute dot command
                                                             // TODO: change this to be platform independent
-                                                            let output = if cfg!(target_os = "windows") {
-                                                                Command::new(COMMAND_SHELL_WINDOWS)
+                                                            let output =
+                                                                if cfg!(target_os = "windows") {
+                                                                    Command::new(
+                                                                        COMMAND_SHELL_WINDOWS,
+                                                                    )
                                                                     .arg("/C")
                                                                     .arg(&command)
                                                                     .output()
-                                                            } else {
-                                                                Command::new(COMMAND_SHELL_LINUX)
+                                                                } else {
+                                                                    Command::new(
+                                                                        COMMAND_SHELL_LINUX,
+                                                                    )
                                                                     .arg("-c")
                                                                     .arg(&command)
                                                                     .output()
-                                                            };
+                                                                };
 
                                                             /*
                                                             let output = Command::new("sh")
@@ -1049,17 +1094,22 @@ pub fn main() {
                                                             // execute dot command
                                                             // TODO: change this to be platform independent
 
-                                                            let output = if cfg!(target_os = "windows") {
-                                                                Command::new(COMMAND_SHELL_WINDOWS)
+                                                            let output =
+                                                                if cfg!(target_os = "windows") {
+                                                                    Command::new(
+                                                                        COMMAND_SHELL_WINDOWS,
+                                                                    )
                                                                     .arg("/C")
                                                                     .arg(&command)
                                                                     .output()
-                                                            } else {
-                                                                Command::new(COMMAND_SHELL_LINUX)
+                                                                } else {
+                                                                    Command::new(
+                                                                        COMMAND_SHELL_LINUX,
+                                                                    )
                                                                     .arg("-c")
                                                                     .arg(&command)
                                                                     .output()
-                                                            };
+                                                                };
 
                                                             /*
                                                             let output = Command::new("sh")
@@ -1323,17 +1373,22 @@ pub fn main() {
 
                                                             // execute dot command
                                                             // TODO: change this to be platform independent
-                                                            let output = if cfg!(target_os = "windows") {
-                                                                Command::new(COMMAND_SHELL_WINDOWS)
+                                                            let output =
+                                                                if cfg!(target_os = "windows") {
+                                                                    Command::new(
+                                                                        COMMAND_SHELL_WINDOWS,
+                                                                    )
                                                                     .arg("/C")
                                                                     .arg(&command)
                                                                     .output()
-                                                            } else {
-                                                                Command::new(COMMAND_SHELL_LINUX)
+                                                                } else {
+                                                                    Command::new(
+                                                                        COMMAND_SHELL_LINUX,
+                                                                    )
                                                                     .arg("-c")
                                                                     .arg(&command)
                                                                     .output()
-                                                            };
+                                                                };
 
                                                             /*
                                                             let output = Command::new("sh")
