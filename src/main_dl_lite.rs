@@ -93,7 +93,7 @@ use crate::alg_math::utilities::null_vector;
 use std::process::Command; // execute OS particular commands
                            // (for dot -args blabla, create a pdf image)
 use tempfile::NamedTempFile; // used to create a temporary dot file and the pdf after, the dot
-                             // file then dissapears
+                             // file then disappears
 
 // END OF IMPORTS
 // =================================================================================================
@@ -106,10 +106,10 @@ use tempfile::NamedTempFile; // used to create a temporary dot file and the pdf 
 // this values are not random, DO NOT TWEAK THEM  if you don't know what you're doing
 const TOLERANCE: f64 = 0.0000000000000001; // below this value we can consider values are equal
                                            // computing sinus introduces rounding errors
-const M_SCALER: f64 = 1.1; // avoid singular matrices
-const B_TRANSLATE: f64 = 1.; // I found (not on the paper) that this value is superflous in
+const M_SCALE: f64 = 1.1; // avoid singular matrices
+const B_TRANSLATE: f64 = 1.; // I found (not on the paper) that this value is superfluous in
                              // the particular case of FFT interpolation, thus is
-                             // set to the multiplicative indetity: 1
+                             // set to the multiplicative identity: 1
 
 // commands for executing dot command
 const DOT_COMMAND_LINUX: &str = "dot";
@@ -117,6 +117,7 @@ const DOT_COMMAND_WINDOWS: &str = "dot.exe";
 const COMMAND_SHELL_LINUX: &str = "sh";
 const COMMAND_SHELL_WINDOWS: &str = "cmd";
 
+// END OF CONSTANTS DECLARATION
 // =================================================================================================
 
 
@@ -134,7 +135,7 @@ pub fn main() {
     let verbose: bool = args.verbose;
     let silent: bool = args.silent;
     let aggr_name_op: Option<AggrName> = args.aggr;
-    // let _ephemere: bool = args.ephemere;
+    // let _ephemera: bool = args.ephemera;
 
     // ---------------------------------
     // this are variables used in several places
@@ -1179,7 +1180,7 @@ pub fn main() {
                                         deduction_tree,
                                         aggr,
                                         TOLERANCE,
-                                        M_SCALER,
+                                        M_SCALE,
                                         B_TRANSLATE,
                                         verbose,
                                     );
