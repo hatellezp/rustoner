@@ -17,22 +17,35 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
-use crate::dl_lite::abox::AbqDllite;
-use crate::dl_lite::ontology::OntologyDllite;
+/*
+    helper is what its name says, a helper module, with several wraps for easy of use functions
+ */
 
+// =================================================================================================
+// IMPORTS
+
+// Ontology and ABox (quantified) realizations for dl_lite
+use crate::dl_lite::ontology::OntologyDllite;
+use rustoner::dl_lite::abox::AbqDllite;
+// abstract structs and widely use types
 use crate::kb::knowledge_base::{ABox, AggrFn};
 use crate::kb::types::ConflictType;
 
+// to the rankab task, which is rank abox assertion
 use crate::alg_math::bounds::find_bound_complex_wrapper;
 use crate::alg_math::utilities::{median, solve_system_wrapper_only_id_mod};
 
+// creation of graphs
 use petgraph::graph::EdgeReference;
 use petgraph::Graph;
 use std::collections::HashMap;
 
-use std::io::ErrorKind;
-use std::ops::DivAssign;
-use std::process::Command;
+use std::io::ErrorKind;  // error to detect absence of command
+use std::ops::DivAssign; // what is this ???
+use std::process::Command; // execute a command
+
+// END OF IMPORTS
+// =================================================================================================
 
 type RankRemainder = (Vec<i8>, HashMap<usize, usize>, HashMap<usize, ConflictType>);
 
