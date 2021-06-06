@@ -6,12 +6,23 @@ edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-# this is the good one
+# entry point for the rustoner reasoner for the logic dl_lite_r
 [[bin]]
 name = "rustoner_dlliter"
 path = "src/main_dl_lite.rs"
 
+# [[bin]]
+# name = "bench"
+# path = "src/bencher.rs"
+
+# for useless stuff
+# [[bin]]
+# name = "scracth"
+# path = "src/scratch.rs"
+
+
 [dependencies]
+# json parsing, feature not used for the moment
 serde = { version = "*", features = ["derive"] }
 serde_json = "*"
 
@@ -21,22 +32,30 @@ paw = "1.0"
 exitcode = "*"
 question = "0.2.2"
 
-# for combinations of higher complexity logics
+# for combinations of higher complexity logics, unused feature
 itertools = "*"
 
-# I'm implementing it again myself, for bound and rank computing
+# ranking computation, requires linear algebra operations and interpolation, we are
+# usign the Fast Fourier Transform to do interpolation
 fftw = "*"
 fftw-src = "*"
 num-complex = "0.4.0"
 nalgebra = "0.25.3"
 
-# for graphs
+# also for benchmarking
+regex = "*"
+
+# graph (visual images) generation
 petgraph = "0.5.1"
 tempfile = "3"
+
+# apparently we must import rand, not part of std...
+rand = "*"
 
 # for benchmarking
 [dev-dependencies]
 criterion = "0.3"
+
 
 [[bench]]
 name = "benchmark"
