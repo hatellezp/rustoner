@@ -47,6 +47,7 @@ use std::process::Command; // execute a command
 // END OF IMPORTS
 // =================================================================================================
 
+// the rank abox algorithm returns
 type RankRemainder = (Vec<i8>, HashMap<usize, usize>, HashMap<usize, ConflictType>);
 
 pub fn rank_abox(
@@ -55,7 +56,7 @@ pub fn rank_abox(
     deduction_tree: bool,
     aggr: AggrFn,
     tolerance: f64,
-    m_scaler: f64,
+    m_scale: f64,
     b_translate: f64,
     verbose: bool,
 ) -> RankRemainder {
@@ -65,7 +66,7 @@ pub fn rank_abox(
         .iter()
         .map(|x| x.prevalue())
         .collect::<Vec<f64>>();
-    let normalization_scaler = normalize_vector(&mut prevalues);
+    let normalization_scale = normalize_vector(&mut prevalues);
 
     for i in 0..abq.len() {
         let abqi = abq.get_mut(i).unwrap();
@@ -130,7 +131,7 @@ pub fn rank_abox(
 
         // compute the bound
         let bound_op =
-            find_bound_complex_wrapper(aggr_matrix.clone(), tolerance, m_scaler, b_translate);
+            find_bound_complex_wrapper(aggr_matrix.clone(), tolerance, m_scale, b_translate);
 
         match bound_op {
             Option::None => (before_matrix, virtual_to_real, conflict_type),
@@ -215,8 +216,8 @@ pub fn rank_abox(
                     let prevalue = abqi.prevalue();
                     let value = abqi.value().unwrap();
 
-                    abqi.set_prevalue(prevalue * normalization_scaler);
-                    abqi.set_value(value * normalization_scaler);
+                    abqi.set_prevalue(prevalue * normalization_scale);
+                    abqi.set_value(value * normalization_scale);
                 }
 
                 // alg for creating viewer of what is a conflict and what not
