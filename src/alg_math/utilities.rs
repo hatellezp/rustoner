@@ -17,31 +17,48 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
+// =================================================================================================
+// IMPORTS
 use nalgebra::{Complex, DMatrix, DVector};
 use std::cmp::Ordering;
 use std::f64::consts::PI;
 
-// creation of matrix and vectors
+// END OF IMPORTS
+// =================================================================================================
 
 /*
-   I found that there several prescision errors when computing division,
-   this is a working solution
+    Must (if not all) operations on matrices in this module are done on references,
+    copies are to be avoided whenever possible.
+ */
+
+/*
+   I found that there several precision errors when computing division,
+   this is a working solution.
+   This problem is recurrent in python, rust, C and R too.
+   Computing sine (or cosine for that matter) introduce rounding errors 15 digits  after 15
+   the point.
+   My attempts to solve this issue resulted in a function that is not worst than rust
+   implementation (nor c nor python) but not better, thus I leave it as it was.
 */
-const PRECISION_ROUNDER: f64 = 1000000000000000.;
+const PRECISION_ROUNDER: f64 = 1000000000000000.;  // to solve rounding errors.
 pub fn round_to_15_f64(v: f64) -> f64 {
     (v * PRECISION_ROUNDER).round() / PRECISION_ROUNDER
 }
 
-pub fn create_indentity_matrix_complex(n: usize) -> DMatrix<Complex<f64>> {
-    // creates a matrix of size n*n
-    // be aware of this
+pub fn create_identity_matrix_complex(n: usize) -> DMatrix<Complex<f64>> {
+    /// takes an integer 'n' as argument and returns
+    /// a Complex DMatrix struct (naglebra defined) (float numbers are double precision)
+    /// dimension of the matrix is n*n
     let id: DMatrix<Complex<f64>> =
         DMatrix::from_vec(n, n, vec![Complex { re: 1.0, im: 0. }; n * n]);
     id
 }
 
-pub fn create_unity_roots(v: &mut DVector<Complex<f64>>, n: usize, inverse: bool) {
-    if v.len() != n {
+pub fn create_unity_roots(roots: &mut DVector<Complex<f64>>, n: usize, inverse: bool) {
+    /// put the n nth complex roots of the unity in the vector roots
+    /// roots must be of dimension n, otherwise the procedure will fail and the
+    /// program will exit (remark that roots must be a mutable reference)
+    if roots.len() != n {
         std::process::exit(exitcode::DATAERR)
     } else {
         let n64 = n as f64;
@@ -60,39 +77,27 @@ pub fn create_unity_roots(v: &mut DVector<Complex<f64>>, n: usize, inverse: bool
             im = round_to_15_f64(im);
 
             new_complex = Complex { re, im };
-            v[k] = new_complex;
+            roots[k] = new_complex;
         }
     }
-    // println!("{}", &v);
 }
 
-/*
-pub fn create_all_units_vector_complex(n: usize) -> DVector<Complex<f64>> {
-    let v: DVector<Complex<f64>> = DVector::from_vec(vec![Complex { re: 1.0, im: 0. }; n]);
-    v
-}
+pub fn matrix_is_zero_complex(matrix: &DMatrix<Complex<f64>>) -> bool {
+    /// verify that matrix is an all zero matrix
 
- */
-
-// basic operations
-
-pub fn matrix_is_zero_complex(m: &DMatrix<Complex<f64>>) -> bool {
+    // this implementation is more elegant and rust will optimize it for us
     let zero: Complex<f64> = Complex { re: 0., im: 0. };
-
-    for r in 0..m.nrows() {
-        for c in 0..m.ncols() {
-            if m[(r, c)] != zero {
-                return false;
-            }
-        }
-    }
-
-    true
+    matrix.iter().all(|&entry| entry == zero)
 }
 
 pub fn matrix_subtraction(receiver: &mut DMatrix<Complex<f64>>, minus: &DMatrix<Complex<f64>>) {
+    /// receiver will get receiver - minus
+    /// if there is a dimension mismatch the operation will fail with
+    /// a DATAERR error code
+
     if receiver.ncols() != minus.ncols() || receiver.nrows() != minus.nrows() {
         println!("mismatched dimension");
+        std::process::exit(exitcode::DATAERR)
     } else {
         for r in 0..receiver.nrows() {
             for n in 0..receiver.ncols() {
@@ -102,17 +107,19 @@ pub fn matrix_subtraction(receiver: &mut DMatrix<Complex<f64>>, minus: &DMatrix<
     }
 }
 
-pub fn multiply_vector_complex(v: &mut DVector<Complex<f64>>, mul: Complex<f64>) {
-    let v2 = v.map(|x| x * mul);
-    v.copy_from(&v2);
+pub fn multiply_vector_complex(vector: &mut DVector<Complex<f64>>, scalar: Complex<f64>) {
+    /// scale vector by scalar
+
+    // better implementation
+    vector.apply(|entry| entry * scalar);
 }
 
-pub fn multiply_matrix_complex(m: &mut DMatrix<Complex<f64>>, mul: Complex<f64>) {
-    let m2 = m.map(|x| x * mul);
-    m.copy_from(&m2);
-}
+pub fn multiply_matrix_complex(matrix: &mut DMatrix<Complex<f64>>, scalar: Complex<f64>) {
+    /// scale matrix by scalar
 
-// more complex behaviour
+    // better implementation
+    matrix.apply(|entry| entry * scalar);
+}
 
 pub fn solve_system(
     matrix: &DMatrix<Complex<f64>>,
@@ -121,71 +128,74 @@ pub fn solve_system(
     matrix_mod: Complex<f64>,
     vector_mod: Complex<f64>,
 ) {
+    /// this function solves the following system:
+    /// (identity_mod * 1 - matrix_mod * m)X = vector_mod * (1,...1)
+    /// will fail if matrix is not square or
+    /// if the solution receiver vector length is mismatch matrix dimension
+
+    // keep this here to avoid calling repeatedly to search for these values
     let rows = matrix.nrows();
     let cols = matrix.ncols();
     let solution_len = solution.len();
 
-    if rows != cols {
+    if rows != cols { // bad dimension
         println!("not an square matrix!");
         std::process::exit(exitcode::DATAERR)
-    } else if rows != solution_len {
+    } else if rows != solution_len { // mismatch dimension between solution vector and matrix
         println!("mismatch size of vector and matrix");
         std::process::exit(exitcode::DATAERR)
     } else {
-        // here we solve (identity_mod * 1 - matrix_mod * m)X = vector_mod * (1,...1)
-        let global_size = rows; // to avoid misunderstandings
+        let global_size = rows; // to avoid misunderstandings, all dimensions are the same
 
-        // let mut receiver_matrix = create_indetity_matrix_complex(global_size);
-        // let mut copy_matrix = create_indentity_matrix_complex(global_size);
-
-        // this idea allocate to vector, we are going to put everyting in solution
-        // let mut vector = create_all_units_vector_complex(global_size);
-        // put everything in solution
+        // the solution vector will first store the information for the right side vector of
+        // the equation
+        // after it will store the solution of the system
         for i in 0..global_size {
             solution[i] = Complex { re: 1.0, im: 0. };
         }
 
+        // receiver matrix will store the computation for the left side matrix
+        // (identity_mod * 1 - matrix_mod * m)X
         let mut receiver_matrix: DMatrix<Complex<f64>> = DMatrix::from_vec(
             global_size,
             global_size,
             vec![Complex { re: 0., im: 0. }; global_size * global_size],
         );
+
+        // for the moment receiver is the identity matrix
         for i in 0..global_size {
             receiver_matrix[(i, i)] = Complex { re: 1., im: 0. };
         }
 
-        // copy content from matrxi to copy_matrix
+        // copy content from matrix to copy_matrix
         let mut copy_matrix = matrix.clone();
-        // copy_matrix.copy_from(matrix);
 
-        // receiver = receiver * identity_mod
+        // receiver <- receiver * identity_mod
         multiply_matrix_complex(&mut receiver_matrix, identity_mod);
 
-        // copy_matrix = copy_matrix * matrix_mod
+        // copy_matrix <- copy_matrix * matrix_mod
         multiply_matrix_complex(&mut copy_matrix, matrix_mod);
 
         // now receiver has the form : identity_mod * 1 - matrix_mod * m
         receiver_matrix -= copy_matrix;
 
-        // first test in-place modification
-        // mutliply vector
-        // multiply_vector_complex(&mut vector, vector_mod);
+        // solution <- solution * vector_mod
         multiply_vector_complex(&mut solution, vector_mod);
 
         // I'm using LU decomposition here
         let decomposed = receiver_matrix.lu();
+
+        // solution receives the actual solution
         decomposed.solve_mut(&mut solution);
-
-        // put everything in solution
-        // solution.copy_from(&vector);
-
-        // done
     }
 }
 
 // wrappers
-pub fn solve_system_wrapper_only_id_mod(v: &[f64], receiver: &mut Vec<f64>, id_mod: f64) -> bool {
-    solve_system_wrapper(v, receiver, id_mod, 1., 1.)
+pub fn solve_system_wrapper_only_id_mod(vector: &[f64], receiver: &mut Vec<f64>, id_mod: f64) -> bool {
+    /// wrapper over the solve_system_wrapper function
+    /// matrix modifier is set to 1
+    /// vector modifier is set to 1
+    solve_system_wrapper(vector, receiver, id_mod, 1., 1.)
 }
 
 pub fn solve_system_wrapper(
@@ -195,40 +205,51 @@ pub fn solve_system_wrapper(
     ma_mod: f64,
     ve_mod: f64,
 ) -> bool {
+    /// takes mutable sequences of f64 numbers and transform
+    /// to matrix (DMatrix) and vector (DVector) respectively
+    /// to perform matrix equation solution
+
     let nsquared = v.len();
     let n = (nsquared as f64).sqrt() as usize;
     let n_receiver = receiver.len();
 
-    if n * n != nsquared {
+    if n * n != nsquared { // check if the matrix cannot be squared
         println!(
             "not an square matrix can be formed, {} is not a perfect square!",
             nsquared
         );
         false
-    } else if n_receiver != n {
+    } else if n_receiver != n { // checks if receiver has the good length
         println!(
             "the receiver vector has mismatched lenght: vector len: {}, matrix dim: {}",
             n_receiver, n
         );
         false
     } else {
+        // builds a complex vector from the f64 real values stored in v
         let v_c64 = v
             .iter()
             .map(|x| Complex { re: *x, im: 0. })
             .collect::<Vec<Complex<f64>>>();
+        // build the matrix from v_64
         let mut matrix: DMatrix<Complex<f64>> = DMatrix::from_vec(n, n, v_c64);
+
+        // the matrix is not in the good position
         matrix.transpose_mut();
 
+        // transforms each modifier to its complex equivalent
         let identity_mod: Complex<f64> = Complex { re: id_mod, im: 0. };
         let matrix_mod: Complex<f64> = Complex { re: ma_mod, im: 0. };
         let vector_mod: Complex<f64> = Complex { re: ve_mod, im: 0. };
 
+        // same, create solution vecto equivalent
         let mut solution: DVector<Complex<f64>> =
             DVector::from_vec(vec![Complex { re: 0., im: 0. }; n]);
 
+        // call the real solver function
         solve_system(&matrix, &mut solution, identity_mod, matrix_mod, vector_mod);
 
-        // copy everything
+        // copy everything back to the receiver vector
         for i in 0..n {
             receiver[i] = solution[i].re;
         }
@@ -236,6 +257,10 @@ pub fn solve_system_wrapper(
         true
     }
 }
+
+
+// =================================================================================================
+// these functions are for testing new features
 
 // for some simple statistics tasks
 // from rust nursery
