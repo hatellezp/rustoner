@@ -198,8 +198,23 @@ pub trait TBox: PartialEq + Debug + Display {
  */
 pub type SymbolDict = HashMap<String, (usize, DLType)>;
 
-pub type TbRule<T> = fn(Vec<&T>, bool) -> Option<Vec<T>>;
 
+/*
+    Deduction rules are defined as functions that take the corresponding
+    arguments.
+    - TBox deduction rules take a variable number of TBox items as argument and
+      produce a variable number of new TBox items.
+    - ABox deduction rules take a variable number of TBox items and a variable
+      number of ABox items and produce a variable number of new ABox items.
+    Both types of rule have a swtich (deduction tree activated or not) to keep track
+    of which items produced each new item.
+ */
+pub type TbRule<T> = fn(Vec<&T>, bool) -> Option<Vec<T>>;
 pub type AbRule<T, A> = fn(Vec<&A>, Vec<&T>, bool) -> Option<Vec<A>>;
 
+/*
+    Aggregate operators produce new credibility values for subsets of an ABox
+    following each aggregation
+    (e.g. Sum([1,2,3,1]) = 1 + 2 + 3 + 1 = 7).
+ */
 pub type AggrFn = fn(Vec<f64>) -> f64;
