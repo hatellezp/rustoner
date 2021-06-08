@@ -17,6 +17,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
+// =================================================================================================
+// IMPORTS
 use crate::interface::format_constants::{
     UNICODE_BOT, UNICODE_EXISTS, UNICODE_NEG, UNICODE_RIGHTARROW, UNICODE_SQSUBSETEQ,
     UNICODE_SUBSETEQ, UNICODE_TOP,
@@ -25,6 +27,14 @@ use std::cmp::Ordering;
 use std::fmt;
 use std::fmt::Display;
 
+// END OF IMPORTS
+// =================================================================================================
+
+
+/*
+    This reasoner need to know the type of each DL expression, so we type them,
+    this is their type.
+ */
 #[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]
 pub enum DLType {
     Bottom,
@@ -38,6 +48,7 @@ pub enum DLType {
     Nominal,
 }
 
+// implementation of Display for DLType (this is how rust is)
 impl fmt::Display for DLType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
@@ -55,21 +66,13 @@ impl fmt::Display for DLType {
 }
 
 impl DLType {
-    /*
-    pub fn is_base_type(&self) -> bool {
-        match self {
-            DLType::Nominal | DLType::BaseRole | DLType::BaseConcept => true,
-            _ => false,
-        }
-    }
-
-     */
-
     pub fn is_nominal_type(&self) -> bool {
+        /// test if self is of Nominal type
         matches!(self, DLType::Nominal)
     }
 
     pub fn is_role_type(&self) -> bool {
+        /// test if self is a Role type
         matches!(
             self,
             DLType::BaseRole | DLType::InverseRole | DLType::NegatedRole
@@ -77,6 +80,7 @@ impl DLType {
     }
 
     pub fn is_concept_type(&self) -> bool {
+        /// returns true if self if of Concept type
         matches!(
             self,
             DLType::Bottom
@@ -88,6 +92,7 @@ impl DLType {
     }
 
     pub fn all_roles(t1: DLType, t2: DLType) -> bool {
+        /// test if both t1 and t2 are Role types
         match t1 {
             DLType::BaseRole | DLType::InverseRole | DLType::NegatedRole => matches!(
                 t2,
@@ -101,6 +106,7 @@ impl DLType {
     I'm going to add top and bottom in concepts
      */
     pub fn all_concepts(t1: DLType, t2: DLType) -> bool {
+        /// test if both t1 and t2 are Concept types
         match t1 {
             DLType::Bottom
             | DLType::Top
@@ -119,18 +125,23 @@ impl DLType {
     }
 
     pub fn all_nominals(t1: DLType, t2: DLType) -> bool {
+        /// returns true if both t1 and t2 are of Nominal type
         t1 == DLType::Nominal && t2 == DLType::Nominal
     }
 
     pub fn same_type(t1: DLType, t2: DLType) -> bool {
+        /// test if both t1 and t2 has the same type : both roles, both concepts or
+        /// both nominals
         DLType::all_roles(t1, t2) || DLType::all_concepts(t1, t2) || DLType::all_nominals(t1, t2)
     }
-
 }
 
+/*
+    each deduction rule is numbered for pretty print and debug, this numbers
+    are tracked by the CR (count rules) type
+ */
 #[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]
 pub enum CR {
-    // stand for count rules
     Zero,
     First,
     Second,
@@ -144,6 +155,7 @@ pub enum CR {
 
 impl CR {
     pub fn to_usize(&self) -> usize {
+        /// cast to usize
         match self {
             CR::Zero => 0,
             CR::First => 1,
@@ -157,8 +169,9 @@ impl CR {
         }
     }
 
-    // true for tbi, false for abi
     pub fn description(&self, for_tbi: bool) -> String {
+        /// pretty printer for rules, the 'for_tbi' bool says
+        /// if rules is to be formatted for TBox rules or ABox rules
         if cfg!(target_os = "windows") {
             match self {
                 CR::Zero => {
@@ -187,7 +200,9 @@ impl CR {
                 CR::Third => {
                     // third rule: r1=>r2 and B=>notExists_r2 then B=>notExists_r1 and Exists_r1=>notB
                     if for_tbi {
-                        String::from("r < s, X < NOT EXISTS s -> X < NOT EXISTS r, EXISTS r < NOT X")
+                        String::from(
+                            "r < s, X < NOT EXISTS s -> X < NOT EXISTS r, EXISTS r < NOT X",
+                        )
                     } else {
                         // if a:c and c < d then a:d
                         String::from("a: X, X < Y -> a: Y")
@@ -204,7 +219,9 @@ impl CR {
                 CR::Fifth => {
                     // fifth rule: Exists_r=>notExists_r then r=>not_r and Exists_r_inv=>notExists_r_inv
                     if for_tbi {
-                        String::from("EXISTS r < NOT EXISTS r -> r < NOT r, EXISTS r^- < NOT EXISTS r^-")
+                        String::from(
+                            "EXISTS r < NOT EXISTS r -> r < NOT r, EXISTS r^- < NOT EXISTS r^-",
+                        )
                     } else {
                         String::from("R5: NONE")
                     }
@@ -213,7 +230,9 @@ impl CR {
                 CR::Seventh => {
                     // seventh rule: r=>not_r then Exists_r=>notExists_r and Exists_r_inv=>notExists_r_inv
                     if for_tbi {
-                        String::from("r < NOT r -> EXISTS r < NOT EXISTS r, EXISTS r^- < NOT EXISTS r^-")
+                        String::from(
+                            "r < NOT r -> EXISTS r < NOT EXISTS r, EXISTS r^- < NOT EXISTS r^-",
+                        )
                     } else {
                         String::from("R7: NONE")
                     }
@@ -397,26 +416,33 @@ impl CR {
                 }
             }
         }
-
     }
 
     pub fn identifier(&self) -> String {
+        /// cast rule to String, as "Rn" where n is the
+        /// number of the rule
         format!("R{}", &self.to_usize())
     }
 }
 
+// such that Ord works
 impl PartialOrd for CR {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         self.to_usize().partial_cmp(&other.to_usize())
     }
 }
 
+/*
+    We need partial ordering to establish an order when applying
+    rules.
+ */
 impl Ord for CR {
     fn cmp(&self, other: &Self) -> Ordering {
         self.to_usize().cmp(&other.to_usize())
     }
 }
 
+// pretty printer for counter rules
 impl Display for CR {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -433,12 +459,25 @@ impl Display for CR {
     }
 }
 
+/*
+    type for files that contains ontologies, for the moment only NATIVE
+    is really operational
+ */
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
 pub enum FileType {
     JSON,
     NATIVE,
+    // XML to come
 }
 
+/*
+    classify assertions in an ABox in three types, clean assertions, not
+    conflicting with any other assertions, conflicting assertions,
+    assertions having conflict with some other assertion and self-conflict
+    assertions which are plain erroneous,
+    this help the ranking algorithm to shrink the matrix and avoid uneeded
+    calculations
+ */
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
 pub enum ConflictType {
     Clean,
