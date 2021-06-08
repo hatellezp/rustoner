@@ -18,6 +18,20 @@ along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
 /*
+    The ItemDllite struct is the materialization of the Item trait present in
+    kb module 'knowledge_base.rs' file, it is the basic construct for ontologies
+    objects.
+    The inner structure follows a basic enum construction:
+    - a bottom object
+    - a top object
+    - a role object with an identifier (a integer)
+    - a concept object with an identifier (a integer)
+    - a nominal object with an identifier (a integer)
+    - a complex object with a modifier (inverse, negated, exists quantifier)
+      and a reference to a child object.
+ */
+
+/*
 TODO: I'm making a big choice here, top will be the negated one, that way we respect that no
       negations are present in the left hand
  */
@@ -38,12 +52,12 @@ pub enum Mod {
 
 #[derive(PartialEq, Eq, Debug, Hash, Clone)]
 pub enum ItemDllite {
-    B,
-    T,
-    R(usize),
-    C(usize),
-    N(usize),
-    X(Mod, Box<ItemDllite>),
+    B, // bottom
+    T, // top
+    R(usize), // base role
+    C(usize), // base concept
+    N(usize), // nominal
+    X(Mod, Box<ItemDllite>), // complex type of items (e.g. inverse role or negated concept)
 }
 
 impl fmt::Display for ItemDllite {
@@ -64,12 +78,14 @@ impl fmt::Display for ItemDllite {
 }
 
 impl PartialOrd for ItemDllite {
-    /*
-    concepts before roles before nominals
-    in concepts: bottom before base before exists before not before top
-    in roles: base before inverse before not
-     */
+
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        /// compares self to other, with the following rule:
+        /// concepts always before roles and roles always before nominals
+        /// for basic constructs the identifier decides precedence
+        /// for complex constructs:
+        /// concept: bottom before base concept before exists quantifier before negation before top
+        /// role: base before inverse before negation
         if self == other {
             Some(Ordering::Equal)
         } else {
@@ -158,6 +174,9 @@ impl PartialOrd for ItemDllite {
 }
 
 impl Ord for ItemDllite {
+    /*
+        The real function is defined in the PartialOrd trait.
+     */
     fn cmp(&self, other: &Self) -> Ordering {
         self.partial_cmp(other).unwrap()
     }
@@ -165,7 +184,9 @@ impl Ord for ItemDllite {
 
 impl Item for ItemDllite {
     fn t(&self) -> DLType {
-        // they have to be well formed !
+        /// every Item as a type (a DLType)
+
+        // they have to be well formed, otherwise it will fail
         match self {
             ItemDllite::B => DLType::Bottom,
             ItemDllite::T => DLType::Top,
@@ -173,22 +194,27 @@ impl Item for ItemDllite {
             ItemDllite::R(_) => DLType::BaseRole,
             ItemDllite::N(_) => DLType::Nominal,
             ItemDllite::X(t, bn) => match (t, bn.deref()) {
+                // if the item is not well formed is not the job of this function to detect it
                 (Mod::N, ItemDllite::R(_)) | (Mod::N, ItemDllite::X(Mod::I, _)) => {
                     DLType::NegatedRole
                 }
                 (Mod::N, ItemDllite::C(_)) | (Mod::N, ItemDllite::X(Mod::E, _)) => {
                     DLType::NegatedConcept
                 }
-                (Mod::I, ItemDllite::R(_)) => DLType::InverseRole,
-                (Mod::E, ItemDllite::R(_)) | (Mod::E, ItemDllite::X(Mod::I, _)) => {
-                    DLType::ExistsConcept
-                }
-                (_, _) => panic!("incorrect format for node"),
+                (Mod::I, _) => DLType::InverseRole,
+                (Mod::E, _) => DLType::ExistsConcept,
+                (_, _) => {
+                    println!("incorrect format for node: {}", &self);
+                    std::process::exit(exitcode::DATAERR)
+                },
             },
         }
     }
 
     fn base(node: &ItemDllite) -> &Self {
+        /// returns a reference to the base node, recursive function
+        /// (e.g. 'NOT EXISTS INV eats' -> 'eats'
+        /// but also 'eats' -> 'eats')
         match node {
             ItemDllite::B => &ItemDllite::B,
             ItemDllite::T => &ItemDllite::T,
@@ -201,6 +227,14 @@ impl Item for ItemDllite {
 
     // recursive version
     fn child(node: Option<&ItemDllite>, depth: usize) -> Option<Vec<&Self>> {
+        /// tries to return the depth-th child of the current node
+        /// return is wrapped in an option to ward against not finding the child
+        /// (e.g.
+        /// ('A INTER B', depth: 1) -> Some(['A', 'B'])
+        /// ('A INTER B', depth: 0) -> Some(['A INTER B'])
+        /// ('A INTER B', depth: 2) -> None
+        /// ('NOT A', depth: 1) -> Some(['A'])
+        /// )
         match node {
             Option::None => Option::None,
             Some(n) => match (n, depth) {
@@ -209,14 +243,15 @@ impl Item for ItemDllite {
                 | (ItemDllite::T, _)
                 | (ItemDllite::C(_), _)
                 | (ItemDllite::R(_), _)
-                | (ItemDllite::N(_), _) => Option::None,
+                | (ItemDllite::N(_), _) => Option::None, // there is no child for the bases types
                 (ItemDllite::X(_, bn), _) => ItemDllite::child(Some(&bn), depth - 1),
             },
         }
     }
 
     fn is_negated(&self) -> bool {
-        // it is BOTTOM which is negated ! UPDATE: is Top which is negated now...
+        /// returns true if self is equal to Top (which is the negation of bottom, the base type)
+        /// or if self is effectively a negated construct
         matches!(self, ItemDllite::T | ItemDllite::X(Mod::N, _))
     }
 }
