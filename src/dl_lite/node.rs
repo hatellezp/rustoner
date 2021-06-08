@@ -37,24 +37,24 @@ pub enum Mod {
 }
 
 #[derive(PartialEq, Eq, Debug, Hash, Clone)]
-pub enum NodeDllite {
+pub enum ItemDllite {
     B,
     T,
     R(usize),
     C(usize),
     N(usize),
-    X(Mod, Box<NodeDllite>),
+    X(Mod, Box<ItemDllite>),
 }
 
-impl fmt::Display for NodeDllite {
+impl fmt::Display for ItemDllite {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            NodeDllite::B => write!(f, "<B>"),
-            NodeDllite::T => write!(f, "<T>"),
-            NodeDllite::R(n) => write!(f, "r({})", n),
-            NodeDllite::C(n) => write!(f, "c({})", n),
-            NodeDllite::N(n) => write!(f, "n({})", n),
-            NodeDllite::X(m, bn) => match m {
+            ItemDllite::B => write!(f, "<B>"),
+            ItemDllite::T => write!(f, "<T>"),
+            ItemDllite::R(n) => write!(f, "r({})", n),
+            ItemDllite::C(n) => write!(f, "c({})", n),
+            ItemDllite::N(n) => write!(f, "n({})", n),
+            ItemDllite::X(m, bn) => match m {
                 Mod::N => write!(f, "-{}", *((*bn).deref())),
                 Mod::I => write!(f, "{}^-", *((*bn).deref())),
                 Mod::E => write!(f, "E{}", *((*bn).deref())),
@@ -63,7 +63,7 @@ impl fmt::Display for NodeDllite {
     }
 }
 
-impl PartialOrd for NodeDllite {
+impl PartialOrd for ItemDllite {
     /*
     concepts before roles before nominals
     in concepts: bottom before base before exists before not before top
@@ -97,7 +97,7 @@ impl PartialOrd for NodeDllite {
                             DLType::BaseConcept => Some(Ordering::Greater),
                             DLType::NegatedConcept => Some(Ordering::Less),
                             DLType::ExistsConcept => match (self, other) {
-                                (NodeDllite::X(Mod::E, bnself), NodeDllite::X(Mod::E, bnother)) => {
+                                (ItemDllite::X(Mod::E, bnself), ItemDllite::X(Mod::E, bnother)) => {
                                     bnself.partial_cmp(bnother)
                                 }
                                 (_, _) => Option::None,
@@ -107,7 +107,7 @@ impl PartialOrd for NodeDllite {
                         DLType::NegatedConcept => match other.t() {
                             DLType::BaseConcept | DLType::ExistsConcept => Some(Ordering::Greater),
                             DLType::NegatedConcept => match (self, other) {
-                                (NodeDllite::X(Mod::N, bnself), NodeDllite::X(Mod::N, bnother)) => {
+                                (ItemDllite::X(Mod::N, bnself), ItemDllite::X(Mod::N, bnother)) => {
                                     bnself.partial_cmp(bnother)
                                 }
                                 (_, _) => Option::None,
@@ -128,7 +128,7 @@ impl PartialOrd for NodeDllite {
                         DLType::BaseRole => Some(Ordering::Greater),
                         DLType::NegatedRole => Some(Ordering::Less),
                         DLType::InverseRole => match (self, other) {
-                            (NodeDllite::X(Mod::I, bnself), NodeDllite::X(Mod::I, bnother)) => {
+                            (ItemDllite::X(Mod::I, bnself), ItemDllite::X(Mod::I, bnother)) => {
                                 bnself.partial_cmp(bnother)
                             }
                             (_, _) => Option::None,
@@ -138,7 +138,7 @@ impl PartialOrd for NodeDllite {
                     DLType::NegatedRole => match other.t() {
                         DLType::BaseRole | DLType::InverseRole => Some(Ordering::Greater),
                         DLType::NegatedRole => match (self, other) {
-                            (NodeDllite::X(Mod::N, bnself), NodeDllite::X(Mod::N, bnother)) => {
+                            (ItemDllite::X(Mod::N, bnself), ItemDllite::X(Mod::N, bnother)) => {
                                 bnself.partial_cmp(bnother)
                             }
                             (_, _) => Option::None,
@@ -157,30 +157,30 @@ impl PartialOrd for NodeDllite {
     }
 }
 
-impl Ord for NodeDllite {
+impl Ord for ItemDllite {
     fn cmp(&self, other: &Self) -> Ordering {
         self.partial_cmp(other).unwrap()
     }
 }
 
-impl Item for NodeDllite {
+impl Item for ItemDllite {
     fn t(&self) -> DLType {
         // they have to be well formed !
         match self {
-            NodeDllite::B => DLType::Bottom,
-            NodeDllite::T => DLType::Top,
-            NodeDllite::C(_) => DLType::BaseConcept,
-            NodeDllite::R(_) => DLType::BaseRole,
-            NodeDllite::N(_) => DLType::Nominal,
-            NodeDllite::X(t, bn) => match (t, bn.deref()) {
-                (Mod::N, NodeDllite::R(_)) | (Mod::N, NodeDllite::X(Mod::I, _)) => {
+            ItemDllite::B => DLType::Bottom,
+            ItemDllite::T => DLType::Top,
+            ItemDllite::C(_) => DLType::BaseConcept,
+            ItemDllite::R(_) => DLType::BaseRole,
+            ItemDllite::N(_) => DLType::Nominal,
+            ItemDllite::X(t, bn) => match (t, bn.deref()) {
+                (Mod::N, ItemDllite::R(_)) | (Mod::N, ItemDllite::X(Mod::I, _)) => {
                     DLType::NegatedRole
                 }
-                (Mod::N, NodeDllite::C(_)) | (Mod::N, NodeDllite::X(Mod::E, _)) => {
+                (Mod::N, ItemDllite::C(_)) | (Mod::N, ItemDllite::X(Mod::E, _)) => {
                     DLType::NegatedConcept
                 }
-                (Mod::I, NodeDllite::R(_)) => DLType::InverseRole,
-                (Mod::E, NodeDllite::R(_)) | (Mod::E, NodeDllite::X(Mod::I, _)) => {
+                (Mod::I, ItemDllite::R(_)) => DLType::InverseRole,
+                (Mod::E, ItemDllite::R(_)) | (Mod::E, ItemDllite::X(Mod::I, _)) => {
                     DLType::ExistsConcept
                 }
                 (_, _) => panic!("incorrect format for node"),
@@ -188,47 +188,47 @@ impl Item for NodeDllite {
         }
     }
 
-    fn base(node: &NodeDllite) -> &Self {
+    fn base(node: &ItemDllite) -> &Self {
         match node {
-            NodeDllite::B => &NodeDllite::B,
-            NodeDllite::T => &NodeDllite::T,
-            NodeDllite::C(_) => node,
-            NodeDllite::R(_) => node,
-            NodeDllite::N(_) => node,
-            NodeDllite::X(_, bn) => NodeDllite::base(bn),
+            ItemDllite::B => &ItemDllite::B,
+            ItemDllite::T => &ItemDllite::T,
+            ItemDllite::C(_) => node,
+            ItemDllite::R(_) => node,
+            ItemDllite::N(_) => node,
+            ItemDllite::X(_, bn) => ItemDllite::base(bn),
         }
     }
 
     // recursive version
-    fn child(node: Option<&NodeDllite>, depth: usize) -> Option<Vec<&Self>> {
+    fn child(node: Option<&ItemDllite>, depth: usize) -> Option<Vec<&Self>> {
         match node {
             Option::None => Option::None,
             Some(n) => match (n, depth) {
                 (_, 0) => Some(vec![node.unwrap()]),
-                (NodeDllite::B, _)
-                | (NodeDllite::T, _)
-                | (NodeDllite::C(_), _)
-                | (NodeDllite::R(_), _)
-                | (NodeDllite::N(_), _) => Option::None,
-                (NodeDllite::X(_, bn), _) => NodeDllite::child(Some(&bn), depth - 1),
+                (ItemDllite::B, _)
+                | (ItemDllite::T, _)
+                | (ItemDllite::C(_), _)
+                | (ItemDllite::R(_), _)
+                | (ItemDllite::N(_), _) => Option::None,
+                (ItemDllite::X(_, bn), _) => ItemDllite::child(Some(&bn), depth - 1),
             },
         }
     }
 
     fn is_negated(&self) -> bool {
         // it is BOTTOM which is negated ! UPDATE: is Top which is negated now...
-        matches!(self, NodeDllite::T | NodeDllite::X(Mod::N, _))
+        matches!(self, ItemDllite::T | ItemDllite::X(Mod::N, _))
     }
 }
 
-impl NodeDllite {
-    pub fn new(n: Option<usize>, t: DLType) -> Option<NodeDllite> {
+impl ItemDllite {
+    pub fn new(n: Option<usize>, t: DLType) -> Option<ItemDllite> {
         match (n, t) {
-            (_, DLType::Bottom) => Some(NodeDllite::B),
-            (_, DLType::Top) => Some(NodeDllite::T),
-            (Option::Some(n), DLType::BaseConcept) => Some(NodeDllite::C(n)),
-            (Option::Some(n), DLType::BaseRole) => Some(NodeDllite::R(n)),
-            (Option::Some(n), DLType::Nominal) => Some(NodeDllite::N(n)),
+            (_, DLType::Bottom) => Some(ItemDllite::B),
+            (_, DLType::Top) => Some(ItemDllite::T),
+            (Option::Some(n), DLType::BaseConcept) => Some(ItemDllite::C(n)),
+            (Option::Some(n), DLType::BaseRole) => Some(ItemDllite::R(n)),
+            (Option::Some(n), DLType::Nominal) => Some(ItemDllite::N(n)),
             (_, _) => Option::None,
         }
     }
@@ -238,52 +238,52 @@ impl NodeDllite {
         0 and 1 are reserved values
          */
         match self {
-            NodeDllite::T => 1,
-            NodeDllite::B => 0,
-            NodeDllite::C(n) | NodeDllite::R(n) | NodeDllite::N(n) => *n,
-            NodeDllite::X(_, bn) => (*bn).n(),
+            ItemDllite::T => 1,
+            ItemDllite::B => 0,
+            ItemDllite::C(n) | ItemDllite::R(n) | ItemDllite::N(n) => *n,
+            ItemDllite::X(_, bn) => (*bn).n(),
         }
     }
 
-    pub fn child_old(node: Option<&NodeDllite>) -> Option<&Self> {
+    pub fn child_old(node: Option<&ItemDllite>) -> Option<&Self> {
         match node {
             Option::None => Option::None,
             Some(n) => match n {
-                NodeDllite::B
-                | NodeDllite::T
-                | NodeDllite::C(_)
-                | NodeDllite::R(_)
-                | NodeDllite::N(_) => Option::None,
-                NodeDllite::X(_, bn) => Some(&bn),
+                ItemDllite::B
+                | ItemDllite::T
+                | ItemDllite::C(_)
+                | ItemDllite::R(_)
+                | ItemDllite::N(_) => Option::None,
+                ItemDllite::X(_, bn) => Some(&bn),
             },
         }
     }
 
     pub fn exists(self) -> Option<Self> {
         match (&self).t() {
-            DLType::BaseRole | DLType::InverseRole => Some(NodeDllite::X(Mod::E, Box::new(self))),
+            DLType::BaseRole | DLType::InverseRole => Some(ItemDllite::X(Mod::E, Box::new(self))),
             _ => Option::None,
         }
     }
 
     pub fn negate(self) -> Self {
         match self {
-            NodeDllite::X(Mod::N, bn) => *bn,
-            NodeDllite::B => NodeDllite::T,
-            NodeDllite::T => NodeDllite::B,
-            _ => NodeDllite::X(Mod::N, Box::new(self)),
+            ItemDllite::X(Mod::N, bn) => *bn,
+            ItemDllite::B => ItemDllite::T,
+            ItemDllite::T => ItemDllite::B,
+            _ => ItemDllite::X(Mod::N, Box::new(self)),
         }
     }
 
-    pub fn is_negation(&self, other: &NodeDllite) -> bool {
+    pub fn is_negation(&self, other: &ItemDllite) -> bool {
         match (self, other) {
             // bottom and top
-            (NodeDllite::B, NodeDllite::T) | (NodeDllite::T, NodeDllite::B) => true,
+            (ItemDllite::B, ItemDllite::T) | (ItemDllite::T, ItemDllite::B) => true,
             // if both are negated return false
-            (NodeDllite::X(Mod::N, _), NodeDllite::X(Mod::N, _)) => false,
+            (ItemDllite::X(Mod::N, _), ItemDllite::X(Mod::N, _)) => false,
             // if one is negated compare its child with the other
-            (NodeDllite::X(Mod::N, bn), _) => bn.deref() == other,
-            (_, NodeDllite::X(Mod::N, bn)) => self == bn.deref(),
+            (ItemDllite::X(Mod::N, bn), _) => bn.deref() == other,
+            (_, ItemDllite::X(Mod::N, bn)) => self == bn.deref(),
             // anything else is false
             (_, _) => false,
         }
@@ -291,8 +291,8 @@ impl NodeDllite {
 
     pub fn inverse(self) -> Option<Self> {
         match self {
-            NodeDllite::R(_) => Some(NodeDllite::X(Mod::I, Box::new(self))),
-            NodeDllite::X(Mod::I, bn) => Some(*bn),
+            ItemDllite::R(_) => Some(ItemDllite::X(Mod::I, Box::new(self))),
+            ItemDllite::X(Mod::I, bn) => Some(*bn),
             _ => Option::None,
         }
     }

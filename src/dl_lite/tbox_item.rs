@@ -19,7 +19,7 @@ along with this program.  If not, see https://www.gnu.org/licenses/.
 
 use std::fmt;
 
-use crate::dl_lite::node::NodeDllite;
+use crate::dl_lite::node::ItemDllite;
 use crate::kb::knowledge_base::{Implier, TbRule};
 use crate::kb::knowledge_base::{Item, TBoxItem};
 use crate::kb::types::{DLType, CR};
@@ -28,8 +28,8 @@ use std::hash::{Hash, Hasher};
 
 #[derive(Debug, Clone)]
 pub struct TbiDllite {
-    lside: NodeDllite,
-    rside: NodeDllite,
+    lside: ItemDllite,
+    rside: ItemDllite,
     level: usize,
     impliers: Vec<(CR, Vec<TbiDllite>)>,
 }
@@ -137,13 +137,13 @@ impl Implier for TbiDllite {
 }
 
 impl TBoxItem for TbiDllite {
-    type NodeItem = NodeDllite;
+    type NodeItem = ItemDllite;
 
-    fn lside(&self) -> &NodeDllite {
+    fn lside(&self) -> &ItemDllite {
         &(self.lside)
     }
 
-    fn rside(&self) -> &NodeDllite {
+    fn rside(&self) -> &ItemDllite {
         &(self.rside)
     }
 
@@ -157,7 +157,7 @@ impl TBoxItem for TbiDllite {
 }
 
 impl TbiDllite {
-    pub fn new(lside: NodeDllite, rside: NodeDllite, level: usize) -> Option<TbiDllite> {
+    pub fn new(lside: ItemDllite, rside: ItemDllite, level: usize) -> Option<TbiDllite> {
         if (lside.t() == DLType::Nominal || rside.t() == DLType::Nominal)
             || (lside.is_negated() || !DLType::same_type(lside.t(), rside.t()))
         {

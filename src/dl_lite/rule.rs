@@ -19,7 +19,7 @@ along with this program.  If not, see https://www.gnu.org/licenses/.
 
 use crate::dl_lite::abox_item::AbiDllite;
 use crate::dl_lite::abox_item_quantum::AbiqDllite;
-use crate::dl_lite::node::NodeDllite;
+use crate::dl_lite::node::ItemDllite;
 use crate::dl_lite::tbox_item::TbiDllite;
 use crate::kb::knowledge_base::{Implier, Item, TBoxItem};
 use crate::kb::types::{DLType, CR};
@@ -52,8 +52,8 @@ pub fn dl_lite_rule_zero(vec: Vec<&TbiDllite>, deduction_tree: bool) -> Option<V
         let tbi = vec[0]; // we only take the first
 
         if DLType::all_concepts(tbi.lside().t(), tbi.rside().t()) {
-            let bottom_op = NodeDllite::new(Option::None, DLType::Bottom);
-            let top_op = NodeDllite::new(Option::None, DLType::Top);
+            let bottom_op = ItemDllite::new(Option::None, DLType::Bottom);
+            let top_op = ItemDllite::new(Option::None, DLType::Top);
 
             match (bottom_op, top_op) {
                 (Some(bottom), Some(top)) => {
@@ -191,12 +191,12 @@ pub fn dl_lite_rule_three(vec: Vec<&TbiDllite>, deduction_tree: bool) -> Option<
             // two time because is second child we want
 
             // I will use recursive child
-            let tbi2_rside_second_child = NodeDllite::child(Some(tbi2.lside()), 2);
+            let tbi2_rside_second_child = ItemDllite::child(Some(tbi2.lside()), 2);
 
             if (&tbi2_rside_second_child).is_some() {
                 // this big ass condition verfies that rside of tbi2 is of the correct form
                 if tbi2.rside().t() == DLType::NegatedConcept
-                    && (NodeDllite::child_old(Some(tbi2.rside())).unwrap().t()
+                    && (ItemDllite::child_old(Some(tbi2.rside())).unwrap().t()
                         == DLType::ExistsConcept)
                 {
                     if tbi2_rside_second_child.unwrap().get(0).unwrap() == &tbi1.rside() {
@@ -250,19 +250,19 @@ pub fn dl_lite_rule_four(vec: Vec<&TbiDllite>, deduction_tree: bool) -> Option<V
             Option::None
         } else {
             // two time because is second child we want
-            let tbi2_rside_third_child = NodeDllite::child(Some(tbi2.lside()), 3);
+            let tbi2_rside_third_child = ItemDllite::child(Some(tbi2.lside()), 3);
 
             if (&tbi2_rside_third_child).is_some() {
                 let tbi2_rside = tbi2.rside();
                 // this big ass condition verfies that rside to tbi2 is of the correct form
                 if tbi2_rside.t() == DLType::NegatedConcept
-                    && NodeDllite::child(Some(tbi2_rside), 1)
+                    && ItemDllite::child(Some(tbi2_rside), 1)
                         .unwrap()
                         .get(0)
                         .unwrap()
                         .t()
                         == DLType::ExistsConcept
-                    && NodeDllite::child(Some(tbi2_rside), 2)
+                    && ItemDllite::child(Some(tbi2_rside), 2)
                         .unwrap()
                         .get(0)
                         .unwrap()
@@ -304,14 +304,14 @@ pub fn dl_lite_rule_five(vec: Vec<&TbiDllite>, deduction_tree: bool) -> Option<V
         Option::None
     } else {
         let tbi = vec[0];
-        let tbi_rside_child = NodeDllite::child(Some(&tbi.rside()), 1);
+        let tbi_rside_child = ItemDllite::child(Some(&tbi.rside()), 1);
 
         let big_level = tbi.level();
 
         if tbi.lside().t() == DLType::ExistsConcept {
             if let Some(some_child) = tbi_rside_child {
                 if tbi.lside() == some_child[0] {
-                    let role = NodeDllite::child(Some(tbi.lside()), 1).unwrap()[0].clone();
+                    let role = ItemDllite::child(Some(tbi.lside()), 1).unwrap()[0].clone();
 
                     let not_role = (&role).clone().negate();
                     let inv_role = (&role).clone().inverse().unwrap();
@@ -361,7 +361,7 @@ pub fn dl_lite_rule_seven(vec: Vec<&TbiDllite>, deduction_tree: bool) -> Option<
                 let maybe_not_r = tbi.rside();
 
                 if &r
-                    == *NodeDllite::child(Some(maybe_not_r), 1)
+                    == *ItemDllite::child(Some(maybe_not_r), 1)
                         .unwrap()
                         .get(0)
                         .unwrap()

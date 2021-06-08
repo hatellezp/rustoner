@@ -26,7 +26,7 @@ use crate::dl_lite::helpers_and_utilities::{
     complete_helper_add_if_necessary_general, complete_helper_dump_from_mutex_temporal_to_current,
 };
 
-use crate::dl_lite::node::NodeDllite;
+use crate::dl_lite::node::ItemDllite;
 use crate::dl_lite::rule::{dl_lite_abox_rule_one, dl_lite_abox_rule_three, dl_lite_abox_rule_two};
 use crate::dl_lite::string_formatter::{abi_to_string, abiq_in_vec_of_vec};
 use crate::dl_lite::tbox::TBDllite;
@@ -275,8 +275,8 @@ impl AbqDllite {
         let mut abiq_i: &AbiqDllite;
         let mut abiq_j: &AbiqDllite;
         let mut is_match: bool;
-        let mut lside: &NodeDllite;
-        let mut rside: &NodeDllite;
+        let mut lside: &ItemDllite;
+        let mut rside: &ItemDllite;
 
         for tbi in tbis {
             // this are only negative inclusions

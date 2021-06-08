@@ -19,7 +19,7 @@ along with this program.  If not, see https://www.gnu.org/licenses/.
 
 use crate::dl_lite::abox_item::AbiDllite;
 use crate::dl_lite::json_filetype_utilities::{parse_symbols_json, parse_tbox_json};
-use crate::dl_lite::node::{Mod, NodeDllite};
+use crate::dl_lite::node::{Mod, ItemDllite};
 use crate::dl_lite::tbox::TBDllite;
 use crate::dl_lite::tbox_item::TbiDllite;
 use crate::kb::types::DLType;
@@ -899,7 +899,7 @@ impl OntologyDllite {
     // ------------------------------------------------------------------------
     // pretty print functions
 
-    fn node_to_string(&self, node: &NodeDllite) -> String {
+    fn node_to_string(&self, node: &ItemDllite) -> String {
         let left_current = String::new();
         let right_current = String::new();
 
@@ -908,14 +908,14 @@ impl OntologyDllite {
 
     fn node_to_string_helper(
         &self,
-        node: &NodeDllite,
+        node: &ItemDllite,
         mut left_current: String,
         mut right_current: String,
     ) -> String {
         match node {
-            NodeDllite::T => String::from("Top"),    // format!("{}", node),
-            NodeDllite::B => String::from("Bottom"), // format!("{}", node),
-            NodeDllite::N(n) | NodeDllite::R(n) | NodeDllite::C(n) => {
+            ItemDllite::T => String::from("Top"),    // format!("{}", node),
+            ItemDllite::B => String::from("Bottom"), // format!("{}", node),
+            ItemDllite::N(n) | ItemDllite::R(n) | ItemDllite::C(n) => {
                 // find the name
                 let mut name_found = false;
                 let mut name: String = String::new();
@@ -934,13 +934,13 @@ impl OntologyDllite {
                 }
 
                 match node {
-                    NodeDllite::N(_) => format!("{}{}{}", left_current, name, right_current),
-                    NodeDllite::R(_) => format!("{}{}{}", left_current, name, right_current),
-                    NodeDllite::C(_) => format!("{}{}{}", left_current, name, right_current),
+                    ItemDllite::N(_) => format!("{}{}{}", left_current, name, right_current),
+                    ItemDllite::R(_) => format!("{}{}{}", left_current, name, right_current),
+                    ItemDllite::C(_) => format!("{}{}{}", left_current, name, right_current),
                     _ => String::from("you shouldn't be here"),
                 }
             }
-            NodeDllite::X(m, bn) => {
+            ItemDllite::X(m, bn) => {
                 let left_addition = match m {
                     Mod::N => "-",
                     Mod::I => "(",

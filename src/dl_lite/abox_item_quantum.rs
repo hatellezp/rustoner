@@ -19,7 +19,7 @@ along with this program.  If not, see https://www.gnu.org/licenses/.
 
 use std::fmt;
 
-use crate::dl_lite::node::NodeDllite;
+use crate::dl_lite::node::ItemDllite;
 use crate::dl_lite::tbox_item::TbiDllite;
 use crate::kb::knowledge_base::{AbRule, Implier};
 
@@ -148,7 +148,7 @@ impl Implier for AbiqDllite {
 }
 
 impl ABoxItem for AbiqDllite {
-    type NodeItem = NodeDllite;
+    type NodeItem = ItemDllite;
     type TBI = TbiDllite;
 
     fn negate(&self) -> Self {
@@ -162,7 +162,7 @@ impl ABoxItem for AbiqDllite {
         self.abi.t()
     }
 
-    fn item(&self) -> &NodeDllite {
+    fn item(&self) -> &ItemDllite {
         /*
         returns a reference to the role or concept symbol of the  abox item
          */

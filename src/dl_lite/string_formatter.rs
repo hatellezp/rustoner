@@ -20,7 +20,7 @@ along with this program.  If not, see https://www.gnu.org/licenses/.
 use crate::dl_lite::abox_item::AbiDllite;
 use crate::dl_lite::abox_item_quantum::AbiqDllite;
 use crate::dl_lite::json_filetype_utilities::{invalid_data_result, result_from_error};
-use crate::dl_lite::node::{Mod, NodeDllite};
+use crate::dl_lite::node::{Mod, ItemDllite};
 use crate::dl_lite::tbox_item::TbiDllite;
 use crate::kb::types::DLType;
 use std::cmp::Ordering;
@@ -79,7 +79,7 @@ pub fn string_to_symbol(string: &str) -> io::Result<(&str, DLType)> {
     }
 }
 
-pub fn string_to_node(s: &str, symbols: &SymbolDict) -> io::Result<NodeDllite> {
+pub fn string_to_node(s: &str, symbols: &SymbolDict) -> io::Result<ItemDllite> {
     /*
     this function need a symbols dictionary reference to function
      */
@@ -90,14 +90,14 @@ pub fn string_to_node(s: &str, symbols: &SymbolDict) -> io::Result<NodeDllite> {
 }
 
 pub fn node_to_string(
-    node: &NodeDllite,
+    node: &ItemDllite,
     symbols: &SymbolDict,
     mut current: String,
 ) -> Option<String> {
     match node {
-        NodeDllite::B => Some(String::from("Bottom")),
-        NodeDllite::T => Some(String::from("Top")),
-        NodeDllite::N(n) => {
+        ItemDllite::B => Some(String::from("Bottom")),
+        ItemDllite::T => Some(String::from("Top")),
+        ItemDllite::N(n) => {
             let vec_of_s = find_keys_for_value(symbols, *n);
 
             if !vec_of_s.is_empty() {
@@ -107,7 +107,7 @@ pub fn node_to_string(
                 Option::None
             }
         }
-        NodeDllite::R(n) | NodeDllite::C(n) => {
+        ItemDllite::R(n) | ItemDllite::C(n) => {
             let vec_of_s = find_keys_for_value(symbols, *n);
 
             if !vec_of_s.is_empty() {
@@ -117,7 +117,7 @@ pub fn node_to_string(
                 Option::None
             }
         }
-        NodeDllite::X(m, bn) => {
+        ItemDllite::X(m, bn) => {
             match m {
                 Mod::I => {
                     current.push_str("INV "); // space here
@@ -165,7 +165,7 @@ pub fn string_to_tbi(s: &str, symbols: &SymbolDict) -> io::Result<Vec<TbiDllite>
             let mut rside_result2 = invalid_data_result("not done yet");
 
             let splitted: Vec<&str>;
-            let mut tuples: Vec<(io::Result<NodeDllite>, io::Result<NodeDllite>)>;
+            let mut tuples: Vec<(io::Result<ItemDllite>, io::Result<ItemDllite>)>;
             let mut tbis: Vec<TbiDllite> = Vec::new();
 
             if sub {
@@ -324,18 +324,18 @@ pub fn string_to_abi(
 
                             // before augmenting current_id we need to know that the elements are not in symbols
                             to_be_added = Vec::new();
-                            let node1: NodeDllite;
-                            let node2: NodeDllite;
+                            let node1: ItemDllite;
+                            let node2: ItemDllite;
 
                             // each nominal
                             if !symbols.contains_key(a1) {
-                                node1 = NodeDllite::new(Some(current_id), DLType::Nominal).unwrap();
+                                node1 = ItemDllite::new(Some(current_id), DLType::Nominal).unwrap();
 
                                 to_be_added.push((a1.to_string(), (current_id, DLType::Nominal)));
                                 current_id += 1;
                             } else {
                                 let (id1, _) = symbols[a1];
-                                node1 = NodeDllite::new(Some(id1), DLType::Nominal).unwrap();
+                                node1 = ItemDllite::new(Some(id1), DLType::Nominal).unwrap();
                             }
 
                             // adding symbols whenever you can
@@ -346,13 +346,13 @@ pub fn string_to_abi(
 
                             // then a2
                             if !symbols.contains_key(a2) {
-                                node2 = NodeDllite::new(Some(current_id), DLType::Nominal).unwrap();
+                                node2 = ItemDllite::new(Some(current_id), DLType::Nominal).unwrap();
 
                                 to_be_added.push((a2.to_string(), (current_id, DLType::Nominal)));
                                 current_id += 1;
                             } else {
                                 let (id2, _) = symbols[a2];
-                                node2 = NodeDllite::new(Some(id2), DLType::Nominal).unwrap();
+                                node2 = ItemDllite::new(Some(id2), DLType::Nominal).unwrap();
                             }
 
                             let abi =
@@ -366,17 +366,17 @@ pub fn string_to_abi(
 
                             // before augmenting current_id we need to know that the elements are not in symbols
                             to_be_added = Vec::new();
-                            let node1: NodeDllite;
+                            let node1: ItemDllite;
 
                             // each nominal
                             if !symbols.contains_key(a1) {
-                                node1 = NodeDllite::new(Some(current_id), DLType::Nominal).unwrap();
+                                node1 = ItemDllite::new(Some(current_id), DLType::Nominal).unwrap();
 
                                 to_be_added.push((a1.to_string(), (current_id, DLType::Nominal)));
                                 current_id += 1;
                             } else {
                                 let (id1, _) = symbols[a1];
-                                node1 = NodeDllite::new(Some(id1), DLType::Nominal).unwrap();
+                                node1 = ItemDllite::new(Some(id1), DLType::Nominal).unwrap();
                             }
 
                             let abi = AbiDllite::new_ca(abi_symbol.clone(), node1, for_completion)
@@ -447,7 +447,7 @@ pub fn abi_to_string(abi: &AbiDllite, symbols: &SymbolDict) -> Option<String> {
 fn __parse_string_to_node_helper(
     splitted: Vec<&str>,
     symbols: &SymbolDict,
-) -> io::Result<NodeDllite> {
+) -> io::Result<ItemDllite> {
     match splitted.len() {
         1 => {
             /*
@@ -456,7 +456,7 @@ fn __parse_string_to_node_helper(
 
             if symbols.contains_key(splitted[0]) {
                 let value = symbols[splitted[0]];
-                let new_node = NodeDllite::new(Some(value.0), value.1).unwrap();
+                let new_node = ItemDllite::new(Some(value.0), value.1).unwrap();
 
                 Ok(new_node)
             } else {
@@ -476,10 +476,10 @@ fn __parse_string_to_node_helper(
                 EXISTS r
              */
             let function_to_call = match splitted[0] {
-                "NOT" => |x: NodeDllite| Some(x.negate()),
-                "INV" => NodeDllite::inverse,
-                "EXISTS" => NodeDllite::exists,
-                _ => |_: NodeDllite| Option::None,
+                "NOT" => |x: ItemDllite| Some(x.negate()),
+                "INV" => ItemDllite::inverse,
+                "EXISTS" => ItemDllite::exists,
+                _ => |_: ItemDllite| Option::None,
             };
 
             let base_node_result = __parse_string_to_node_helper(vec![splitted[1]], symbols);
@@ -512,9 +512,9 @@ fn __parse_string_to_node_helper(
             EXISTS INV r
              */
             let function_to_call = match splitted[0] {
-                "NOT" => |x: NodeDllite| Some(x.negate()),
-                "EXISTS" => NodeDllite::exists,
-                _ => |_: NodeDllite| Option::None,
+                "NOT" => |x: ItemDllite| Some(x.negate()),
+                "EXISTS" => ItemDllite::exists,
+                _ => |_: ItemDllite| Option::None,
             };
             let base_node_result =
                 __parse_string_to_node_helper(vec![splitted[1], splitted[2]], symbols);
@@ -540,8 +540,8 @@ fn __parse_string_to_node_helper(
             NOT EXISTS INV r
              */
             let function_to_call = match splitted[0] {
-                "NOT" => |x: NodeDllite| Some(x.negate()),
-                _ => |_: NodeDllite| Option::None,
+                "NOT" => |x: ItemDllite| Some(x.negate()),
+                _ => |_: ItemDllite| Option::None,
             };
             let base_node_result =
                 __parse_string_to_node_helper(vec![splitted[1], splitted[2], splitted[3]], symbols);
