@@ -21,6 +21,9 @@ use std::str::FromStr;
 use std::string::ParseError;
 use structopt::StructOpt;
 
+/*
+    Every task the the binary dl_lite_r can do, each is explained as a comment.
+ */
 // more to be added after
 #[derive(Debug)]
 pub enum Task {
@@ -33,16 +36,14 @@ pub enum Task {
     CAB,      // complete abox
     RNKAB,    // rank assertions on abox
     UNDEFINED,
-    // INIT, // initiate database
 }
 
+// Implementing 'FromStr' allows to cast an string value as 'Task' enum
 impl FromStr for Task {
     type Err = ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let s2 = s.trim();
-
-        match s2 {
+        match s.trim() {
             "vertb" => Ok(Task::VERTB),
             "gencontb" => Ok(Task::GENCONTB),
             "ctb" => Ok(Task::CTB),
@@ -51,12 +52,12 @@ impl FromStr for Task {
             "genconab" => Ok(Task::GENCONAB),
             "cab" => Ok(Task::CAB),
             "rankab" => Ok(Task::RNKAB),
-            // "init" => Ok(Task::INIT),
             _ => Ok(Task::UNDEFINED),
         }
     }
 }
 
+// name of the aggregate operators for credibility of subsets
 #[derive(Debug)]
 pub enum AggrName {
     MAX,
@@ -67,6 +68,7 @@ pub enum AggrName {
     UNDEFINED,
 }
 
+// to cast to enum from string
 impl FromStr for AggrName {
     type Err = ParseError;
 
@@ -84,6 +86,11 @@ impl FromStr for AggrName {
     }
 }
 
+/*
+    The binary dl_lite_r works through an interface of arguments of the
+    form '--argname'.
+    They should be self-explanatory.
+ */
 #[derive(StructOpt, Debug)]
 pub struct Cli {
     #[structopt(

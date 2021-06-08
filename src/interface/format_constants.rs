@@ -17,7 +17,12 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
-// symbol equivalent to latex rendering
+
+/*
+    For pretty printing images in a dot graph, these are some
+    special symbols. Keep them stored allows for readability when used.
+ */
+
 
 // \sqsubseteq
 pub const UNICODE_SQSUBSETEQ: &str = "\u{2291}";

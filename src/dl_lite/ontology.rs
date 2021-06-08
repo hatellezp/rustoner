@@ -48,6 +48,7 @@ use crate::dl_lite::sqlite_interface::{
 
 // import traits
 use crate::kb::knowledge_base::{ABox, ABoxItem, AggrFn, SymbolDict, TBox, TBoxItem};
+use crate::interface::utilities::write_str_to_file;
 
 /*
 some types to avoid large names
@@ -1145,29 +1146,9 @@ impl OntologyDllite {
 
                 match abox_as_string_op {
                     Some(abox_as_string) => {
-                        let file_res = File::create(filename);
-
-                        match file_res {
-                            Result::Err(e) => {
-                                println!("something went wrong: {}", e);
-                                false
-                            }
-                            Result::Ok(mut file) => {
-                                let result = file.write(abox_as_string.as_bytes());
-
-                                match result {
-                                    Result::Err(e) => {
-                                        println!(
-                                            "something went wrong while writing to the file: {}",
-                                            e
-                                        );
-                                        false
-                                    }
-                                    Result::Ok(_) => true,
-                                }
-                            }
-                        }
-                    }
+                        // this function successfully does as is told
+                        write_str_to_file(&abox_as_string, filename)
+                    },
                     _ => false,
                 }
             }
