@@ -125,13 +125,16 @@ impl DLType {
     }
 
     pub fn all_nominals(t1: DLType, t2: DLType) -> bool {
-        /// returns true if both t1 and t2 are of Nominal type
+
+        // returns true if both t1 and t2 are of Nominal type
+
         t1 == DLType::Nominal && t2 == DLType::Nominal
     }
 
     pub fn same_type(t1: DLType, t2: DLType) -> bool {
-        /// test if both t1 and t2 has the same type : both roles, both concepts or
-        /// both nominals
+        // test if both t1 and t2 has the same type : both roles, both concepts or
+        // both nominals
+
         DLType::all_roles(t1, t2) || DLType::all_concepts(t1, t2) || DLType::all_nominals(t1, t2)
     }
 }
