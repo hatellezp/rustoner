@@ -24,6 +24,18 @@ use std::hash::Hash;
 use crate::kb::types::DLType;
 use std::cmp::Ordering;
 
+/*
+    An Item is the basic construct in DL types
+    - a role
+    - a concept
+    - a nominal name
+    more complex constructs as TBox items are built over this
+    an item can
+    - be basic (no tranformation)
+    - have a child (like a tree, 'a inter b' has two childs : 'a' and 'b')
+    - be negated or not
+    each Item has a type defined by the DLType defined in the 'types.rs' file of this module.
+ */
 pub trait Item: PartialOrd + Ord + PartialEq + Eq + Debug + Hash + Display + Sized {
     fn t(&self) -> DLType;
     fn base(node: &Self) -> &Self;
@@ -32,6 +44,15 @@ pub trait Item: PartialOrd + Ord + PartialEq + Eq + Debug + Hash + Display + Siz
 }
 
 // trait to allow for impliers to be for everyone
+/*
+    Whenever a deduction rule is applied to TBox items or ABox items two things happen
+    - a certain rule is applied
+    - some items triggered the rule
+    the Implier trait captures those items that trigger some rules, regardless of if they
+    are TBox items or ABox items.
+    Impliers can be compared sometimes by a subset criteria, this allows for minimal
+    impliers and non redundant information.
+ */
 pub trait Implier {
     type Imp: Clone + PartialOrd + Ord + PartialEq + Eq;
 
@@ -52,6 +73,17 @@ pub trait Implier {
     }
 }
 
+/*
+    An ABoxItem is an assertion in an ABox, it contains two units
+    - the constants
+    - the TBox item
+    for example in the case 'horacio: Student', 'horacio' is the constant and
+    'Student' is the TBox item.
+    We can
+    - access the constants in an ABoxItem
+    - negate it (for example 'horacio: NOT Student')
+    - access its type (the type of the TBox item)
+ */
 pub trait ABoxItem:
     PartialOrd + Ord + PartialEq + Eq + Debug + Hash + Display + Sized + Implier
 {
@@ -61,10 +93,20 @@ pub trait ABoxItem:
     fn item(&self) -> &Self::NodeItem;
     fn negate(&self) -> Self;
     fn t(&self) -> DLType;
-    // fn implied_by(&self) -> &Vec<(Vec<Self::TBI>, Vec<Self>)>;
-    // fn add_to_implied_by(&mut self, impliers: (Vec<Self::TBI>, Vec<Self>)); // where Self: Sized;
 }
 
+/*
+    An ABox is exactly a materialization of an ABox in an ontology.
+    Virtually a list of ABox assertions, there are nevertheless some functionalities
+    - it has a name
+    - we can access its size
+    - we can add new assertions
+    - we can get a list of its items
+    - we can get an specific item (a reference to it)
+    - sort the items (almost every struct and enum in this work implements PartialOrd or Ord)
+    - we can check for emptiness
+    - check for presence of an item
+ */
 pub trait ABox: PartialEq + Debug + Display {
     type AbiItem: ABoxItem;
 
@@ -80,6 +122,18 @@ pub trait ABox: PartialEq + Debug + Display {
     fn contains(&self, abi: &Self::AbiItem) -> bool;
 }
 
+/*
+    A TBoxItem is composed of two parts, take 'a Human IS a Mortal' for example,
+    then the left side of the TBox item would be 'Human', 'Mortal' being the right side.
+    Informally, any DL has two trivial items: 'Bottom' and 'Top', in OWL they are
+    implemented as 'Nothing' and 'Thing' respectively, here they are named
+    'Bottom' and 'Top', pretty easy.
+    We can be done with TBox items:
+    - access its left and right side
+    - check for triviality (e.g. 'Nothing is a Human' or 'a Human is a Thing')
+    - check for negative inclusion (e.g. 'a Human is NOT a Dog')
+    - check for redundancy (e.g. 'a Human is a Human').
+ */
 pub trait TBoxItem:
     PartialEq + Eq + PartialOrd + Ord + Debug + Hash + Display + Sized + Implier
 {
@@ -89,8 +143,6 @@ pub trait TBoxItem:
     fn rside(&self) -> &Self::NodeItem;
     fn is_trivial(&self) -> bool;
     fn is_negative_inclusion(&self) -> bool;
-    // fn implied_by(&self) -> &Vec<Vec<Self>>; // where Self: Sized;
-    // fn add_to_implied_by(&mut self, impliers: Vec<Self>); // where Self: Sized;
 
     // test if i can implement here some behaviour
     fn is_positive_inclusion(&self) -> bool {
@@ -102,6 +154,16 @@ pub trait TBoxItem:
     }
 }
 
+/*
+    Materialization of a TBox of an ontology. What we can do:
+    - access its size
+    - add new TBox inclusions
+    - get a vector of the items present
+    - get a reference to an specific item
+    - sort the TBox
+    - check for emptiness
+    - check if a certain item is present
+ */
 pub trait TBox: PartialEq + Debug + Display {
     type TbiItem: TBoxItem;
 
@@ -114,7 +176,26 @@ pub trait TBox: PartialEq + Debug + Display {
     fn contains(&self, tbi: &Self::TbiItem) -> bool;
 }
 
-// TESTING: does this work ?
+/*
+    A real ontology is made of words (e.g. 'a Human IS a Mortal', 'horacio IS a Human').
+    Comparisons between items are unavoidable and some words are longer than others, some
+    really long.
+    Our solution to this is to abstract every word present in the ontology to a number of
+    constant size. From a theoretical point of view we can really talk about complexity,
+    as each atomic instruction can be done in constant time, and from a practical point of
+    view the engine that do the reasoning works thus on numbers, which results in easiness
+    of read, easiness of debug, and it is notably faster.
+    SymbolDict contains this information, for each individual name:
+    role name, basic concept name or constant name, a tuple is associated: (number id, type)
+    (e.g. 'a Human IS a Mortal', 'horacio IS a Human' would be transformed in
+        'Bottom' : (0, BaseConcept)
+        'Top'    : (1, BaseConcept)
+        'Human'  : (2, BaseConcept)
+        'Mortal' : (3, BaseConcept)
+        'horacio': (4, Nominal)
+     ).
+     Note how 'Bottom' and 'Top' are automatically added.
+ */
 pub type SymbolDict = HashMap<String, (usize, DLType)>;
 
 pub type TbRule<T> = fn(Vec<&T>, bool) -> Option<Vec<T>>;

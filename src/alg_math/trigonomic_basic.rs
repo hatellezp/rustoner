@@ -17,7 +17,12 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
-// all constants are defined here
+/*
+    This module is a reimplementation of the sine and cosine functions to
+    solve the precision issue that arise at certain values.
+    Finally, my idea here is not better but not worst that the original
+    sine implementation.
+ */
 
 use nalgebra::{Complex, DVector};
 use std::collections::HashMap;
@@ -71,7 +76,6 @@ pub fn compute_cosine(x: f64) -> f64 {
 pub fn compute_cosine2(x: f64) -> f64 {
     compute_sine2(PI_OVER_2_REDEF - x)
 }
-
 
 pub fn compute_sine(x: f64) -> f64 {
     if x < 0_f64 {
@@ -169,7 +173,6 @@ pub fn compute_sine_kernel(x: f64) -> f64 {
         let lower_half = x9 * INV_FACT9 - x11 * INV_FACT11 + x13 * INV_FACT13;
 
         upper_half + lower_half
-
     } else if SECOND_BOUND_AFTER_ZERO <= x && x < FIRST_BOUND_AFTER_PI_OVER_4 {
         // x is in the interval around pi/4
         // here we need taylor series of sine at pi/4 with precision 15 (21?)
@@ -205,7 +208,6 @@ pub fn compute_sine_kernel(x: f64) -> f64 {
 
         let almost = upper_half + lower_half;
         ROOT_OF_2_OVER_2 * (1_f64 + almost)
-
     } else if FIRST_BOUND_AFTER_PI_OVER_4 <= x && x < LAST_BOUND_BEFORE_PI_OVER_2 {
         // x is after interval around pi/4 but far from pi/2
         // same as the last case but with more precision
@@ -246,7 +248,6 @@ pub fn compute_sine_kernel(x: f64) -> f64 {
 pub fn round_to_15_f64(v: f64) -> f64 {
     (v * PRECISION_ROUNDER).round() / PRECISION_ROUNDER
 }
-
 
 // changing to accelerate this function
 pub fn create_unity_roots(v: &mut DVector<Complex<f64>>, n: usize, inverse: bool) {

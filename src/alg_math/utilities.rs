@@ -260,7 +260,7 @@ pub fn solve_system_wrapper(
 
 
 // =================================================================================================
-// these functions are for testing new features
+// these functions are to test new features
 
 // for some simple statistics tasks
 // from rust nursery

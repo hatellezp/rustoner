@@ -292,11 +292,9 @@ pub fn node_attr_tbox_unraveling(
 
 // quantum is used !!!!
 pub fn transform_abiq_for_graph(abiq: &AbiqDllite, abiq_string: String) -> String {
-
     if !cfg!(target_os = "windows") {
         let abiq_string = abiq_string.replace("EXISTS", UNICODE_EXISTS);
         let abiq_string = abiq_string.replace("NOT", UNICODE_NEG);
-
     }
 
     let abiq_string = format!("<abi>LV{}  {}", abiq.level(), &abiq_string);
