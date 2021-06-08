@@ -17,6 +17,17 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
+
+/*
+    This module define some usual aggregation functions to work with the ranking algorithm,
+    they are:
+    - sum
+    - max
+    - min
+    - avg (arithmetic mean)
+    - count (cardinality)
+ */
+
 extern crate itertools;
 
 use crate::kb::knowledge_base::AggrFn;
