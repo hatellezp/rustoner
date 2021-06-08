@@ -258,6 +258,10 @@ impl Item for ItemDllite {
 
 impl ItemDllite {
     pub fn new(n: Option<usize>, t: DLType) -> Option<ItemDllite> {
+        /// creates a new ItemDllite from the specification
+        /// an integer n as identifier and a type t
+        /// the integer is wrapped in a Option type to allow for border cases
+        /// like bottom and top
         match (n, t) {
             (_, DLType::Bottom) => Some(ItemDllite::B),
             (_, DLType::Top) => Some(ItemDllite::T),
