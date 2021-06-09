@@ -197,6 +197,11 @@ impl TBoxItem for TbiDllite {
 }
 
 impl TbiDllite {
+
+    /// Creates a new TBox item, wrapped in an Option to ward against errors.
+    /// No nominal (constants) can be part of a TBox item.
+    /// For dl_lite_r left side cannot be negated.
+    /// Both sides must be of the same type: roles or concepts.
     pub fn new(lside: ItemDllite, rside: ItemDllite, level: usize) -> Option<TbiDllite> {
         if (lside.t() == DLType::Nominal || rside.t() == DLType::Nominal)
             || (lside.is_negated() || !DLType::same_type(lside.t(), rside.t()))
@@ -218,13 +223,18 @@ impl TbiDllite {
         self.level
     }
 
+    /// Check for self contradicting TBox item (do not confound with self conflicting).
     pub fn is_contradiction(&self) -> bool {
         self.lside.is_negation(&self.rside)
     }
 
+    /// Creates a new TBox item that is the reverse negation of self.
+    /// (e.g. 'a Human IS NOT a Dog' -> 'a Dog IS NOT a Human').
+    /// The new item is wrapped in an Option, if self is not negated will return
+    /// None.
     pub fn reverse_negation(&self, add_level: bool) -> Option<TbiDllite> {
         /*
-        this method creates a new item
+        be aware: this method creates a new item
          */
         if self.rside.is_negated() {
             let lside = self.lside.clone();
@@ -242,6 +252,13 @@ impl TbiDllite {
         }
     }
 
+    /// A deduction rule 'r' is applied to a TBox item and returns an array
+    /// of consequences (wrapped in an Option), if the rule cannot be applied then None
+    /// is returned.
+    /// e.g.
+    /// 'r': X => Y
+    /// item: 'A' and 'A' matches with X
+    /// then ('r', 'A') -> 'Y'
     pub fn apply_rule(
         tbis: Vec<&TbiDllite>,
         rule: &TbRule<TbiDllite>,
@@ -252,6 +269,8 @@ impl TbiDllite {
         every vector in the answer get the vectors that created it in the implied_by field
          */
 
+        // rules are only applied if the tbis array length match the size of
+        // deduction rules defined in the 'rule.rs' file
         let prov_vec = match tbis.len() {
             1 => rule(tbis, deduction_tree),
             2 => rule(tbis, deduction_tree),
@@ -263,6 +282,7 @@ impl TbiDllite {
             Some(prov_vec_unwrapped) => {
                 let mut final_vec: Vec<TbiDllite> = Vec::new();
 
+                // purge redundant items from the consequences
                 for item in &prov_vec_unwrapped {
                     if !item.is_redundant() {
                         final_vec.push(item.clone());
@@ -274,10 +294,10 @@ impl TbiDllite {
         }
     }
 
-    // function utility for levels
+    /// Find the minimum or maximum level in an array of TBox items.
     pub fn get_extrema_level(v: Vec<&TbiDllite>, max_index: usize, get_max: bool) -> usize {
         // for max or min
-        let mut extrema_level: usize = if get_max { 0 } else { usize::max_value() };
+        let mut extrema_level: usize = if get_max { 0 } else { usize::MAX };
 
         // this part is independent of max and min
         let v_len = v.len();
