@@ -18,24 +18,13 @@ along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
 use std::fmt;
+use std::cmp::Ordering;
 
 use crate::dl_lite::node::ItemDllite;
 
 use crate::kb::types::DLType;
-use std::cmp::Ordering;
-
 use crate::kb::knowledge_base::Item;
 
-/*
-// help enum for the match function in the ABI implementation
-#[derive(Eq, PartialEq, Debug, Copy, Clone, Hash)]
-pub enum Side {
-    None,
-    Left,
-    Right,
-}
-
- */
 
 /*
    remember that only base roles and base concepts are allowed here !!

@@ -25,6 +25,25 @@ use crate::kb::knowledge_base::{Item, TBoxItem};
 use crate::kb::types::{DLType, CR};
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
+use crate::dl_lite::utilities::ordering_cmp_helper;
+
+/*
+    TBox items are composed basically of two parts:
+    - a left side
+    - a right side
+    e.g. 'a Human IS a Mortal' left: Human, right: Mortal.
+    Left and right sides are Items.
+    There are two more fields, added for deduction.
+
+    A TBox item added from a file as level 0, now suppose item 'it' was added using
+    a deduction rule 'r' and items in the list 'its', then its level
+    is max(level(i) | i in its).
+
+    The impliers field help to keep track of which items produced a new one using a
+    certain deduction rule.
+    An implier of item 'it' is an array of tuples ('r', 'its') where 'its' produced
+    item 'it' by deduction rule 'r'.
+ */
 
 #[derive(Debug, Clone)]
 pub struct TbiDllite {
@@ -40,7 +59,12 @@ impl PartialEq for TbiDllite {
     }
 }
 
-// I must implement Hash myself because PartialEq is implemented and can cause unforeseen errors: thanks Clippy
+/*
+    I must implement Hash myself because PartialEq is implemented and can cause
+    unforeseen errors: thanks Clippy.
+    Long explanation short 'a = b' must imply that 'hash(a) = hash(b)', thus because I
+    implemented PartialEq I must assure that Hash behaves the same way.
+ */
 impl Hash for TbiDllite {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.lside.hash(state);
@@ -48,6 +72,7 @@ impl Hash for TbiDllite {
     }
 }
 
+// The 'Eq' trait falls back to PartialEq if not implemented.
 impl Eq for TbiDllite {}
 
 impl fmt::Display for TbiDllite {
@@ -56,9 +81,12 @@ impl fmt::Display for TbiDllite {
     }
 }
 
+// TBox items are ordered by lexicographic order.
 impl PartialOrd for TbiDllite {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        if self.lside().cmp(other.lside()) == Ordering::Less {
+        if self.lside() == other.lside() && self.rside() == other.rside() {
+            Some(Ordering::Equal)
+        } else if self.lside().cmp(other.lside()) == Ordering::Less {
             Some(Ordering::Less)
         } else if self.lside().cmp(other.lside()) == Ordering::Greater {
             Some(Ordering::Greater)
@@ -87,13 +115,9 @@ impl Implier for TbiDllite {
         let mut all_good = true;
         let mut tbi1: &TbiDllite;
         let mut tbi2: &TbiDllite;
-        let (lenght, ordering) = match len1.cmp(&len2) {
-            Ordering::Less => (len1, Ordering::Less),
-            Ordering::Equal => (len1, Ordering::Equal),
-            Ordering::Greater => (len2, Ordering::Greater),
-        };
+        let (length, ordering) = ordering_cmp_helper(len1, len2);
 
-        for i in 0..lenght {
+        for i in 0..length {
             tbi1 = (&imp1.1).get(i).unwrap();
             tbi2 = (&imp2.1).get(i).unwrap();
 

@@ -28,6 +28,7 @@ use crate::kb::knowledge_base::ABoxItem;
 use crate::kb::types::{DLType, CR};
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
+use crate::dl_lite::utilities::ordering_cmp_helper;
 
 /*
    remember that only base roles and base concepts are allowed here !!
@@ -35,7 +36,7 @@ use std::hash::{Hash, Hasher};
 #[derive(Debug, Clone)]
 pub struct AbiqDllite {
     abi: AbiDllite, // role or concept assertion
-    prevalue: f64,
+    credibility: f64,
     value: Option<f64>,
     level: usize,
     impliers: Vec<(CR, Vec<TbiDllite>, Vec<AbiqDllite>)>,
@@ -60,7 +61,7 @@ impl Hash for AbiqDllite {
 
 impl fmt::Display for AbiqDllite {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} ({}, {:?})", self.abi, self.prevalue, self.value)
+        write!(f, "{} ({}, {:?})", self.abi, self.credibility, self.value)
     }
 }
 
@@ -155,7 +156,7 @@ impl ABoxItem for AbiqDllite {
         let abi_neg = self.abi.negate();
 
         // really dangerous here
-        AbiqDllite::new(abi_neg, Some(self.prevalue), self.value, self.level + 1)
+        AbiqDllite::new(abi_neg, Some(self.credibility), self.value, self.level + 1)
     }
 
     fn t(&self) -> DLType {
@@ -192,7 +193,7 @@ impl AbiqDllite {
 
         AbiqDllite {
             abi,
-            prevalue,
+            credibility: prevalue,
             value,
             level,
             impliers,
@@ -204,7 +205,7 @@ impl AbiqDllite {
     }
 
     pub fn prevalue(&self) -> f64 {
-        self.prevalue
+        self.credibility
     }
 
     pub fn set_value(&mut self, v: f64) {
@@ -212,7 +213,7 @@ impl AbiqDllite {
     }
 
     pub fn set_prevalue(&mut self, v: f64) {
-        self.prevalue = v;
+        self.credibility = v;
     }
 
     pub fn value(&self) -> Option<f64> {
@@ -266,11 +267,7 @@ impl AbiqDllite {
         let mut abiq1: &AbiqDllite;
         let mut abiq2: &AbiqDllite;
 
-        let (lenght, ordering) = match len1.cmp(&len2) {
-            Ordering::Less => (len1, Ordering::Less),
-            Ordering::Equal => (len1, Ordering::Equal),
-            Ordering::Greater => (len2, Ordering::Greater),
-        };
+        let (length, ordering) = ordering_cmp_helper(len1, len2);
 
         for i in 0..lenght {
             abiq1 = v1.get(i).unwrap();
