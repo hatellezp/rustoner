@@ -269,7 +269,7 @@ impl AbiqDllite {
 
         let (length, ordering) = ordering_cmp_helper(len1, len2);
 
-        for i in 0..lenght {
+        for i in 0..length {
             abiq1 = v1.get(i).unwrap();
             abiq2 = v2.get(i).unwrap();
 
