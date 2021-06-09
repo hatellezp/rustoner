@@ -420,9 +420,9 @@ impl CR {
         }
     }
 
+    /// cast rule to String, as "Rn" where n is the
+    /// number of the rule
     pub fn identifier(&self) -> String {
-        /// cast rule to String, as "Rn" where n is the
-        /// number of the rule
         format!("R{}", &self.to_usize())
     }
 }

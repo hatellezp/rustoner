@@ -22,33 +22,21 @@ use crate::dl_lite::json_filetype_utilities::{parse_symbols_json, parse_tbox_jso
 use crate::dl_lite::node::{Mod, ItemDllite};
 use crate::dl_lite::tbox::TBDllite;
 use crate::dl_lite::tbox_item::TbiDllite;
-use crate::kb::types::DLType;
-use crate::kb::types::FileType;
-
+use crate::dl_lite::abox::AbqDllite;
+use crate::dl_lite::abox_item_quantum::AbiqDllite;
 use crate::dl_lite::native_filetype_utilities::{
     abox_to_native_string_quantum, parse_abox_native_quantum, parse_symbols_native,
     parse_tbox_native,
 };
+
+use crate::kb::types::DLType;
+use crate::kb::types::FileType;
+use crate::kb::knowledge_base::{ABox, ABoxItem, AggrFn, SymbolDict, TBox, TBoxItem};
+
+use crate::interface::utilities::write_str_to_file;
+
 use std::collections::{HashMap, HashSet};
 use std::fmt;
-
-use std::io::Write;
-
-// use rusqlite::{Connection, Result};
-
-use crate::dl_lite::abox::AbqDllite;
-use crate::dl_lite::abox_item_quantum::AbiqDllite;
-
-/*
-use crate::dl_lite::sqlite_interface::{
-    add_basic_tables_to_db, add_symbols_from_db, add_symbols_to_db, add_tbis_from_db,
-    add_tbis_to_db,
-};
- */
-
-// import traits
-use crate::kb::knowledge_base::{ABox, ABoxItem, AggrFn, SymbolDict, TBox, TBoxItem};
-use crate::interface::utilities::write_str_to_file;
 
 /*
 some types to avoid large names
