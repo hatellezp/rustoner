@@ -37,6 +37,9 @@ use crate::kb::types::{ConflictType, DLType, CR};
 use petgraph::{Directed, Graph};
 use std::cmp::Ordering;
 
+/// An ABox is basically an array of ABox items.
+/// It has a name, a vector containing the items,
+/// a witness of completion and a length.
 #[derive(PartialEq, Debug, Clone)]
 pub struct AbqDllite {
     name: String,
@@ -45,6 +48,8 @@ pub struct AbqDllite {
     length: usize,
 }
 
+/// Implementation of the ABox trait for the materialization of
+/// ABox in the dl_lite_r setting.
 impl ABox for AbqDllite {
     type AbiItem = AbiqDllite;
 
@@ -53,11 +58,11 @@ impl ABox for AbqDllite {
     }
 
     fn len(&self) -> usize {
-        // i'm changing this for the time being
-        // self.length
         self.items.len()
     }
 
+    /// Will try to add the item abi to self.
+    /// If successful it returns true, false otherwise.
     fn add(&mut self, abi: AbiqDllite) -> bool {
         /*
         returns true if the item was successfully inserted, false otherwise
@@ -72,6 +77,7 @@ impl ABox for AbqDllite {
         }
     }
 
+    /// Returns a non mutable reference to the ABox items in self.
     fn items(&self) -> &Vec<AbiqDllite> {
         &self.items
     }
@@ -113,6 +119,9 @@ impl fmt::Display for AbqDllite {
 }
 
 impl AbqDllite {
+
+    /// An ABox is always created by a name, we can only add
+    /// items after.
     pub fn new(name: &str) -> AbqDllite {
         AbqDllite {
             name: name.to_string(),
@@ -122,10 +131,15 @@ impl AbqDllite {
         }
     }
 
+    /// Gets a mutable reference to an ABox item in self, at index 'index'.
+    /// Wrapped in an Option, it will return None if nothing is found and index
+    /// 'index'.
     pub fn get_mut(&mut self, index: usize) -> Option<&mut AbiqDllite> {
         self.items.get_mut(index)
     }
 
+    /// Build an ABox from a mutable vector of ABox items and an string to
+    /// name the ABox.
     pub fn from_vec(name: &str, mut v: Vec<AbiqDllite>) -> AbqDllite {
         let mut abq = AbqDllite::new(name);
 
@@ -138,15 +152,12 @@ impl AbqDllite {
         abq
     }
 
-    /*
-    pub fn is_completed(&self) -> bool {
-        self.completed
-    }
-
-     */
-
-    // create an abox from a vec of index, will help when finding conflicts in a database
+    /// Will create an ABox from self and a vector of index.
+    /// Literally copies each ABox item at an index present in  self.
+    /// A name is necessary to construct the new ABox.
+    /// Wrapped as always in an Option in case it fails.
     pub fn sub_abox(&self, index: Vec<usize>, name: Option<&str>) -> Option<AbqDllite> {
+        // create an abox from a vec of index, will help when finding conflicts in a database
         let name = name.unwrap_or("tmp");
 
         let mut sub_abox = AbqDllite::new(name);
@@ -302,11 +313,7 @@ impl AbqDllite {
                 for j in index_for_j..self_lenght {
                     abiq_j = self.items.get(j).unwrap();
 
-                    // println!("------------------comparing\n               tbi: {}\n               abiq_{}: {}\n               abiq_{}: {}", tbi, i, abiq_i, j, abiq_j);
-
                     if abiq_i.same_nominal(abiq_j) {
-                        // println!("--------------------they have same nominal");
-
                         // here is the first case
                         // a:A a:B and A < - B
 
@@ -319,30 +326,18 @@ impl AbqDllite {
                                X_j = A and X_i = B
                         */
 
-                        // println!("detailed:\n           abiq_i item: {}\n           abiq_j item: {}\n           lside: {}\n           rside: {}", abiq_i.item(), abiq_j.item(), lside, rside);
-
                         is_match = (abiq_i.item() == lside) && abiq_j.item().is_negation(rside)
                             || (abiq_j.item() == lside) && abiq_i.item().is_negation(rside);
 
                         // there a second test:
                         if i != j {
-                            // let negated_j = abiq_j.item().clone().negate();
-                            // println!("------------------negated_{} is {}", j, &negated_j);
 
                             if abiq_j.item().is_negation(abiq_i.item()) {
-                                // println!("  --  found contradiction without tbi: abiq_{}: {}, abiq_{}: {}", i, abiq_i, j, abiq_j);
                                 return true;
                             }
                         }
 
                         if is_match {
-                            /*
-                            println!(
-                                "  --  found contradiction: abiq_i: {}, abiq_j: {}, tbi: {}",
-                                abiq_i, abiq_j, tbi
-                            );
-
-                             */
                             return true;
                         }
                     }
