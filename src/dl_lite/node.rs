@@ -28,12 +28,10 @@ along with this program.  If not, see https://www.gnu.org/licenses/.
 /// - a nominal object with an identifier (a integer)
 /// - a complex object with a modifier (inverse, negated, exists quantifier)
 ///   and a reference to a child object.
-
 /*
 TODO: I'm making a big choice here, top will be the negated one, that way we respect that no
       negations are present in the left hand
  */
-
 use std::fmt;
 
 use crate::kb::knowledge_base::Item;
@@ -50,11 +48,11 @@ pub enum Mod {
 
 #[derive(PartialEq, Eq, Debug, Hash, Clone)]
 pub enum ItemDllite {
-    B, // bottom
-    T, // top
-    R(usize), // base role
-    C(usize), // base concept
-    N(usize), // nominal
+    B,                       // bottom
+    T,                       // top
+    R(usize),                // base role
+    C(usize),                // base concept
+    N(usize),                // nominal
     X(Mod, Box<ItemDllite>), // complex type of items (e.g. inverse role or negated concept)
 }
 
@@ -76,7 +74,6 @@ impl fmt::Display for ItemDllite {
 }
 
 impl PartialOrd for ItemDllite {
-
     /// compares self to other, with the following rule:
     /// concepts always before roles and roles always before nominals
     /// for basic constructs the identifier decides precedence
@@ -173,18 +170,16 @@ impl PartialOrd for ItemDllite {
 
 impl Ord for ItemDllite {
     /*
-        The real function is defined in the PartialOrd trait.
-     */
+       The real function is defined in the PartialOrd trait.
+    */
     fn cmp(&self, other: &Self) -> Ordering {
         self.partial_cmp(other).unwrap()
     }
 }
 
 impl Item for ItemDllite {
-
     /// Every Item as a type (a DLType).
     fn t(&self) -> DLType {
-
         // they have to be well formed, otherwise it will fail
         match self {
             ItemDllite::B => DLType::Bottom,
@@ -205,7 +200,7 @@ impl Item for ItemDllite {
                 (_, _) => {
                     println!("incorrect format for node: {}", &self);
                     std::process::exit(exitcode::DATAERR)
-                },
+                }
             },
         }
     }
@@ -214,7 +209,6 @@ impl Item for ItemDllite {
     /// (e.g. 'NOT EXISTS INV eats' -> 'eats'
     /// but also 'eats' -> 'eats').
     fn base(node: &ItemDllite) -> &Self {
-
         match node {
             ItemDllite::B => &ItemDllite::B,
             ItemDllite::T => &ItemDllite::T,
@@ -234,7 +228,6 @@ impl Item for ItemDllite {
     /// ('NOT A', depth: 1) -> Some(['A'])
     /// )
     fn child(node: Option<&ItemDllite>, depth: usize) -> Option<Vec<&Self>> {
-
         match node {
             Option::None => Option::None,
             Some(n) => match (n, depth) {
@@ -257,13 +250,11 @@ impl Item for ItemDllite {
 }
 
 impl ItemDllite {
-
     /// creates a new ItemDllite from the specification
     /// an integer n as identifier and a type t
     /// the integer is wrapped in a Option type to allow for border cases
     /// like bottom and top
     pub fn new(n: Option<usize>, t: DLType) -> Option<ItemDllite> {
-
         match (n, t) {
             (_, DLType::Bottom) => Some(ItemDllite::B),
             (_, DLType::Top) => Some(ItemDllite::T),
@@ -277,7 +268,6 @@ impl ItemDllite {
     /// returns the identifier of the Item
     /// top is always 1 and bottom is always 0,values are reserved
     pub fn n(&self) -> usize {
-
         /*
             if you try to write a parser for rustoner be aware that this values
             are always reserved
@@ -296,7 +286,6 @@ impl ItemDllite {
     /// 'NOT teaches' -> None
     /// 'Human' is a concept: 'Human' -> None
     pub fn exists(self) -> Option<Self> {
-
         match (&self).t() {
             DLType::BaseRole | DLType::InverseRole => Some(ItemDllite::X(Mod::E, Box::new(self))),
             _ => Option::None,
@@ -306,7 +295,6 @@ impl ItemDllite {
     /// build a new ItemDllite struct with self as a child and a
     /// negation (NOT) modifier
     pub fn negate(self) -> Self {
-
         match self {
             ItemDllite::X(Mod::N, bn) => *bn,
             ItemDllite::B => ItemDllite::T,
@@ -319,7 +307,6 @@ impl ItemDllite {
     /// e.g. ('NOT Human', 'Human') -> true
     /// ('NOT Human', 'Mortal') -> false
     pub fn is_negation(&self, other: &ItemDllite) -> bool {
-
         match (self, other) {
             // bottom and top
             (ItemDllite::B, ItemDllite::T) | (ItemDllite::T, ItemDllite::B) => true,
@@ -337,7 +324,6 @@ impl ItemDllite {
     /// which is a base role or an inverse role,
     /// a negated role, a concept or a nominal are all not invertible
     pub fn inverse(self) -> Option<Self> {
-
         match self {
             ItemDllite::R(_) => Some(ItemDllite::X(Mod::I, Box::new(self))),
             ItemDllite::X(Mod::I, bn) => Some(*bn),

@@ -17,21 +17,21 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
-use crate::dl_lite::abox_item::AbiDllite;
-use crate::dl_lite::json_filetype_utilities::{parse_symbols_json, parse_tbox_json};
-use crate::dl_lite::node::{Mod, ItemDllite};
-use crate::dl_lite::tbox::TBDllite;
-use crate::dl_lite::tbox_item::TbiDllite;
 use crate::dl_lite::abox::AbqDllite;
+use crate::dl_lite::abox_item::AbiDllite;
 use crate::dl_lite::abox_item_quantum::AbiqDllite;
+use crate::dl_lite::json_filetype_utilities::{parse_symbols_json, parse_tbox_json};
 use crate::dl_lite::native_filetype_utilities::{
     abox_to_native_string_quantum, parse_abox_native_quantum, parse_symbols_native,
     parse_tbox_native,
 };
+use crate::dl_lite::node::{ItemDllite, Mod};
+use crate::dl_lite::tbox::TBDllite;
+use crate::dl_lite::tbox_item::TbiDllite;
 
+use crate::kb::knowledge_base::{ABox, ABoxItem, AggrFn, SymbolDict, TBox, TBoxItem};
 use crate::kb::types::DLType;
 use crate::kb::types::FileType;
-use crate::kb::knowledge_base::{ABox, ABoxItem, AggrFn, SymbolDict, TBox, TBoxItem};
 
 use crate::interface::utilities::write_str_to_file;
 
@@ -1120,7 +1120,7 @@ impl OntologyDllite {
                     Some(abox_as_string) => {
                         // this function successfully does as is told
                         write_str_to_file(&abox_as_string, filename)
-                    },
+                    }
                     _ => false,
                 }
             }

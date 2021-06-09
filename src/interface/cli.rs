@@ -21,7 +21,6 @@ use std::str::FromStr;
 use std::string::ParseError;
 use structopt::StructOpt;
 
-
 /// Every task the the binary dl_lite_r can do, each is explained as a comment.
 /// more to be added after
 #[derive(Debug)]

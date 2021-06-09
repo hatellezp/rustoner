@@ -20,12 +20,12 @@ along with this program.  If not, see https://www.gnu.org/licenses/.
 use std::fmt;
 
 use crate::dl_lite::node::ItemDllite;
+use crate::dl_lite::utilities::ordering_cmp_helper;
 use crate::kb::knowledge_base::{Implier, TbRule};
 use crate::kb::knowledge_base::{Item, TBoxItem};
 use crate::kb::types::{DLType, CR};
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
-use crate::dl_lite::utilities::ordering_cmp_helper;
 
 /// TBox items are composed basically of two parts:
 /// - a left side
@@ -57,11 +57,11 @@ impl PartialEq for TbiDllite {
 }
 
 /*
-    I must implement Hash myself because PartialEq is implemented and can cause
-    unforeseen errors: thanks Clippy.
-    Long explanation short 'a = b' must imply that 'hash(a) = hash(b)', thus because I
-    implemented PartialEq I must assure that Hash behaves the same way.
- */
+   I must implement Hash myself because PartialEq is implemented and can cause
+   unforeseen errors: thanks Clippy.
+   Long explanation short 'a = b' must imply that 'hash(a) = hash(b)', thus because I
+   implemented PartialEq I must assure that Hash behaves the same way.
+*/
 impl Hash for TbiDllite {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.lside.hash(state);
@@ -113,7 +113,6 @@ impl Implier for TbiDllite {
     /// imp2 is included in imp1 then imp1 is greater than imp1,
     /// if not comparison can be made then None is returned
     fn cmp_imp(imp1: &(CR, Vec<TbiDllite>), imp2: &(CR, Vec<TbiDllite>)) -> Option<Ordering> {
-
         let len1 = (&imp1.1).len();
         let len2 = (&imp2.1).len();
         let mut all_good = true; // accumulates equality of element in both arrays
@@ -127,8 +126,9 @@ impl Implier for TbiDllite {
 
             all_good = all_good && (tbi1 == tbi2);
 
-            if ! all_good {  // early stopping condition
-                break
+            if !all_good {
+                // early stopping condition
+                break;
             }
         }
 
@@ -144,15 +144,16 @@ impl Implier for TbiDllite {
     /// - it is not present in the impliers of self
     /// - there is no implier smaller in the impliers of self
     fn add_to_implied_by(&mut self, mut implier: (CR, Vec<TbiDllite>)) {
-
-        if !(&implier.1).contains(&self) { // verify it is not present in self.impliers
+        if !(&implier.1).contains(&self) {
+            // verify it is not present in self.impliers
             implier.1.sort();
 
             // compares the new implier with the present ones
             let contains = self.contains_implier(&implier);
 
             match contains {
-                Option::Some(Ordering::Less) => {  // if it is smaller then a substitution is done
+                Option::Some(Ordering::Less) => {
+                    // if it is smaller then a substitution is done
                     let mut cmpd: Option<Ordering>;
                     let mut inner_implier: &(CR, Vec<TbiDllite>);
                     let length: usize = self.impliers.len();
@@ -167,7 +168,7 @@ impl Implier for TbiDllite {
                                    // future iteration, so I put a break right here
                         }
                     }
-                },
+                }
                 // all these cases amount to nothing to do
                 Option::None => self.impliers.push(implier),
                 Option::Some(Ordering::Equal) | Option::Some(Ordering::Greater) => (),
@@ -197,7 +198,6 @@ impl TBoxItem for TbiDllite {
 }
 
 impl TbiDllite {
-
     /// Creates a new TBox item, wrapped in an Option to ward against errors.
     /// No nominal (constants) can be part of a TBox item.
     /// For dl_lite_r left side cannot be negated.

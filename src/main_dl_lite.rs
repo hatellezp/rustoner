@@ -17,28 +17,25 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
-
 // =================================================================================================
 // MODULE DECLARATION
 
 mod alg_math; // this module is for computing the rank, matrix manipulation and interpolation are
-             // defined here
+              // defined here
 mod dl_lite; // dl_lite reasoner is in this module
 mod graph_maker; // a module that is only a file, creates a graph from ontologies and alike
-mod helper;  // helper functions to parse files, update list and other
-mod interface;  // module with the cli interface
-mod kb;  // abstract structures and traits for knowledge bases are defined here
+mod helper; // helper functions to parse files, update list and other
+mod interface; // module with the cli interface
+mod kb; // abstract structures and traits for knowledge bases are defined here
 
 // END OF MODULE DECLARATION
 // =================================================================================================
-
 
 // =================================================================================================
 // STRUCTS AND FUNCTION IMPORTS
 
 // for cli interface, need to import it so the interface module works
 use structopt::StructOpt;
-
 
 // import abstract traits from kb module
 use crate::kb::knowledge_base::{ABox, TBox, TBoxItem};
@@ -47,9 +44,9 @@ use crate::kb::knowledge_base::SymbolDict; // syntactic sugar for a really long 
 use crate::kb::types::FileType; // types of file, "JSON" or "NATIVE", for the moment only "NATIVE"
 
 // several import from the dl_lite module
-use crate::dl_lite::ontology::OntologyDllite;  // Ontology realization for dl_lite
-use crate::dl_lite::abox::AbqDllite;  // ABox (quantified) realization for dl_lite
+use crate::dl_lite::abox::AbqDllite; // ABox (quantified) realization for dl_lite
 use crate::dl_lite::abox_item_quantum::AbiqDllite; // ABox Item (quantified) for dl_lite
+use crate::dl_lite::ontology::OntologyDllite; // Ontology realization for dl_lite
 use crate::dl_lite::tbox::TBDllite; // TBox realization for dl_lite
 use crate::dl_lite::tbox_item::TbiDllite; // TBox Item realization for dl_lite
 
@@ -98,7 +95,6 @@ use tempfile::NamedTempFile; // used to create a temporary dot file and the pdf 
 // END OF IMPORTS
 // =================================================================================================
 
-
 // =================================================================================================
 // SOME CONSTANTS
 
@@ -119,7 +115,6 @@ const COMMAND_SHELL_WINDOWS: &str = "cmd";
 
 // END OF CONSTANTS DECLARATION
 // =================================================================================================
-
 
 // the main function
 pub fn main() {

@@ -57,7 +57,6 @@ pub trait Implier {
 
     /// search if an comparable implier is present
     fn contains_implier(&self, implier: &Self::Imp) -> Option<Ordering> {
-
         for inner_implier in self.implied_by() {
             let cpmd = Self::cmp_imp(implier, inner_implier);
 

@@ -24,11 +24,11 @@ use crate::dl_lite::tbox_item::TbiDllite;
 use crate::kb::knowledge_base::{AbRule, Implier};
 
 use crate::dl_lite::abox_item::AbiDllite;
+use crate::dl_lite::utilities::ordering_cmp_helper;
 use crate::kb::knowledge_base::ABoxItem;
 use crate::kb::types::{DLType, CR};
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
-use crate::dl_lite::utilities::ordering_cmp_helper;
 
 /*
    remember that only base roles and base concepts are allowed here !!

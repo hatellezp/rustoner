@@ -17,18 +17,18 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
-use std::fmt;
 use std::cmp::Ordering;
+use std::fmt;
 
 use crate::dl_lite::node::ItemDllite;
 
-use crate::kb::types::DLType;
 use crate::kb::knowledge_base::Item;
+use crate::kb::types::DLType;
 
-
-/*
-   remember that only base roles and base concepts are allowed here !!
-*/
+/// ABox items are built as an enumerate struct.
+/// We have two types of ABox assertions, role assertions and concept assertions.
+/// They are built like a tuple of Items, where the first is a role or a concept
+/// and the following are the nominal (constants).
 #[derive(Eq, PartialEq, Debug, Clone, Hash)]
 pub enum AbiDllite {
     RA(ItemDllite, ItemDllite, ItemDllite), // role assertion
@@ -44,6 +44,8 @@ impl fmt::Display for AbiDllite {
     }
 }
 
+// Almost all construct in rustoner can be ordered.
+// As always, order is lexicographic.
 impl PartialOrd for AbiDllite {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         if self == other {
@@ -72,6 +74,7 @@ impl PartialOrd for AbiDllite {
     }
 }
 
+// The real function is implemented in PartialOrd
 impl Ord for AbiDllite {
     fn cmp(&self, other: &Self) -> Ordering {
         self.partial_cmp(other).unwrap()
@@ -83,8 +86,18 @@ the language only allows for base concept and role assertions,
 here we however, we will allow for negation of and other complex constructions
 this will allow for finding that 'a doesn't belong to A'
  */
-
 impl AbiDllite {
+    // There are two constructors for ABox items, role assertions are
+    // different enough of concept assertions to justify defining two
+    // methods.
+    // We could do a sole general method, but keeping it easy
+    // to read is one of my mottos when writing code.
+
+    /// Creates a new role assertion in the form of a ABox item.
+    /// Three principal arguments are provided, a role and two
+    /// constants.
+    /// A last argument: 'for_completion', is a switch to allow
+    /// incorrect syntactically assertions during the reasoning tasks.
     pub fn new_ra(
         r: ItemDllite,
         a: ItemDllite,
@@ -101,6 +114,9 @@ impl AbiDllite {
         }
     }
 
+    /// Same approach as 'new_ra', but this time two principal arguments, a concept
+    /// item and a constant item.
+    /// The 'for_completion' argument is as in 'new_ra'.
     pub fn new_ca(c: ItemDllite, a: ItemDllite, for_completion: bool) -> Option<AbiDllite> {
         let is_base_concept = c.t() == DLType::BaseConcept || for_completion;
         let is_nominal = a.t() == DLType::Nominal;
@@ -111,6 +127,8 @@ impl AbiDllite {
         }
     }
 
+    /// Negate the constant or role in the ABox item that self is.
+    /// Be aware that this method produces a new object.
     pub fn negate(&self) -> AbiDllite {
         match self {
             AbiDllite::CA(c, a) => {
@@ -126,6 +144,8 @@ impl AbiDllite {
         }
     }
 
+    /// Checks if self is of the form 'some_constant : Top' which
+    /// is a trivial assertion.
     pub fn is_trivial(&self) -> bool {
         match self {
             AbiDllite::CA(c, _) => c.t() == DLType::Top,
@@ -133,14 +153,21 @@ impl AbiDllite {
         }
     }
 
+    /// Retrieves the type of the non constants element in
+    /// the ABox assertions.
     pub fn t(&self) -> DLType {
+        // rewrote this to be in accord with the actual implementation
+        // before it was BaseRole or BaseConcept that were returned,
+        // but during completion some other DLType are allowed, thus I
+        // adjusted the method
         match self {
-            AbiDllite::RA(_, _, _) => DLType::BaseRole,
-            AbiDllite::CA(_, _) => DLType::BaseConcept,
+            AbiDllite::RA(c_or_r, _, _)
+            | AbiDllite::CA(c_or_r, _) => c_or_r.t(),
         }
     }
 
-    // reference to the concept or role in the abox_item
+    /// Returns a reference to the role item if self is a role assertion
+    /// or a reference to the concept item if self is a concept assertion.
     pub fn symbol(&self) -> &ItemDllite {
         /*
         returns a reference to the role or concept symbol of the  abox item
@@ -151,6 +178,13 @@ impl AbiDllite {
         }
     }
 
+    /// Checks if self and other are of the same type (role assertion or
+    /// concept assertion) and if true then checks if the items in
+    /// self and other are the same.
+    /// e.g.
+    /// ('horacio': 'Human', 'alejandro': 'Human') -> true
+    /// ('horacio': 'Human', 'horacio': 'Mortal') -> false
+    /// ('horacio': 'Human', 'horacio', "apple': 'eats') -> false
     pub fn same_nominal(&self, other: &Self) -> bool {
         match (self, other) {
             (AbiDllite::RA(_, a1, b1), AbiDllite::RA(_, a2, b2)) => a1 == a2 && b1 == b2,

@@ -30,7 +30,6 @@ use std::fmt::Display;
 // END OF IMPORTS
 // =================================================================================================
 
-
 /// This reasoner need to know the type of each DL expression, so we type them,
 /// this is their type.
 #[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]
@@ -106,7 +105,6 @@ impl DLType {
 
     /// test if both t1 and t2 are Concept types
     pub fn all_concepts(t1: DLType, t2: DLType) -> bool {
-
         match t1 {
             DLType::Bottom
             | DLType::Top
@@ -125,7 +123,6 @@ impl DLType {
     }
 
     pub fn all_nominals(t1: DLType, t2: DLType) -> bool {
-
         // returns true if both t1 and t2 are of Nominal type
 
         t1 == DLType::Nominal && t2 == DLType::Nominal
@@ -173,7 +170,6 @@ impl CR {
     /// Pretty printer for rules, the 'for_tbi' bool says
     /// if rules is to be formatted for TBox rules or ABox rules
     pub fn description(&self, for_tbi: bool) -> String {
-
         if cfg!(target_os = "windows") {
             match self {
                 CR::Zero => {

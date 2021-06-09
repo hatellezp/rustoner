@@ -21,7 +21,6 @@ use crate::kb::types::FileType;
 use std::fs::File;
 use std::io::Write;
 
-
 /// All these functions are utilities for IO tasks as parsing names and
 /// detecting file extensions.
 
@@ -43,12 +42,11 @@ pub fn get_filetype(filename: &str) -> FileType {
 /// Find the actual name of an ontology file from a path string
 /// (e.g. 'path/to/file/myfile.extension' -> 'myfile').
 pub fn parse_name_from_filename(filename: &str) -> &str {
-
     let path_separator = std::path::MAIN_SEPARATOR; // smart :)
     let v: Vec<&str> = filename.split(path_separator).collect();
 
-    let name = v.last().unwrap().trim();  // this vector can never be empty, asking
-                                               // for last is ok
+    let name = v.last().unwrap().trim(); // this vector can never be empty, asking
+                                         // for last is ok
     let v: Vec<&str> = name.split('.').collect();
     v[0].trim()
 }

@@ -18,15 +18,15 @@ along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
 /*
-    helper is what its name says, a helper module, with several wraps for easy of use functions
- */
+   helper is what its name says, a helper module, with several wraps for easy of use functions
+*/
 
 // =================================================================================================
 // IMPORTS
 
 // Ontology and ABox (quantified) realizations for dl_lite
-use crate::dl_lite::ontology::OntologyDllite;
 use crate::dl_lite::abox::AbqDllite;
+use crate::dl_lite::ontology::OntologyDllite;
 // abstract structs and widely use types
 use crate::kb::knowledge_base::{ABox, AggrFn};
 use crate::kb::types::ConflictType;
@@ -40,7 +40,7 @@ use petgraph::graph::EdgeReference;
 use petgraph::Graph;
 use std::collections::HashMap;
 
-use std::io::ErrorKind;  // error to detect absence of command
+use std::io::ErrorKind; // error to detect absence of command
 use std::ops::DivAssign; // what is this ???
 use std::process::Command; // execute a command
 

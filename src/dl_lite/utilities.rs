@@ -8,5 +8,3 @@ pub fn ordering_cmp_helper(len1: usize, len2: usize) -> (usize, Ordering) {
         Ordering::Greater => (len2, Ordering::Greater),
     }
 }
-
-

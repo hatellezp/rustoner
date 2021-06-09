@@ -1,7 +1,6 @@
-use nalgebra::{DMatrix, Complex, DVector};
+use nalgebra::{Complex, DMatrix, DVector};
 
 mod alg_math;
-
 
 use alg_math::utilities::*;
 
@@ -110,14 +109,13 @@ pub fn pretty_print_matrix2(v: &Vec<i8>) {
 
  */
 
-
 pub fn main() {
     println!("Hello there!");
     let zero: Complex<f64> = Complex { re: 0., im: 0. };
     let n: usize = 2;
 
-    let mut m = DMatrix::from_vec(n, n, vec![zero; n*n]);
-    let mut v = DVector::from(vec![zero; n]) ;
+    let mut m = DMatrix::from_vec(n, n, vec![zero; n * n]);
+    let mut v = DVector::from(vec![zero; n]);
 
     println!("before modification: {}", matrix_is_zero_complex(&m));
 
@@ -137,7 +135,7 @@ pub fn main() {
     println!("v: {:?}", &v);
 
     println!("m: {:?}", &m);
-    m[n+1] = Complex { re: 1., im: 2. };
+    m[n + 1] = Complex { re: 1., im: 2. };
     multiply_matrix_complex(&mut m, scalar);
     println!("m: {:?}", &m);
 }

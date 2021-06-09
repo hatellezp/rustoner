@@ -18,15 +18,15 @@ along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
 /*
-    This module has only one important function: find_bound_complex.
-    From a matrix computes a bound for stabilized results.
-    Not the best place to completely explain this algorithm.
-    Go read one of the papers that specifies this, like the following:
+   This module has only one important function: find_bound_complex.
+   From a matrix computes a bound for stabilized results.
+   Not the best place to completely explain this algorithm.
+   Go read one of the papers that specifies this, like the following:
 
-    https://soft.vub.ac.be/DBDBD2020/abstract/dbdbd_2020_tellez.pdf
+   https://soft.vub.ac.be/DBDBD2020/abstract/dbdbd_2020_tellez.pdf
 
-    good luck.
- */
+   good luck.
+*/
 
 use fftw::array::AlignedVec;
 use fftw::plan::*;
@@ -39,7 +39,6 @@ use crate::alg_math::utilities::{
 use nalgebra::Complex;
 use nalgebra::{DMatrix, DVector};
 
-
 /// will compute a bound for the 'a' value (you should know what it is)
 /// such that solutions for the matrix equation given by the matrix  'matrix'
 /// are rank equivalent (you should also know what it is)
@@ -49,20 +48,20 @@ fn find_bound_complex(
     m_scale: f64,
     b_translate: f64,
 ) -> Option<f64> {
-
     // I love to keep values these values such that I can stop calling for them
     let rows = matrix.nrows();
     let cols = matrix.ncols();
 
-    if rows != cols {  // verify that the matrix is square
+    if rows != cols {
+        // verify that the matrix is square
         println!("matrix is not square!");
         Option::None
     } else {
         /*
-            The matrix dimension is n thus each polynomial that defines the behaviour
-            of each component of the solution vector is at most of degree n-2.
-            Therefore, we need n-1 samples, this comes down to N = n-1 vectors of dimension n.
-         */
+           The matrix dimension is n thus each polynomial that defines the behaviour
+           of each component of the solution vector is at most of degree n-2.
+           Therefore, we need n-1 samples, this comes down to N = n-1 vectors of dimension n.
+        */
         let n = rows;
 
         // set to zero the diagonal, we don't want any troubles as a corrupted entry in the matrix
@@ -77,9 +76,9 @@ fn find_bound_complex(
 
         let n_samples = n - 1; // we need then a n-1 samples
         let mut prov_scale: f64 = 1.; // the matrix need to be scaled, we begin at 1
-        let mut current_max: f64;  // find the biggest value in the matrix
-        let inverse_roots = true;  // for the fast fourier transform, we want to go back
-                                        // so inverse is set to true
+        let mut current_max: f64; // find the biggest value in the matrix
+        let inverse_roots = true; // for the fast fourier transform, we want to go back
+                                  // so inverse is set to true
 
         // from the provisional scale we need to find a better bound so the matrix is
         // not singular when added to the identity matrix
@@ -96,7 +95,8 @@ fn find_bound_complex(
 
         // now prov_scale will assure a non singular matrix
         prov_scale += m_scale; // this number guaranteed that 1/prov_scale < 1 strictly
-        let scale = Complex {  // cast to complex
+        let scale = Complex {
+            // cast to complex
             re: (1. / prov_scale),
             im: 0.,
         };
@@ -194,9 +194,9 @@ fn find_bound_complex(
         */
 
         /*
-            each polynomial is not necessarily of degree n-2, to compute the bound (Cauchy bound)
-             on the roots we need the real degree of each of those polynomials
-         */
+           each polynomial is not necessarily of degree n-2, to compute the bound (Cauchy bound)
+            on the roots we need the real degree of each of those polynomials
+        */
         let mut possible_coeff_real: f64;
         let mut max_coeff: f64;
         current_max = 1.; // to avoid zero related problems
@@ -215,10 +215,10 @@ fn find_bound_complex(
                 }
 
                 /*
-                    once the plan is executed the out_vector has the solution, which by our
-                    choice of values (the unity roots) has the coefficients of the wanted
-                    polynomial
-                 */
+                   once the plan is executed the out_vector has the solution, which by our
+                   choice of values (the unity roots) has the coefficients of the wanted
+                   polynomial
+                */
                 plan.c2c(&mut in_vector, &mut out_vector).unwrap(); // TODO: is this safe ??
                                                                     // now out_vector has the result
                                                                     // now the answer is stored in out
@@ -282,11 +282,11 @@ pub fn find_bound_complex_wrapper(
     m_scale: f64,
     b_translate: f64,
 ) -> Option<f64> {
-
     let nsquared = v.len();
     let n = (nsquared as f64).sqrt() as usize;
 
-    if n * n != nsquared { // always verify the array can be casted to an square matrix
+    if n * n != nsquared {
+        // always verify the array can be casted to an square matrix
         println!(
             "not an square matrix can be formed, {} is not a perfect square!",
             nsquared

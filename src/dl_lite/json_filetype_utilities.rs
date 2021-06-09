@@ -17,17 +17,17 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
-use std::{fs, io};
+use serde_json::{Result, Value};
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
-use serde_json::{Result, Value};
+use std::{fs, io};
 
+use crate::dl_lite::string_formatter::string_to_node;
 use crate::dl_lite::tbox::TBDllite;
 use crate::dl_lite::tbox_item::TbiDllite;
-use crate::dl_lite::string_formatter::string_to_node;
 
-use crate::kb::types::DLType;
 use crate::kb::knowledge_base::{SymbolDict, TBox};
+use crate::kb::types::DLType;
 
 /*
 how this works:
