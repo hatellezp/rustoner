@@ -64,13 +64,13 @@ pub fn rank_abox(
     let mut prevalues = abq
         .items()
         .iter()
-        .map(|x| x.prevalue())
+        .map(|x| x.credibility())
         .collect::<Vec<f64>>();
     let normalization_scale = normalize_vector(&mut prevalues);
 
     for i in 0..abq.len() {
         let abqi = abq.get_mut(i).unwrap();
-        abqi.set_prevalue(prevalues[i]);
+        abqi.set_credibility(prevalues[i]);
     }
 
     let (before_matrix, real_to_virtual, virtual_to_real) =
@@ -213,10 +213,10 @@ pub fn rank_abox(
                 // once every value is in the abox, we upscale by the normalization factor
                 for i in 0..abq.len() {
                     let abqi = abq.get_mut(i).unwrap();
-                    let prevalue = abqi.prevalue();
+                    let prevalue = abqi.credibility();
                     let value = abqi.value().unwrap();
 
-                    abqi.set_prevalue(prevalue * normalization_scale);
+                    abqi.set_credibility(prevalue * normalization_scale);
                     abqi.set_value(value * normalization_scale);
                 }
 

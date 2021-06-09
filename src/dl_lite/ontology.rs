@@ -746,7 +746,7 @@ impl OntologyDllite {
                             }
                         } // pass again
                         Some(abiq) => {
-                            aggr_v = aggr(vec![abiq.prevalue()]);
+                            aggr_v = aggr(vec![abiq.credibility()]);
                             v[index] = aggr_v * (matrix[index] as f64);
                         }
                     }
@@ -1000,7 +1000,7 @@ impl OntologyDllite {
             Some(n) => format!("{}", n),
         };
 
-        let res = format!("{} (pv: {}, v: {})", abi_to_string, abiq.prevalue(), v);
+        let res = format!("{} (pv: {}, v: {})", abi_to_string, abiq.credibility(), v);
         res
     }
 

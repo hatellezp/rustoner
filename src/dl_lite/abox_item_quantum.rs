@@ -185,13 +185,15 @@ this will allow for finding that 'a doesn't belong to A'
  */
 
 impl AbiqDllite {
+    /// Build a new ABox item (quantified) from an ABox item.
+    /// Credibility defaults to 1.0 if None is provided.
     pub fn new(
         abi: AbiDllite,
-        prevalue: Option<f64>,
+        credibility: Option<f64>,
         value: Option<f64>,
         level: usize,
     ) -> AbiqDllite {
-        let prevalue = match prevalue {
+        let credibility = match credibility {
             Some(pv) => pv,
             _ => 1.0,
         };
@@ -200,7 +202,7 @@ impl AbiqDllite {
 
         AbiqDllite {
             abi,
-            credibility: prevalue,
+            credibility,
             value,
             level,
             impliers,
@@ -211,7 +213,7 @@ impl AbiqDllite {
         &self.abi
     }
 
-    pub fn prevalue(&self) -> f64 {
+    pub fn credibility(&self) -> f64 {
         self.credibility
     }
 
@@ -219,7 +221,7 @@ impl AbiqDllite {
         self.value = Some(v);
     }
 
-    pub fn set_prevalue(&mut self, v: f64) {
+    pub fn set_credibility(&mut self, v: f64) {
         self.credibility = v;
     }
 
@@ -235,11 +237,20 @@ impl AbiqDllite {
         self.abi.is_trivial()
     }
 
+    /// Checks if self and other have the same constants (in the same order).
     pub fn same_nominal(&self, other: &Self) -> bool {
         self.abi.same_nominal(&other.abi)
     }
 
-    // pub fn apply_two(one: &ABIQ, two: &ABIQ, tbox: &TB) -> Option<Vec<ABIQ>> {}
+    /// Deduction rule is applied if possible to an array of ABox items.
+    /// args:
+    /// - an array of ABox items
+    /// - an array of TBox items
+    /// - a dedudction rule to be applied
+    /// - a switch (deduction_tree) to keep or not track of what impliers produced
+    ///   a new item.
+    /// Result is wrapped in an Option, it will return None when the rule
+    /// fails to be applied.
     pub fn apply_rule(
         abiqs: Vec<&AbiqDllite>,
         tbis: Vec<&TbiDllite>,
@@ -256,7 +267,7 @@ impl AbiqDllite {
             let mut final_vec: Vec<AbiqDllite> = Vec::new();
 
             for item in some_vec {
-                if !item.abi().is_trivial() {
+                if !item.abi().is_trivial() { // purge trivial assertions
                     final_vec.push(item);
                 }
             }
@@ -267,6 +278,10 @@ impl AbiqDllite {
         }
     }
 
+    /// Compares arrays as if they were sets.
+    /// If comparable will return Some(Less) when v1 is included in v2,
+    /// Some(Equal) when vector are equals and Some(Greater) when v2 is included
+    /// in v1. Will return None when comparison is not possible.
     pub fn compare_two_vectors(v1: &[AbiqDllite], v2: &[AbiqDllite]) -> Option<Ordering> {
         let len1 = v1.len();
         let len2 = v2.len();

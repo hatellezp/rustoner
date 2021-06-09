@@ -728,7 +728,7 @@ pub fn string_to_abiq(
 pub fn abiq_to_string(abiq: &AbiqDllite, symbols: &SymbolDict, to_native: bool) -> Option<String> {
     let abi_to_string = abi_to_string(abiq.abi(), symbols);
 
-    let pv_to_string = format!("{}", abiq.prevalue());
+    let pv_to_string = format!("{}", abiq.credibility());
     let v_to_string = match abiq.value() {
         Option::None => "NC".to_string(),
         Some(v) => format!("{}", v),
