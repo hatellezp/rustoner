@@ -18,20 +18,15 @@ along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
 use std::{fs, io};
-
-use serde_json::{Result, Value};
-
-// use crate::dl_lite::abox::AB;
-
-// use crate::dl_lite::node::Mod;
-use crate::dl_lite::tbox::TBDllite;
-use crate::dl_lite::tbox_item::TbiDllite;
-use crate::kb::types::DLType;
-// use serde::Deserializer;
-use crate::dl_lite::string_formatter::string_to_node;
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
+use serde_json::{Result, Value};
 
+use crate::dl_lite::tbox::TBDllite;
+use crate::dl_lite::tbox_item::TbiDllite;
+use crate::dl_lite::string_formatter::string_to_node;
+
+use crate::kb::types::DLType;
 use crate::kb::knowledge_base::{SymbolDict, TBox};
 
 /*
@@ -403,57 +398,6 @@ pub fn parse_tbox_json(
         }
     }
 }
-
-/*
-fn node_to_value(node: &Node_DLlite, symbols: &SymbolDict) -> Option<Value> {
-    let string_op = node_to_string(node, symbols, String::new());
-
-    match string_op {
-        Option::Some(s) => Some(Value::String(s)),
-        _ => Option::None,
-    }
-}
-
-fn tbi_to_value(tbi: &TBI_DLlite, symbols: &SymbolDict) -> Option<Value> {
-    let lside_op = node_to_value(tbi.lside(), symbols);
-    let rside_op = node_to_value(tbi.rside(), symbols);
-
-    match (lside_op, rside_op) {
-        (Some(lside), Some(rside)) => Some(Value::Array(vec![lside, rside])),
-        (_, _) => Option::None,
-    }
-}
-
-pub fn tbox_to_value(
-    tbox: &TB_DLlite,
-    symbols: &SymbolDict,
-    dont_write_trivial: bool,
-) -> Option<Value> {
-    let mut vec_of_tbis: Vec<Value> = Vec::new();
-
-    for tbi in tbox.items() {
-        let tbi_op: Option<Value>;
-
-        if dont_write_trivial && tbi.is_trivial() {
-            tbi_op = Option::None
-        } else {
-            tbi_op = tbi_to_value(tbi, symbols);
-        }
-
-        match tbi_op {
-            Some(tbi_value) => vec_of_tbis.push(tbi_value),
-            _ => (),
-        }
-    }
-
-    if vec_of_tbis.len() > 0 {
-        Some(Value::Array(vec_of_tbis))
-    } else {
-        Option::None
-    }
-}
-
- */
 
 pub fn invalid_data_result<T>(error: &str) -> io::Result<T> {
     let new_error = Error::new(ErrorKind::InvalidData, error);

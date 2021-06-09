@@ -17,7 +17,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
-// entry point of the module
+//! Implementation of dl_lite_r reasoner. ABox and TBox items are defined here,
+//! ABox and TBox as well. Reasoning tasks to detect for inconsistency, to complete
+//! and others are implemented here.
+//! Some utilities to parse ontology files are also defined here.
 pub mod abox;
 pub mod abox_item;
 pub mod abox_item_quantum;

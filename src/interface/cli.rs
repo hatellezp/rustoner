@@ -21,10 +21,9 @@ use std::str::FromStr;
 use std::string::ParseError;
 use structopt::StructOpt;
 
-/*
-    Every task the the binary dl_lite_r can do, each is explained as a comment.
- */
-// more to be added after
+
+/// Every task the the binary dl_lite_r can do, each is explained as a comment.
+/// more to be added after
 #[derive(Debug)]
 pub enum Task {
     VERTB,    // verify tbox
@@ -38,7 +37,7 @@ pub enum Task {
     UNDEFINED,
 }
 
-// Implementing 'FromStr' allows to cast an string value as 'Task' enum
+/// Implementing 'FromStr' allows to cast an string value as 'Task' enum
 impl FromStr for Task {
     type Err = ParseError;
 
@@ -57,7 +56,7 @@ impl FromStr for Task {
     }
 }
 
-// name of the aggregate operators for credibility of subsets
+/// name of the aggregate operators for credibility of subsets
 #[derive(Debug)]
 pub enum AggrName {
     MAX,
@@ -68,7 +67,7 @@ pub enum AggrName {
     UNDEFINED,
 }
 
-// to cast to enum from string
+/// to cast to enum from string
 impl FromStr for AggrName {
     type Err = ParseError;
 
@@ -86,11 +85,9 @@ impl FromStr for AggrName {
     }
 }
 
-/*
-    The binary dl_lite_r works through an interface of arguments of the
-    form '--argname'.
-    They should be self-explanatory.
- */
+/// The binary dl_lite_r works through an interface of arguments of the
+/// form '--argname'.
+/// They should be self-explanatory.
 #[derive(StructOpt, Debug)]
 pub struct Cli {
     #[structopt(

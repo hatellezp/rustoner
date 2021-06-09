@@ -261,7 +261,7 @@ pub fn create_unity_roots(v: &mut DVector<Complex<f64>>, n: usize, inverse: bool
         let mut im: f64;
         let mut new_complex: Complex<f64>;
 
-        let mut cashed_values: HashMap<usize, (f64, f64)> = HashMap::new();
+        let _cashed_values: HashMap<usize, (f64, f64)> = HashMap::new();
 
         for k in 0..n {
             arg = t * PI_TIMES_2_REDEF * ((k as f64) / n64);

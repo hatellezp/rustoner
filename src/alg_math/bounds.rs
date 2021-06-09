@@ -39,15 +39,16 @@ use crate::alg_math::utilities::{
 use nalgebra::Complex;
 use nalgebra::{DMatrix, DVector};
 
+
+/// will compute a bound for the 'a' value (you should know what it is)
+/// such that solutions for the matrix equation given by the matrix  'matrix'
+/// are rank equivalent (you should also know what it is)
 fn find_bound_complex(
     mut matrix: DMatrix<Complex<f64>>,
     tolerance: f64,
     m_scale: f64,
     b_translate: f64,
 ) -> Option<f64> {
-    /// will compute a bound for the 'a' value (you should know what it is)
-    /// such that solutions for the matrix equation given by the matrix  'matrix'
-    /// are rank equivalent (you should also know what it is)
 
     // I love to keep values these values such that I can stop calling for them
     let rows = matrix.nrows();
@@ -273,14 +274,15 @@ fn find_bound_complex(
     }
 }
 
+/// this is wrapper over the find_bound_complex function, it takes f64 values
+/// and construct the necessary DMatrix to compute a bound
 pub fn find_bound_complex_wrapper(
     v: Vec<f64>,
     tolerance: f64,
     m_scale: f64,
     b_translate: f64,
 ) -> Option<f64> {
-    /// this is wrapper over the find_bound_complex function, it takes f64 values
-    /// and construct the necessary DMatrix to compute a bound
+
     let nsquared = v.len();
     let n = (nsquared as f64).sqrt() as usize;
 

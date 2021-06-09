@@ -110,9 +110,16 @@ impl Implier for TbiDllite {
     }
 
     fn cmp_imp(imp1: &(CR, Vec<TbiDllite>), imp2: &(CR, Vec<TbiDllite>)) -> Option<Ordering> {
+        /// Compares two impliers to search for minimality, ideally an implier
+        /// should be minimal with respect to subset comparison.
+        /// Impliers are compared with the following rule:
+        /// if imp1 is included in imp2 then imp1 is smaller than imp2, if
+        /// imp2 is included in imp1 then imp1 is greater than imp1,
+        /// if not comparison can be made then None is returned
+
         let len1 = (&imp1.1).len();
         let len2 = (&imp2.1).len();
-        let mut all_good = true;
+        let mut all_good = true; // accumulates equality of element in both arrays
         let mut tbi1: &TbiDllite;
         let mut tbi2: &TbiDllite;
         let (length, ordering) = ordering_cmp_helper(len1, len2);
@@ -122,6 +129,10 @@ impl Implier for TbiDllite {
             tbi2 = (&imp2.1).get(i).unwrap();
 
             all_good = all_good && (tbi1 == tbi2);
+
+            if ! all_good {  // early stopping condition
+                break
+            }
         }
 
         match all_good {
@@ -131,28 +142,36 @@ impl Implier for TbiDllite {
     }
 
     fn add_to_implied_by(&mut self, mut implier: (CR, Vec<TbiDllite>)) {
-        // before everything, here in DLlite we can negation implies reverse negation
-        // we must avoid to add an element as self implier
-        if !(&implier.1).contains(&self) {
+        /// add a new implier to the array of impliers of self
+        /// a new implier is added only if
+        /// - it is not equivalent to self
+        /// - it is not present in the impliers of self
+        /// - there is no implier smaller in the impliers of self
+
+        if !(&implier.1).contains(&self) { // verify it is not present in self.impliers
             implier.1.sort();
+
+            // compares the new implier with the present ones
             let contains = self.contains_implier(&implier);
 
             match contains {
-                Option::Some(Ordering::Less) => {
+                Option::Some(Ordering::Less) => {  // if it is smaller then a substitution is done
                     let mut cmpd: Option<Ordering>;
                     let mut inner_implier: &(CR, Vec<TbiDllite>);
-                    let lenght: usize = self.impliers.len();
+                    let length: usize = self.impliers.len();
 
-                    for index in 0..lenght {
+                    for index in 0..length {
                         inner_implier = &self.impliers.get(index).unwrap();
                         cmpd = Self::cmp_imp(&implier, inner_implier);
 
                         if let Option::Some(Ordering::Less) = cmpd {
                             self.impliers[index] = implier;
-                            break; // rust is very smart, told me that value was being used in future iteration, so I put a break right here
+                            break; // rust is very smart, told me that value was being used in
+                                   // future iteration, so I put a break right here
                         }
                     }
-                }
+                },
+                // all these cases amount to nothing to do
                 Option::None => self.impliers.push(implier),
                 Option::Some(Ordering::Equal) | Option::Some(Ordering::Greater) => (),
             }
@@ -187,13 +206,13 @@ impl TbiDllite {
         {
             Option::None
         } else {
-            let implied_by: Vec<(CR, Vec<TbiDllite>)> = Vec::new();
+            let impliers: Vec<(CR, Vec<TbiDllite>)> = Vec::new();
 
             Some(TbiDllite {
                 lside,
                 rside,
                 level,
-                impliers: implied_by,
+                impliers,
             })
         }
     }

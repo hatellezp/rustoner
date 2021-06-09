@@ -17,7 +17,12 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
-// entry point of module
+//! The kb module is sort of an interface or abstract class module for
+//! what knowledge bases are.
+//! Rust do not have interfaces not abstract classes, everything is
+//! done by traits.
+//! Items, TBoxes, ABoxes, every one is implemented by a trait.
+
 pub mod aggr_functions;
 pub mod knowledge_base;
 pub mod types;

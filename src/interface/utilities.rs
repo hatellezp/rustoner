@@ -21,30 +21,28 @@ use crate::kb::types::FileType;
 use std::fs::File;
 use std::io::Write;
 
-/*
-    All these functions are utilities for IO tasks as parsing names and
-    detecting file extensions.
- */
+
+/// All these functions are utilities for IO tasks as parsing names and
+/// detecting file extensions.
 
 // TODO: write a real test, some file do not have the '.json' extension
 pub fn is_json_file(filename: &str) -> bool {
-    /// check if the file is of json type
+    // check if the file is of json type
 
     filename.ends_with(".json")
 }
 
 pub fn get_filetype(filename: &str) -> FileType {
-    /// class ontology files in one of the known types to parse
-
+    // class ontology files in one of the known types to parse
     match is_json_file(filename) {
         true => FileType::JSON,
         false => FileType::NATIVE,
     }
 }
 
+/// Find the actual name of an ontology file from a path string
+/// (e.g. 'path/to/file/myfile.extension' -> 'myfile').
 pub fn parse_name_from_filename(filename: &str) -> &str {
-    /// find the actual name of an ontology file from a path string
-    /// (e.g. 'path/to/file/myfile.extension' -> 'myfile')
 
     let path_separator = std::path::MAIN_SEPARATOR; // smart :)
     let v: Vec<&str> = filename.split(path_separator).collect();
@@ -56,8 +54,9 @@ pub fn parse_name_from_filename(filename: &str) -> &str {
 }
 
 pub fn write_str_to_file(s: &str, filename: &str) -> bool {
-    /// a simple write to file function
-    /// take a raw string 's' and dump it to file 'filename'
+    // a simple write to file function
+    // take a raw string 's' and dump it to file 'filename'
+
     let file_res = File::create(filename);
 
     match file_res {

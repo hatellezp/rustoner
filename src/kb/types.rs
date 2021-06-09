@@ -31,10 +31,8 @@ use std::fmt::Display;
 // =================================================================================================
 
 
-/*
-    This reasoner need to know the type of each DL expression, so we type them,
-    this is their type.
- */
+/// This reasoner need to know the type of each DL expression, so we type them,
+/// this is their type.
 #[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]
 pub enum DLType {
     Bottom,
@@ -139,10 +137,8 @@ impl DLType {
     }
 }
 
-/*
-    each deduction rule is numbered for pretty print and debug, this numbers
-    are tracked by the CR (count rules) type
- */
+/// Each deduction rule is numbered for pretty print and debug, this numbers
+/// are tracked by the CR (count rules) type
 #[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]
 pub enum CR {
     Zero,
@@ -435,10 +431,8 @@ impl PartialOrd for CR {
     }
 }
 
-/*
-    We need partial ordering to establish an order when applying
-    rules.
- */
+/// We need partial ordering to establish an order when applying
+/// rules.
 impl Ord for CR {
     fn cmp(&self, other: &Self) -> Ordering {
         self.to_usize().cmp(&other.to_usize())
@@ -462,10 +456,8 @@ impl Display for CR {
     }
 }
 
-/*
-    type for files that contains ontologies, for the moment only NATIVE
-    is really operational
- */
+/// Type for files that contains ontologies, for the moment only NATIVE
+/// is really operational
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
 pub enum FileType {
     JSON,
@@ -473,14 +465,12 @@ pub enum FileType {
     // XML to come
 }
 
-/*
-    classify assertions in an ABox in three types, clean assertions, not
-    conflicting with any other assertions, conflicting assertions,
-    assertions having conflict with some other assertion and self-conflict
-    assertions which are plain erroneous,
-    this help the ranking algorithm to shrink the matrix and avoid uneeded
-    calculations
- */
+/// Classify assertions in an ABox in three types, clean assertions, not
+/// conflicting with any other assertions, conflicting assertions.
+/// Assertions having conflict with some other assertion and self-conflict
+/// assertions which are plain erroneous.
+/// This help the ranking algorithm to shrink the matrix and avoid unneeded
+/// calculations.
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
 pub enum ConflictType {
     Clean,

@@ -24,6 +24,13 @@ use std::collections::VecDeque;
 use std::fmt::{Debug, Display};
 use std::sync::MutexGuard;
 
+/// ABox and TBox completion engines modify hashmaps in their inner workings.
+/// Hashmaps usually cannot be modified and at the same time accessed, to avoid
+/// corruption to the hash table.
+/// Nevertheless we need to modify such hashmaps. We do this by wrapping these hashmaps
+/// in a MutexGuard which ensures modification is done when not accessing is done.
+/// Functions defined here modify these MutexGuards both in ABox and TBox engines.
+
 pub fn complete_helper_dump_from_mutex_temporal_to_current<
     T: Display + PartialEq + Eq + Clone + Debug + Implier,
 >(
@@ -174,21 +181,7 @@ pub fn complete_helper_add_if_necessary_general<T: Display + PartialEq + Eq + Cl
     mu_length
 }
 
-/*
-fn print_vector_of_tbi<T: Display + PartialEq + Eq>(vec: &Vec<T>) -> String {
-    let mut s = String::from("[");
-
-    for item in vec {
-        s.push_str(format!("{}, ", &item).as_str());
-    }
-
-    s.push_str("]");
-
-    s
-}
-
- */
-
+/// Pretty printer for array of of tbis.
 fn print_vector_of_tbi_references<T: Display + PartialEq + Eq>(vec: &[&T]) -> String {
     let mut s = String::from("[");
 
@@ -199,32 +192,3 @@ fn print_vector_of_tbi_references<T: Display + PartialEq + Eq>(vec: &[&T]) -> St
     s.push(']');
     s
 }
-
-/*
-pub fn print_matrix<T: Display>(v: Vec<T>) {
-    let mlength = v.len();
-    let msize = (mlength as f64).sqrt() as usize;
-
-    let mut s = String::from("[");
-
-    for i in 0..msize {
-        for j in 0..msize {
-            let to_add = format!("{}", v.get(i * msize + j).unwrap());
-
-            s.push_str(to_add.as_str());
-
-            if j != msize - 1 {
-                s.push_str(", ");
-            }
-        }
-
-        if i != msize - 1 {
-            s.push_str("\n");
-        }
-    }
-    s.push_str("]");
-
-    println!("{}", s);
-}
-
- */

@@ -17,7 +17,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
-// entry point of the module
+//! Amazingly the interface module deals with the interface cli.
+//! Parsing arguments, reading files and dispatching tasks to the
+//! corresponding functions.
+
 pub mod cli;
 pub mod format_constants;
 pub mod utilities;

@@ -45,19 +45,21 @@ pub fn round_to_15_f64(v: f64) -> f64 {
     (v * PRECISION_ROUNDER).round() / PRECISION_ROUNDER
 }
 
+/// takes an integer 'n' as argument and returns
+/// a Complex DMatrix struct (naglebra defined) (float numbers are double precision)
+/// dimension of the matrix is n*n
 pub fn create_identity_matrix_complex(n: usize) -> DMatrix<Complex<f64>> {
-    /// takes an integer 'n' as argument and returns
-    /// a Complex DMatrix struct (naglebra defined) (float numbers are double precision)
-    /// dimension of the matrix is n*n
+
     let id: DMatrix<Complex<f64>> =
         DMatrix::from_vec(n, n, vec![Complex { re: 1.0, im: 0. }; n * n]);
     id
 }
 
+/// put the n nth complex roots of the unity in the vector roots
+/// roots must be of dimension n, otherwise the procedure will fail and the
+/// program will exit (remark that roots must be a mutable reference)
 pub fn create_unity_roots(roots: &mut DVector<Complex<f64>>, n: usize, inverse: bool) {
-    /// put the n nth complex roots of the unity in the vector roots
-    /// roots must be of dimension n, otherwise the procedure will fail and the
-    /// program will exit (remark that roots must be a mutable reference)
+
     if roots.len() != n {
         std::process::exit(exitcode::DATAERR)
     } else {
@@ -82,18 +84,18 @@ pub fn create_unity_roots(roots: &mut DVector<Complex<f64>>, n: usize, inverse: 
     }
 }
 
+/// verify that matrix is an all zero matrix
 pub fn matrix_is_zero_complex(matrix: &DMatrix<Complex<f64>>) -> bool {
-    /// verify that matrix is an all zero matrix
 
     // this implementation is more elegant and rust will optimize it for us
     let zero: Complex<f64> = Complex { re: 0., im: 0. };
     matrix.iter().all(|&entry| entry == zero)
 }
 
+/// receiver will get receiver - minus
+/// if there is a dimension mismatch the operation will fail with
+/// a DATAERR error code (see the exitcode module)
 pub fn matrix_subtraction(receiver: &mut DMatrix<Complex<f64>>, minus: &DMatrix<Complex<f64>>) {
-    /// receiver will get receiver - minus
-    /// if there is a dimension mismatch the operation will fail with
-    /// a DATAERR error code
 
     if receiver.ncols() != minus.ncols() || receiver.nrows() != minus.nrows() {
         println!("mismatched dimension");
@@ -108,19 +110,21 @@ pub fn matrix_subtraction(receiver: &mut DMatrix<Complex<f64>>, minus: &DMatrix<
 }
 
 pub fn multiply_vector_complex(vector: &mut DVector<Complex<f64>>, scalar: Complex<f64>) {
-    /// scale vector by scalar
 
     // better implementation
     vector.apply(|entry| entry * scalar);
 }
 
 pub fn multiply_matrix_complex(matrix: &mut DMatrix<Complex<f64>>, scalar: Complex<f64>) {
-    /// scale matrix by scalar
 
     // better implementation
     matrix.apply(|entry| entry * scalar);
 }
 
+/// this function solves the following system:
+/// (identity_mod * 1 - matrix_mod * m)X = vector_mod * (1,...1)
+/// will fail if matrix is not square or
+/// if the solution receiver vector length is mismatch matrix dimension
 pub fn solve_system(
     matrix: &DMatrix<Complex<f64>>,
     mut solution: &mut DVector<Complex<f64>>,
@@ -128,10 +132,6 @@ pub fn solve_system(
     matrix_mod: Complex<f64>,
     vector_mod: Complex<f64>,
 ) {
-    /// this function solves the following system:
-    /// (identity_mod * 1 - matrix_mod * m)X = vector_mod * (1,...1)
-    /// will fail if matrix is not square or
-    /// if the solution receiver vector length is mismatch matrix dimension
 
     // keep this here to avoid calling repeatedly to search for these values
     let rows = matrix.nrows();
@@ -190,14 +190,17 @@ pub fn solve_system(
     }
 }
 
-// wrappers
+/// wrapper over the solve_system_wrapper function
+/// matrix modifier is set to 1
+/// vector modifier is set to 1
 pub fn solve_system_wrapper_only_id_mod(vector: &[f64], receiver: &mut Vec<f64>, id_mod: f64) -> bool {
-    /// wrapper over the solve_system_wrapper function
-    /// matrix modifier is set to 1
-    /// vector modifier is set to 1
+
     solve_system_wrapper(vector, receiver, id_mod, 1., 1.)
 }
 
+/// takes mutable sequences of f64 numbers and transform
+/// to matrix (DMatrix) and vector (DVector) respectively
+/// to perform matrix equation solution
 pub fn solve_system_wrapper(
     v: &[f64],
     receiver: &mut Vec<f64>,
@@ -205,9 +208,6 @@ pub fn solve_system_wrapper(
     ma_mod: f64,
     ve_mod: f64,
 ) -> bool {
-    /// takes mutable sequences of f64 numbers and transform
-    /// to matrix (DMatrix) and vector (DVector) respectively
-    /// to perform matrix equation solution
 
     let nsquared = v.len();
     let n = (nsquared as f64).sqrt() as usize;

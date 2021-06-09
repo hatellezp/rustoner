@@ -18,11 +18,8 @@ along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
 
-/*
-    For pretty printing images in a dot graph, these are some
-    special symbols. Keep them stored allows for readability when used.
- */
-
+/// For pretty printing images in a dot graph, these are some
+/// special symbols. Keep them stored allows for readability when used.
 
 // \sqsubseteq
 pub const UNICODE_SQSUBSETEQ: &str = "\u{2291}";

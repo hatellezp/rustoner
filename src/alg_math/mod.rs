@@ -17,7 +17,11 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
-// entry point of the module
+//! The alg_math module deals with the computation of an stabilized
+//! rank for an ontology or in general a knowledge base.
+//! Most of the functionnalities defined here are related to matrix
+//! manipulation and Fast Fourier Transform operations.
+
 pub mod bounds;
 pub mod trigonomic_basic;
 pub mod utilities;

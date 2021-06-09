@@ -31,7 +31,7 @@ use crate::dl_lite::native_filetype_utilities::{
 };
 use std::collections::{HashMap, HashSet};
 use std::fmt;
-use std::fs::File;
+
 use std::io::Write;
 
 // use rusqlite::{Connection, Result};
