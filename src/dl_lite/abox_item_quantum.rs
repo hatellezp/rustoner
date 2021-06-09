@@ -30,9 +30,14 @@ use crate::kb::types::{DLType, CR};
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 
-/*
-   remember that only base roles and base concepts are allowed here !!
-*/
+/// This is a wrapper over ABox item that add quantified
+/// functionality to reasoning.
+/// Level and impliers are as defined for TBox items in the
+/// 'tbox_item.rs' file.
+/// The other two arguments are 'credibility' and 'value'.
+/// The first, 'credibility', is the amount of trust a user put in an
+/// assertion (which default to one if none is provided).
+/// The second, 'value',  is computed by the abox ranking algorithm.
 #[derive(Debug, Clone)]
 pub struct AbiqDllite {
     abi: AbiDllite, // role or concept assertion
@@ -42,7 +47,10 @@ pub struct AbiqDllite {
     impliers: Vec<(CR, Vec<TbiDllite>, Vec<AbiqDllite>)>,
 }
 
-// TODO: this might apport some unseen problems... :(
+// TODO: this might introduce some unseen problems... :(
+/// This struct is a quantified wrapper over the implementation
+/// of ABox item. Thus we overdrive equality to fall into
+/// ABox item equality and disregard other fields of the struct.
 impl PartialEq for AbiqDllite {
     fn eq(&self, other: &Self) -> bool {
         self.abi.eq(other.abi())
@@ -51,8 +59,7 @@ impl PartialEq for AbiqDllite {
 
 impl Eq for AbiqDllite {}
 
-// TODO: is this enough ????
-//     : Clippy complais that I only hash the abi, maybe I should do the same for the abiq ?
+// Hash to be implemented because we overdrive PartialEq
 impl Hash for AbiqDllite {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.abi.hash(state);
@@ -82,6 +89,36 @@ impl Implier for AbiqDllite {
 
     fn implied_by(&self) -> &Vec<(CR, Vec<TbiDllite>, Vec<AbiqDllite>)> {
         &self.impliers
+    }
+
+    fn cmp_imp(imp1: &Self::Imp, imp2: &Self::Imp) -> Option<Ordering> {
+        let r1 = &imp1.0;
+        let r2 = &imp2.0;
+        let tb1 = (&imp1.1).clone();
+        let tb2 = (&imp2.1).clone();
+        let ab1 = &imp1.2;
+        let ab2 = &imp2.2;
+
+        let tb_cmp = TbiDllite::cmp_imp(&(*r1, tb1), &(*r2, tb2));
+        let ab_cmp = AbiqDllite::compare_two_vectors(ab1, ab2);
+
+        match (tb_cmp, ab_cmp) {
+            (Option::None, _) => Option::None,
+            (_, Option::None) => Option::None,
+            (Some(Ordering::Less), Some(Ordering::Less))
+            | (Some(Ordering::Less), Some(Ordering::Equal)) => Some(Ordering::Less),
+            (Some(Ordering::Greater), Some(Ordering::Greater))
+            | (Some(Ordering::Greater), Some(Ordering::Equal)) => Some(Ordering::Greater),
+            (Some(Ordering::Equal), Some(Ordering::Equal)) => Some(Ordering::Equal),
+            (Some(Ordering::Equal), Some(Ordering::Less)) => Some(Ordering::Less),
+            (Some(Ordering::Equal), Some(Ordering::Greater)) => Some(Ordering::Greater),
+            (Some(Ordering::Less), Some(Ordering::Greater))
+            | (Some(Ordering::Greater), Some(Ordering::Less)) => {
+                // this needs more analysis
+                // a theoretical one I mean
+                Option::None
+            }
+        }
     }
 
     fn add_to_implied_by(&mut self, implier: (CR, Vec<TbiDllite>, Vec<AbiqDllite>)) {
@@ -114,36 +151,6 @@ impl Implier for AbiqDllite {
             }
             Option::None => self.impliers.push(implier),
             Option::Some(Ordering::Equal) | Option::Some(Ordering::Greater) => (),
-        }
-    }
-
-    fn cmp_imp(imp1: &Self::Imp, imp2: &Self::Imp) -> Option<Ordering> {
-        let r1 = &imp1.0;
-        let r2 = &imp2.0;
-        let tb1 = (&imp1.1).clone();
-        let tb2 = (&imp2.1).clone();
-        let ab1 = &imp1.2;
-        let ab2 = &imp2.2;
-
-        let tb_cmp = TbiDllite::cmp_imp(&(*r1, tb1), &(*r2, tb2));
-        let ab_cmp = AbiqDllite::compare_two_vectors(ab1, ab2);
-
-        match (tb_cmp, ab_cmp) {
-            (Option::None, _) => Option::None,
-            (_, Option::None) => Option::None,
-            (Some(Ordering::Less), Some(Ordering::Less))
-            | (Some(Ordering::Less), Some(Ordering::Equal)) => Some(Ordering::Less),
-            (Some(Ordering::Greater), Some(Ordering::Greater))
-            | (Some(Ordering::Greater), Some(Ordering::Equal)) => Some(Ordering::Greater),
-            (Some(Ordering::Equal), Some(Ordering::Equal)) => Some(Ordering::Equal),
-            (Some(Ordering::Equal), Some(Ordering::Less)) => Some(Ordering::Less),
-            (Some(Ordering::Equal), Some(Ordering::Greater)) => Some(Ordering::Greater),
-            (Some(Ordering::Less), Some(Ordering::Greater))
-            | (Some(Ordering::Greater), Some(Ordering::Less)) => {
-                // this needs more analysis
-                // a theoretical one I mean
-                Option::None
-            }
         }
     }
 }

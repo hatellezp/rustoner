@@ -161,8 +161,7 @@ impl AbiDllite {
         // but during completion some other DLType are allowed, thus I
         // adjusted the method
         match self {
-            AbiDllite::RA(c_or_r, _, _)
-            | AbiDllite::CA(c_or_r, _) => c_or_r.t(),
+            AbiDllite::RA(c_or_r, _, _) | AbiDllite::CA(c_or_r, _) => c_or_r.t(),
         }
     }
 
