@@ -27,24 +27,21 @@ use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 use crate::dl_lite::utilities::ordering_cmp_helper;
 
-/*
-    TBox items are composed basically of two parts:
-    - a left side
-    - a right side
-    e.g. 'a Human IS a Mortal' left: Human, right: Mortal.
-    Left and right sides are Items.
-    There are two more fields, added for deduction.
-
-    A TBox item added from a file as level 0, now suppose item 'it' was added using
-    a deduction rule 'r' and items in the list 'its', then its level
-    is max(level(i) | i in its).
-
-    The impliers field help to keep track of which items produced a new one using a
-    certain deduction rule.
-    An implier of item 'it' is an array of tuples ('r', 'its') where 'its' produced
-    item 'it' by deduction rule 'r'.
- */
-
+/// TBox items are composed basically of two parts:
+/// - a left side
+/// - a right side
+/// e.g. 'a Human IS a Mortal' left: Human, right: Mortal.
+/// Left and right sides are Items.
+/// There are two more fields, added for deduction.
+///
+/// A TBox item added from a file as level 0, now suppose item 'it' was added using
+/// a deduction rule 'r' and items in the list 'its', then its level
+/// is max(level(i) | i in its).
+///
+/// The impliers field help to keep track of which items produced a new one using a
+/// certain deduction rule.
+/// An implier of item 'it' is an array of tuples ('r', 'its') where 'its' produced
+/// item 'it' by deduction rule 'r'.
 #[derive(Debug, Clone)]
 pub struct TbiDllite {
     lside: ItemDllite,
@@ -109,13 +106,13 @@ impl Implier for TbiDllite {
         &(self.impliers)
     }
 
+    /// Compares two impliers to search for minimality, ideally an implier
+    /// should be minimal with respect to subset comparison.
+    /// Impliers are compared with the following rule:
+    /// if imp1 is included in imp2 then imp1 is smaller than imp2, if
+    /// imp2 is included in imp1 then imp1 is greater than imp1,
+    /// if not comparison can be made then None is returned
     fn cmp_imp(imp1: &(CR, Vec<TbiDllite>), imp2: &(CR, Vec<TbiDllite>)) -> Option<Ordering> {
-        /// Compares two impliers to search for minimality, ideally an implier
-        /// should be minimal with respect to subset comparison.
-        /// Impliers are compared with the following rule:
-        /// if imp1 is included in imp2 then imp1 is smaller than imp2, if
-        /// imp2 is included in imp1 then imp1 is greater than imp1,
-        /// if not comparison can be made then None is returned
 
         let len1 = (&imp1.1).len();
         let len2 = (&imp2.1).len();
@@ -141,12 +138,12 @@ impl Implier for TbiDllite {
         }
     }
 
+    /// add a new implier to the array of impliers of self
+    /// a new implier is added only if
+    /// - it is not equivalent to self
+    /// - it is not present in the impliers of self
+    /// - there is no implier smaller in the impliers of self
     fn add_to_implied_by(&mut self, mut implier: (CR, Vec<TbiDllite>)) {
-        /// add a new implier to the array of impliers of self
-        /// a new implier is added only if
-        /// - it is not equivalent to self
-        /// - it is not present in the impliers of self
-        /// - there is no implier smaller in the impliers of self
 
         if !(&implier.1).contains(&self) { // verify it is not present in self.impliers
             implier.1.sort();

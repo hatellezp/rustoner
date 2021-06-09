@@ -55,8 +55,8 @@ pub trait Implier {
     fn cmp_imp(imp1: &Self::Imp, imp2: &Self::Imp) -> Option<Ordering>;
     fn add_to_implied_by(&mut self, implier: Self::Imp);
 
+    /// search if an comparable implier is present
     fn contains_implier(&self, implier: &Self::Imp) -> Option<Ordering> {
-        /// search if an comparable implier is present
 
         for inner_implier in self.implied_by() {
             let cpmd = Self::cmp_imp(implier, inner_implier);

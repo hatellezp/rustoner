@@ -64,21 +64,21 @@ impl fmt::Display for DLType {
 }
 
 impl DLType {
+    /// test if self is of Nominal type
     pub fn is_nominal_type(&self) -> bool {
-        /// test if self is of Nominal type
         matches!(self, DLType::Nominal)
     }
 
+    /// test if self is a Role type
     pub fn is_role_type(&self) -> bool {
-        /// test if self is a Role type
         matches!(
             self,
             DLType::BaseRole | DLType::InverseRole | DLType::NegatedRole
         )
     }
 
+    /// returns true if self if of Concept type
     pub fn is_concept_type(&self) -> bool {
-        /// returns true if self if of Concept type
         matches!(
             self,
             DLType::Bottom
@@ -89,8 +89,8 @@ impl DLType {
         )
     }
 
+    /// test if both t1 and t2 are Role types
     pub fn all_roles(t1: DLType, t2: DLType) -> bool {
-        /// test if both t1 and t2 are Role types
         match t1 {
             DLType::BaseRole | DLType::InverseRole | DLType::NegatedRole => matches!(
                 t2,
@@ -103,8 +103,10 @@ impl DLType {
     /*
     I'm going to add top and bottom in concepts
      */
+
+    /// test if both t1 and t2 are Concept types
     pub fn all_concepts(t1: DLType, t2: DLType) -> bool {
-        /// test if both t1 and t2 are Concept types
+
         match t1 {
             DLType::Bottom
             | DLType::Top
@@ -153,8 +155,8 @@ pub enum CR {
 }
 
 impl CR {
+    /// cast to usize
     pub fn to_usize(&self) -> usize {
-        /// cast to usize
         match self {
             CR::Zero => 0,
             CR::First => 1,
@@ -168,9 +170,10 @@ impl CR {
         }
     }
 
+    /// Pretty printer for rules, the 'for_tbi' bool says
+    /// if rules is to be formatted for TBox rules or ABox rules
     pub fn description(&self, for_tbi: bool) -> String {
-        /// pretty printer for rules, the 'for_tbi' bool says
-        /// if rules is to be formatted for TBox rules or ABox rules
+
         if cfg!(target_os = "windows") {
             match self {
                 CR::Zero => {
