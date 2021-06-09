@@ -273,28 +273,18 @@ impl ItemDllite {
     }
 
     pub fn n(&self) -> usize {
+        /// returns the identifier of the Item
+        /// top is always 1 and bottom is always 0,values are reserved
+
         /*
-        0 and 1 are reserved values
-         */
+            if you try to write a parser for rustoner be aware that this values
+            are always reserved
+        */
         match self {
             ItemDllite::T => 1,
             ItemDllite::B => 0,
             ItemDllite::C(n) | ItemDllite::R(n) | ItemDllite::N(n) => *n,
             ItemDllite::X(_, bn) => (*bn).n(),
-        }
-    }
-
-    pub fn child_old(node: Option<&ItemDllite>) -> Option<&Self> {
-        match node {
-            Option::None => Option::None,
-            Some(n) => match n {
-                ItemDllite::B
-                | ItemDllite::T
-                | ItemDllite::C(_)
-                | ItemDllite::R(_)
-                | ItemDllite::N(_) => Option::None,
-                ItemDllite::X(_, bn) => Some(&bn),
-            },
         }
     }
 

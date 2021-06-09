@@ -367,22 +367,6 @@ impl OntologyDllite {
         self.tbox.complete(deduction_tree, verbose)
     }
 
-    /*
-    pub fn auto_complete(&mut self, deduction_tree: bool, verbose: bool) {
-        // the tbox
-        let tb = self.complete_tbox(deduction_tree, verbose);
-
-        self.add_tbis_from_tbox(&tb);
-
-        self.tbox.remove_trivial();
-
-        // the name of the abox changes
-        let ab_op = self.complete_abox(deduction_tree, verbose);
-        self.current_abox = ab_op;
-    }
-
-     */
-
     pub fn complete_abox(&self, deduction_tree: bool, verbose: bool) -> Option<AbqDllite> {
         match &self.current_abox {
             Some(ab) => Some(ab.complete(self.tbox(), deduction_tree, verbose)),

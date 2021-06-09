@@ -194,10 +194,11 @@ pub fn dl_lite_rule_three(vec: Vec<&TbiDllite>, deduction_tree: bool) -> Option<
             let tbi2_rside_second_child = ItemDllite::child(Some(tbi2.lside()), 2);
 
             if (&tbi2_rside_second_child).is_some() {
-                // this big ass condition verfies that rside of tbi2 is of the correct form
+                // this big ass condition verifies that rside of tbi2 is of the correct form
                 if tbi2.rside().t() == DLType::NegatedConcept
-                    && (ItemDllite::child_old(Some(tbi2.rside())).unwrap().t()
-                        == DLType::ExistsConcept)
+                    // TODO: this works apparently well
+                    && (ItemDllite::child(Some(tbi2.rside()), 1).unwrap()[0].t() == DLType::ExistsConcept)
+                    // && (ItemDllite::child_old(Some(tbi2.rside())).unwrap().t() == DLType::ExistsConcept)
                 {
                     if tbi2_rside_second_child.unwrap().get(0).unwrap() == &tbi1.rside() {
                         let exists_r1 = tbi1.lside().clone().exists().unwrap();

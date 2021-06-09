@@ -679,6 +679,8 @@ impl AbqDllite {
             // of course, set completed to 'true' in the new tbox
             new_abq.clean_duplicates();
             new_abq.completed = true;
+
+            new_abq.sort();
             new_abq
         }
     }
