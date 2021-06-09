@@ -289,6 +289,12 @@ impl ItemDllite {
     }
 
     pub fn exists(self) -> Option<Self> {
+        /// tries to build an Exists concept from self, will fail if self is not
+        /// of the right form
+        /// e.g. 'teaches' is a role: 'teaches' -> Some('EXISTS teaches')
+        /// 'NOT teaches' -> None
+        /// 'Human' is a concept: 'Human' -> None
+
         match (&self).t() {
             DLType::BaseRole | DLType::InverseRole => Some(ItemDllite::X(Mod::E, Box::new(self))),
             _ => Option::None,
@@ -296,6 +302,9 @@ impl ItemDllite {
     }
 
     pub fn negate(self) -> Self {
+        /// build a new ItemDllite struct with self as a child and a
+        /// negation (NOT) modifier
+
         match self {
             ItemDllite::X(Mod::N, bn) => *bn,
             ItemDllite::B => ItemDllite::T,
@@ -305,6 +314,9 @@ impl ItemDllite {
     }
 
     pub fn is_negation(&self, other: &ItemDllite) -> bool {
+        /// verfies that self is the negation of other
+        /// e.g. ('NOT Human', 'Human') -> true
+        /// ('NOT Human', 'Mortal') -> false
         match (self, other) {
             // bottom and top
             (ItemDllite::B, ItemDllite::T) | (ItemDllite::T, ItemDllite::B) => true,
@@ -319,6 +331,10 @@ impl ItemDllite {
     }
 
     pub fn inverse(self) -> Option<Self> {
+        /// will try ton inverse self, will fail if self is not of the correct form
+        /// which is a base role or an inverse role,
+        /// a negated role, a concept or a nominal are all not invertible
+
         match self {
             ItemDllite::R(_) => Some(ItemDllite::X(Mod::I, Box::new(self))),
             ItemDllite::X(Mod::I, bn) => Some(*bn),
