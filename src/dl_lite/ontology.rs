@@ -195,8 +195,8 @@ impl OntologyDllite {
 
     pub fn add_symbols_from_file(&mut self, filename: &str, filetype: FileType, verbose: bool) {
         let new_symbols_result = match filetype {
-            FileType::JSON => parse_symbols_json(filename),
-            FileType::NATIVE => {
+            FileType::Json => parse_symbols_json(filename),
+            FileType::Native => {
                 parse_symbols_native(filename, verbose) // don't like this :/ (this is a smiley face)
             }
         };
@@ -218,8 +218,8 @@ impl OntologyDllite {
     pub fn add_tbis_from_file(&mut self, filename: &str, filetype: FileType, verbose: bool) {
         if !self.symbols.is_empty() {
             let tb_result = match filetype {
-                FileType::JSON => parse_tbox_json(filename, &self.symbols, verbose),
-                FileType::NATIVE => parse_tbox_native(filename, &self.symbols, verbose),
+                FileType::Json => parse_tbox_json(filename, &self.symbols, verbose),
+                FileType::Native => parse_tbox_native(filename, &self.symbols, verbose),
             };
             match tb_result {
                 Err(error) => {
@@ -251,14 +251,14 @@ impl OntologyDllite {
     ) {
         if !self.symbols.is_empty() {
             match filetype {
-                FileType::JSON => {
+                FileType::Json => {
                     if verbose {
                         println!("the json parser is not yet implemented");
                     }
 
                     panic!("not implemented yet!")
                 }
-                FileType::NATIVE => {
+                FileType::Native => {
                     let ab_result = parse_abox_native_quantum(filename, &mut self.symbols, verbose);
 
                     match ab_result {
@@ -356,10 +356,9 @@ impl OntologyDllite {
     }
 
     pub fn complete_abox(&self, deduction_tree: bool, verbose: bool) -> Option<AbqDllite> {
-        match &self.current_abox {
-            Some(ab) => Some(ab.complete(self.tbox(), deduction_tree, verbose)),
-            _ => Option::None,
-        }
+        self.current_abox
+            .as_ref()
+            .map(|ab| ab.complete(self.tbox(), deduction_tree, verbose))
     }
 
     // please note that this matrix detect also implications
@@ -1109,7 +1108,7 @@ impl OntologyDllite {
         dont_write_trivial: bool,
     ) -> bool {
         match filetype {
-            FileType::NATIVE => {
+            FileType::Native => {
                 let abox_as_string_op = abox_to_native_string_quantum(
                     &self.current_abox.as_ref().unwrap(),
                     &self.symbols,

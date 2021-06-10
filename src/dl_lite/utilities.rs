@@ -1,11 +1,11 @@
-use crate::kb::knowledge_base::{LeveledItem, SymbolDict, ABox};
-use std::cmp::Ordering;
 use crate::dl_lite::abox::AbqDllite;
-use std::collections::HashMap;
-use petgraph::{Graph, Directed};
-use crate::kb::types::ConflictType;
 use crate::dl_lite::abox_item_quantum::AbiqDllite;
 use crate::dl_lite::string_formatter::abi_to_string;
+use crate::kb::knowledge_base::{ABox, LeveledItem, SymbolDict};
+use crate::kb::types::ConflictType;
+use petgraph::{Directed, Graph};
+use std::cmp::Ordering;
+use std::collections::HashMap;
 
 /// Helps ordering size of impliers both in abox items and tbox items.
 pub fn ordering_cmp_helper(len1: usize, len2: usize) -> (usize, Ordering) {
@@ -25,7 +25,6 @@ pub fn get_max_level_abstract<T: LeveledItem>(items: &[T]) -> usize {
 
     max_level
 }
-
 
 pub fn create_aboxq_graph_dot(
     abq: &AbqDllite,
@@ -123,6 +122,3 @@ pub fn create_aboxq_graph_dot(
 
     graph
 }
-
-
-

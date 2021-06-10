@@ -113,6 +113,7 @@ pub trait ABox: PartialEq + Debug + Display {
     fn len(&self) -> usize;
     fn add(&mut self, abi: Self::AbiItem) -> bool;
     fn items(&self) -> &Vec<Self::AbiItem>;
+    fn items_mut(&mut self) -> &mut Vec<Self::AbiItem>;
     fn get(&self, index: usize) -> Option<&Self::AbiItem>;
     fn sort(&mut self);
     fn is_empty(&self) -> bool {

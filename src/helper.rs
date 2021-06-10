@@ -68,8 +68,9 @@ pub fn rank_abox(
         .collect::<Vec<f64>>();
     let normalization_scale = normalize_vector(&mut prevalues);
 
-    for i in 0..abq.len() {
-        let abqi = abq.get_mut(i).unwrap();
+    let _abq_length = abq.len();
+
+    for (i, abqi) in abq.items_mut().iter_mut().enumerate().take(prevalues.len()) {
         abqi.set_credibility(prevalues[i]);
     }
 

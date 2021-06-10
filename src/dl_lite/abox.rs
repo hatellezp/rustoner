@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
 use std::fmt;
 use std::sync::{Arc, Mutex};
 
@@ -28,17 +28,13 @@ use crate::dl_lite::helpers_and_utilities::{
 
 use crate::dl_lite::node::ItemDllite;
 use crate::dl_lite::rule::{dl_lite_abox_rule_one, dl_lite_abox_rule_three, dl_lite_abox_rule_two};
-use crate::dl_lite::string_formatter::{abi_to_string, abiq_in_vec_of_vec};
+use crate::dl_lite::string_formatter::abiq_in_vec_of_vec;
 use crate::dl_lite::tbox::TBDllite;
 use crate::dl_lite::tbox_item::TbiDllite;
-use crate::kb::knowledge_base::{
-    ABox, ABoxItem, AbRule, Item, LeveledItem, SymbolDict, TBox, TBoxItem,
-};
-use crate::kb::types::{ConflictType, DLType, CR};
+use crate::kb::knowledge_base::{ABox, ABoxItem, AbRule, Item, LeveledItem, TBox, TBoxItem};
+use crate::kb::types::{DLType, CR};
 
 use crate::dl_lite::utilities::get_max_level_abstract;
-use petgraph::{Directed, Graph};
-use std::cmp::Ordering;
 
 /// An ABox is basically an array of ABox items.
 /// It has a name, a vector containing the items,
@@ -83,6 +79,10 @@ impl ABox for AbqDllite {
     /// Returns a non mutable reference to the ABox items in self.
     fn items(&self) -> &Vec<AbiqDllite> {
         &self.items
+    }
+
+    fn items_mut(&mut self) -> &mut Vec<Self::AbiItem> {
+        &mut self.items
     }
 
     fn get(&self, index: usize) -> Option<&AbiqDllite> {
@@ -744,5 +744,4 @@ impl AbqDllite {
 
         levels
     }
-
 }

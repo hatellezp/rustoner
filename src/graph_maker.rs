@@ -66,16 +66,6 @@ pub fn create_graph_for_tbox_unraveling(
     let mut rules_added: Vec<usize> = Vec::new();
     let for_tbi = true;
     let is_for_abox = false;
-    /*
-    we wont add all rules for nothing, only rules that are being used
-    // add all the rules
-    let for_tbi = true;
-    for item in &RULE_IDS {
-        let rule_descrip = item.description(for_tbi);
-        graph.add_node(rule_descrip);
-    }
-
-     */
 
     // I need two types of nodes
     // rond for tbis
@@ -92,13 +82,8 @@ pub fn create_graph_for_tbox_unraveling(
 
                     let impliers = tbi.implied_by();
 
-                    let tbi_index: NodeIndex<u32>;
-                    if added.contains_key(&tbi_string) {
-                        tbi_index = added.get(&tbi_string).unwrap().clone();
-                    } else {
-                        tbi_index = graph.add_node(tbi_string.clone());
-                        added.insert(tbi_string, tbi_index);
-                    }
+                    let tbi_index: NodeIndex<u32> =
+                        modify_hashmap_graph(tbi_string, &mut added, &mut graph);
 
                     for (r, v) in impliers {
                         let rule_usize = r.to_usize();
@@ -109,7 +94,7 @@ pub fn create_graph_for_tbox_unraveling(
                             rules_added.push(rule_usize);
                         }
 
-                        let rule_string = format!("{}", r.identifier());
+                        let rule_string = r.identifier();
                         let index_rule = graph.add_node(rule_string);
 
                         let _ = graph.add_edge(index_rule, tbi_index, ());
@@ -121,14 +106,8 @@ pub fn create_graph_for_tbox_unraveling(
                             let tbi_string =
                                 transform_tbi_for_graph(tbi_imp, tbi_string, is_for_abox);
 
-                            let imp_index: NodeIndex<u32>;
-                            if added.contains_key(&tbi_string) {
-                                imp_index = added.get(&tbi_string).unwrap().clone();
-                            } else {
-                                imp_index = graph.add_node(tbi_string.clone());
-                                added.insert(tbi_string, imp_index);
-                            }
-
+                            let imp_index: NodeIndex<u32> =
+                                modify_hashmap_graph(tbi_string, &mut added, &mut graph);
                             let _ = graph.add_edge(imp_index, index_rule, ());
                         }
                     }
@@ -176,14 +155,8 @@ pub fn create_graph_for_aboxq_unraveling(
 
                     let impliers = abiq.implied_by();
 
-                    let abi_index: NodeIndex<u32>;
-
-                    if added.contains_key(&abi_string) {
-                        abi_index = added.get(&abi_string).unwrap().clone();
-                    } else {
-                        abi_index = graph.add_node(abi_string.clone());
-                        added.insert(abi_string, abi_index);
-                    }
+                    let abi_index: NodeIndex<u32> =
+                        modify_hashmap_graph(abi_string, &mut added, &mut graph);
 
                     for (r, v_tbis, v_abiqs) in impliers {
                         let rule_usize = r.to_usize();
@@ -194,7 +167,7 @@ pub fn create_graph_for_aboxq_unraveling(
                             rules_added.push(rule_usize);
                         }
 
-                        let rule_string = format!("{}", r.identifier());
+                        let rule_string = r.identifier();
                         let index_rule = graph.add_node(rule_string);
 
                         let _ = graph.add_edge(index_rule, abi_index, ());
@@ -206,13 +179,8 @@ pub fn create_graph_for_aboxq_unraveling(
                             let tbi_string =
                                 transform_tbi_for_graph(tbi_imp, tbi_string, is_for_abox);
 
-                            let imp_index: NodeIndex<u32>;
-                            if added.contains_key(&tbi_string) {
-                                imp_index = added.get(&tbi_string).unwrap().clone();
-                            } else {
-                                imp_index = graph.add_node(tbi_string.clone());
-                                added.insert(tbi_string, imp_index);
-                            }
+                            let imp_index: NodeIndex<u32> =
+                                modify_hashmap_graph(tbi_string, &mut added, &mut graph);
 
                             let _ = graph.add_edge(imp_index, index_rule, ());
                         }
@@ -223,14 +191,8 @@ pub fn create_graph_for_aboxq_unraveling(
                             // here we substitute for the right symbol
                             let abi_string = transform_abiq_for_graph(abi_imp, abi_string);
 
-                            let imp_index: NodeIndex<u32>;
-                            if added.contains_key(&abi_string) {
-                                imp_index = added.get(&abi_string).unwrap().clone();
-                            } else {
-                                imp_index = graph.add_node(abi_string.clone());
-                                added.insert(abi_string, imp_index);
-                            }
-
+                            let imp_index: NodeIndex<u32> =
+                                modify_hashmap_graph(abi_string, &mut added, &mut graph);
                             let _ = graph.add_edge(imp_index, index_rule, ());
                         }
                     }
@@ -321,4 +283,20 @@ pub fn transform_tbi_for_graph(tbi: &TbiDllite, tbi_string: String, is_for_abox:
     };
 
     tbi_string
+}
+
+pub fn modify_hashmap_graph(
+    abi_string: String,
+    added: &mut HashMap<String, NodeIndex<u32>>,
+    graph: &mut Graph<String, ()>,
+) -> NodeIndex<u32> {
+    let abi_index: NodeIndex;
+    if added.contains_key(&abi_string) {
+        abi_index = *added.get(&abi_string).unwrap();
+    } else {
+        abi_index = graph.add_node(abi_string.clone());
+        added.insert(abi_string, abi_index);
+    }
+
+    abi_index
 }

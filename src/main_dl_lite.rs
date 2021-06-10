@@ -948,7 +948,7 @@ pub fn main() {
                                             onto.add_abis_from_abox(&abox_completed);
                                             onto.abox_to_file(
                                                 &filename,
-                                                FileType::NATIVE,
+                                                FileType::Native,
                                                 dont_write_trivial,
                                             );
 

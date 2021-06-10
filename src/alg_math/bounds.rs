@@ -136,7 +136,7 @@ fn find_bound_complex(
              det(un*1 - m) * [(un*1 - m)^(-1) (1,...1)]
              this is vector, and we stored in the pvalues array
         */
-        let mut x: DVector<Complex<f64>> = DVector::from_vec(vec![Complex { re: 0., im: 0. }; n]);
+
         let mut identity: DMatrix<Complex<f64>> =
             DMatrix::from_vec(n, n, vec![Complex { re: 0., im: 0. }; n * n]);
         identity.fill_with_identity();
@@ -164,7 +164,7 @@ fn find_bound_complex(
 
             // solve the system and compute also the determinant
             let decomp = temp_identity.lu();
-            x = decomp.solve(&right_vector).unwrap(); // usually this is always solvable
+            let mut x: DVector<Complex<f64>> = decomp.solve(&right_vector).unwrap(); // usually this is always solvable
             det = decomp.determinant();
 
             /*

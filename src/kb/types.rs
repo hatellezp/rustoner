@@ -459,9 +459,9 @@ impl Display for CR {
 /// is really operational
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
 pub enum FileType {
-    JSON,
-    NATIVE,
-    // XML to come
+    Json,
+    Native,
+    // Xml to come
 }
 
 /// Classify assertions in an ABox in three types, clean assertions, not

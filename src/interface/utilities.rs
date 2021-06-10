@@ -34,8 +34,8 @@ pub fn is_json_file(filename: &str) -> bool {
 pub fn get_filetype(filename: &str) -> FileType {
     // class ontology files in one of the known types to parse
     match is_json_file(filename) {
-        true => FileType::JSON,
-        false => FileType::NATIVE,
+        true => FileType::Json,
+        false => FileType::Native,
     }
 }
 
