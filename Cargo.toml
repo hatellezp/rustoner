@@ -16,9 +16,9 @@ path = "src/main_dl_lite.rs"
 # path = "src/bencher.rs"
 
 # for useless stuff
-# [[bin]]
-# name = "scracth"
-# path = "src/scratch.rs"
+[[bin]]
+name = "scracth"
+path = "src/scratch.rs"
 
 
 [dependencies]
