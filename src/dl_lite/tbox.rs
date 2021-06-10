@@ -31,7 +31,8 @@ use crate::dl_lite::rule::{
     dl_lite_rule_six, dl_lite_rule_three, dl_lite_rule_two, dl_lite_rule_zero,
 };
 use crate::dl_lite::tbox_item::TbiDllite;
-use crate::kb::knowledge_base::{TBox, TBoxItem, TbRule};
+use crate::dl_lite::utilities::get_max_level_abstract;
+use crate::kb::knowledge_base::{LeveledItem, TBox, TBoxItem, TbRule};
 use crate::kb::types::CR;
 
 #[derive(PartialEq, Debug, Clone)]
@@ -640,12 +641,6 @@ impl TBDllite {
     }
 
     pub fn get_max_level(&self) -> usize {
-        let mut max_level: usize = 0;
-
-        for tbi in &self.items {
-            max_level = max_level.max(tbi.level());
-        }
-
-        max_level
+        get_max_level_abstract(self.items())
     }
 }

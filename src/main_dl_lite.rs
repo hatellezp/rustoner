@@ -1252,7 +1252,7 @@ pub fn main() {
                                         // here ask later for only conflicts or not
                                         let only_conflicts_graph = true;
 
-                                        let graph = abox.create_graph_dot(
+                                        let graph = abox.create_aboxq_graph_dot(
                                             onto.symbols(),
                                             &before_matrix,
                                             &virtual_to_real,

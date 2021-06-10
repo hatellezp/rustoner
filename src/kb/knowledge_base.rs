@@ -41,6 +41,13 @@ pub trait Item: PartialOrd + Ord + PartialEq + Eq + Debug + Hash + Display + Siz
     fn is_negated(&self) -> bool;
 }
 
+/// Specialization of an Item. Leveled items have
+/// a level field to keep track on their position in the
+/// deduction tree.
+pub trait LeveledItem {
+    fn level(&self) -> usize;
+}
+
 /// Whenever a deduction rule is applied to TBox items or ABox items two things happen
 /// - a certain rule is applied
 /// - some items triggered the rule

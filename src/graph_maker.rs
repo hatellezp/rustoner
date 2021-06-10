@@ -23,7 +23,7 @@ use crate::dl_lite::tbox_item::TbiDllite;
 use crate::interface::format_constants::{
     UNICODE_EXISTS, UNICODE_NEG, UNICODE_SQSUBSETEQ, UNICODE_SUBSETEQ,
 };
-use crate::kb::knowledge_base::{ABox, Implier, Item, SymbolDict, TBox, TBoxItem};
+use crate::kb::knowledge_base::{ABox, Implier, Item, LeveledItem, SymbolDict, TBox, TBoxItem};
 use crate::kb::types::{DLType, CR};
 use petgraph::graph::EdgeReference;
 use petgraph::prelude::NodeIndex;

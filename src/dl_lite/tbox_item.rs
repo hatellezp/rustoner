@@ -21,7 +21,7 @@ use std::fmt;
 
 use crate::dl_lite::node::ItemDllite;
 use crate::dl_lite::utilities::ordering_cmp_helper;
-use crate::kb::knowledge_base::{Implier, TbRule};
+use crate::kb::knowledge_base::{Implier, LeveledItem, TbRule};
 use crate::kb::knowledge_base::{Item, TBoxItem};
 use crate::kb::types::{DLType, CR};
 use std::cmp::Ordering;
@@ -197,6 +197,12 @@ impl TBoxItem for TbiDllite {
     }
 }
 
+impl LeveledItem for TbiDllite {
+    fn level(&self) -> usize {
+        self.level
+    }
+}
+
 impl TbiDllite {
     /// Creates a new TBox item, wrapped in an Option to ward against errors.
     /// No nominal (constants) can be part of a TBox item.
@@ -217,10 +223,6 @@ impl TbiDllite {
                 impliers,
             })
         }
-    }
-
-    pub fn level(&self) -> usize {
-        self.level
     }
 
     /// Check for self contradicting TBox item (do not confound with self conflicting).

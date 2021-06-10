@@ -31,9 +31,12 @@ use crate::dl_lite::rule::{dl_lite_abox_rule_one, dl_lite_abox_rule_three, dl_li
 use crate::dl_lite::string_formatter::{abi_to_string, abiq_in_vec_of_vec};
 use crate::dl_lite::tbox::TBDllite;
 use crate::dl_lite::tbox_item::TbiDllite;
-use crate::kb::knowledge_base::{ABox, ABoxItem, AbRule, Item, SymbolDict, TBox, TBoxItem};
+use crate::kb::knowledge_base::{
+    ABox, ABoxItem, AbRule, Item, LeveledItem, SymbolDict, TBox, TBoxItem,
+};
 use crate::kb::types::{ConflictType, DLType, CR};
 
+use crate::dl_lite::utilities::get_max_level_abstract;
 use petgraph::{Directed, Graph};
 use std::cmp::Ordering;
 
@@ -119,7 +122,6 @@ impl fmt::Display for AbqDllite {
 }
 
 impl AbqDllite {
-
     /// An ABox is always created by a name, we can only add
     /// items after.
     pub fn new(name: &str) -> AbqDllite {
@@ -152,7 +154,7 @@ impl AbqDllite {
         abq
     }
 
-    /// Will create an ABox from self and a vector of index.
+    /// Will create an ABox from self and a vector of indexes.
     /// Literally copies each ABox item at an index present in  self.
     /// A name is necessary to construct the new ABox.
     /// Wrapped as always in an Option in case it fails.
@@ -174,6 +176,12 @@ impl AbqDllite {
         }
     }
 
+    /// Checks if self is inconsistent with respect to the
+    /// TBox tb provided. Once an ABox is completed checking for
+    /// inconsistency is comparing each ABox assertion (or couple of
+    /// ABox assertions) with a TBox item and checking for a logical
+    /// error.
+    /// e.g. 'a Human IS NOT a Dog' and 'max IS a Human' and 'max IS a Dog'.
     pub fn is_inconsistent_detailed(
         &self,
         tb: &TBDllite,
@@ -182,26 +190,32 @@ impl AbqDllite {
         let tbis = tb.items();
 
         // we can have a:A and A < (-A)
-        // also a:A a:B and A < (-B) the first case is an special case, so we test for the second
-        // only
+        // also a:A a:B and A < (-B) the first case is an special case, so we test
+        // for the second only
 
+        // store contradictions here
         let mut contradictions: Vec<(TbiDllite, Vec<AbiqDllite>)> = Vec::new();
 
+        // these two arrays keep track of which combinations have been tested
+        // to avoid adding or to test known values
         let mut combs_added_one: Vec<&AbiqDllite> = Vec::new();
         let mut combs_added_two: Vec<(&AbiqDllite, &AbiqDllite)> = Vec::new();
 
         let self_length = self.length;
 
         for tbi in tbis {
+            // pick a tbox item
             if verbose {
                 println!(" -- ABQ::is_inconsistent: comparing against {}", &tbi);
             }
 
+            // get left, right and negated right side
             let left = tbi.lside();
             let right = tbi.rside();
-            let right_negated = right.clone().negate();
+            let right_negated = right.clone().negate(); // gets the right side negation
 
             for i in 0..self_length {
+                // test against each member of self
                 let abq_i = self.items.get(i).unwrap();
                 let node_i = abq_i.abi().symbol();
 
@@ -213,6 +227,8 @@ impl AbqDllite {
                 }
 
                 if node_i == left {
+                    // found a match for the left side, now we continue to test
+                    // for the right side
                     if verbose {
                         println!(" -- ABQ::is_inconsistent: found match for left side, continuing analysis");
                     }
@@ -238,8 +254,9 @@ impl AbqDllite {
 
                             let mut to_add: Vec<AbiqDllite> = Vec::new();
 
-                            // verify that elements has not yer been added
-                            let only_one = abq_i == abq_j;
+                            // verify that elements has not yet been added
+                            let only_one = abq_i == abq_j; // checks if abq_i is self
+                                                           // conflicting
                             let do_we_add: bool;
 
                             if only_one {
@@ -274,6 +291,9 @@ impl AbqDllite {
         contradictions
     }
 
+    /// This version of the function check for inconsistency without giving
+    /// a detailed rapport. Returns true if self is inconsistent with respect
+    /// to the TBox provided tb.
     pub fn is_inconsistent(&self, tb: &TBDllite, _verbose: bool) -> bool {
         let take_trivial = false;
         let tbis = tb.negative_inclusions(take_trivial);
@@ -331,7 +351,6 @@ impl AbqDllite {
 
                         // there a second test:
                         if i != j {
-
                             if abiq_j.item().is_negation(abiq_i.item()) {
                                 return true;
                             }
@@ -348,6 +367,7 @@ impl AbqDllite {
         false
     }
 
+    // remove duplicates in self items
     fn clean_duplicates(&mut self) {
         if !self.items.is_empty() {
             self.items.sort();
@@ -680,23 +700,22 @@ impl AbqDllite {
         }
     }
 
+    /// Checks if an ABox assertion is self-contradicting with
+    /// respect to the TBox provided tb.
     pub fn abiq_is_self_contradicting(abiq: &AbiqDllite, tb: &TBDllite) -> bool {
+        // build a new ABox with one sole assertion
         let mut new_ab = AbqDllite::new("temp");
         new_ab.add(abiq.clone());
 
+        // complete the ABox
         new_ab = new_ab.complete(tb, false, false);
 
+        // check for inconsistency
         new_ab.is_inconsistent(tb, false)
     }
 
     pub fn get_max_level(&self) -> usize {
-        let mut max_level: usize = 0;
-
-        for tbi in &self.items {
-            max_level = max_level.max(tbi.level());
-        }
-
-        max_level
+        get_max_level_abstract(self.items())
     }
 
     pub fn get_abis_by_level(
@@ -726,7 +745,7 @@ impl AbqDllite {
         levels
     }
 
-    pub fn create_graph_dot(
+    pub fn create_aboxq_graph_dot(
         &self,
         symbols: &SymbolDict,
         conflict_matrix: &[i8],

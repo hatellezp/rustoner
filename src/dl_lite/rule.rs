@@ -21,7 +21,7 @@ use crate::dl_lite::abox_item::AbiDllite;
 use crate::dl_lite::abox_item_quantum::AbiqDllite;
 use crate::dl_lite::node::ItemDllite;
 use crate::dl_lite::tbox_item::TbiDllite;
-use crate::kb::knowledge_base::{Implier, Item, TBoxItem};
+use crate::kb::knowledge_base::{Implier, Item, LeveledItem, TBoxItem};
 use crate::kb::types::{DLType, CR};
 
 /*

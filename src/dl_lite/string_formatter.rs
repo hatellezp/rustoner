@@ -22,6 +22,7 @@ use crate::dl_lite::abox_item_quantum::AbiqDllite;
 use crate::dl_lite::json_filetype_utilities::{invalid_data_result, result_from_error};
 use crate::dl_lite::node::{ItemDllite, Mod};
 use crate::dl_lite::tbox_item::TbiDllite;
+use crate::kb::knowledge_base::LeveledItem;
 use crate::kb::types::DLType;
 use std::cmp::Ordering;
 

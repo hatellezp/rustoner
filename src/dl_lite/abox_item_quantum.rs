@@ -21,7 +21,7 @@ use std::fmt;
 
 use crate::dl_lite::node::ItemDllite;
 use crate::dl_lite::tbox_item::TbiDllite;
-use crate::kb::knowledge_base::{AbRule, Implier};
+use crate::kb::knowledge_base::{AbRule, Implier, LeveledItem};
 
 use crate::dl_lite::abox_item::AbiDllite;
 use crate::dl_lite::utilities::ordering_cmp_helper;
@@ -159,6 +159,13 @@ impl ABoxItem for AbiqDllite {
     type NodeItem = ItemDllite;
     type TBI = TbiDllite;
 
+    fn item(&self) -> &ItemDllite {
+        /*
+        returns a reference to the role or concept symbol of the  abox item
+         */
+        self.abi.symbol()
+    }
+
     fn negate(&self) -> Self {
         let abi_neg = self.abi.negate();
 
@@ -169,12 +176,11 @@ impl ABoxItem for AbiqDllite {
     fn t(&self) -> DLType {
         self.abi.t()
     }
+}
 
-    fn item(&self) -> &ItemDllite {
-        /*
-        returns a reference to the role or concept symbol of the  abox item
-         */
-        self.abi.symbol()
+impl LeveledItem for AbiqDllite {
+    fn level(&self) -> usize {
+        self.level
     }
 }
 
@@ -229,10 +235,6 @@ impl AbiqDllite {
         self.value
     }
 
-    pub fn level(&self) -> usize {
-        self.level
-    }
-
     pub fn is_trivial(&self) -> bool {
         self.abi.is_trivial()
     }
@@ -267,7 +269,8 @@ impl AbiqDllite {
             let mut final_vec: Vec<AbiqDllite> = Vec::new();
 
             for item in some_vec {
-                if !item.abi().is_trivial() { // purge trivial assertions
+                if !item.abi().is_trivial() {
+                    // purge trivial assertions
                     final_vec.push(item);
                 }
             }
