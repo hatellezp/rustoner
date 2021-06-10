@@ -49,6 +49,7 @@ use crate::dl_lite::abox_item_quantum::AbiqDllite; // ABox Item (quantified) for
 use crate::dl_lite::ontology::OntologyDllite; // Ontology realization for dl_lite
 use crate::dl_lite::tbox::TBDllite; // TBox realization for dl_lite
 use crate::dl_lite::tbox_item::TbiDllite; // TBox Item realization for dl_lite
+use crate::dl_lite::utilities::create_aboxq_graph_dot;
 
 // utilities to transform ABoxes and TBoxes in dl_lite to strings (NATIVE format)
 use crate::dl_lite::native_filetype_utilities::{
@@ -1252,7 +1253,8 @@ pub fn main() {
                                         // here ask later for only conflicts or not
                                         let only_conflicts_graph = true;
 
-                                        let graph = abox.create_aboxq_graph_dot(
+                                        let graph = create_aboxq_graph_dot(
+                                            &abox,
                                             onto.symbols(),
                                             &before_matrix,
                                             &virtual_to_real,

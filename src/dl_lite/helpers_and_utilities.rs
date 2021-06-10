@@ -28,7 +28,8 @@ use std::sync::MutexGuard;
 /// Hashmaps usually cannot be modified and at the same time accessed, to avoid
 /// corruption to the hash table.
 /// Nevertheless we need to modify such hashmaps. We do this by wrapping these hashmaps
-/// in a MutexGuard which ensures modification is done when not accessing is done.
+/// in a MutexGuard which ensures modification is done when not accessing is done
+/// and inversely.
 /// Functions defined here modify these MutexGuards both in ABox and TBox engines.
 
 pub fn complete_helper_dump_from_mutex_temporal_to_current<

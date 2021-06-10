@@ -320,7 +320,7 @@ impl ItemDllite {
         }
     }
 
-    /// will try ton inverse self, will fail if self is not of the correct form
+    /// will try to inverse self, will fail if self is not of the correct form
     /// which is a base role or an inverse role,
     /// a negated role, a concept or a nominal are all not invertible
     pub fn inverse(self) -> Option<Self> {
