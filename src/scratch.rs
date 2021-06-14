@@ -1,8 +1,6 @@
-use nalgebra::{Complex, DMatrix, DVector};
-
 mod alg_math;
 
-use alg_math::utilities::*;
+use crate::alg_math::matrix_building::Filter;
 
 /*
 mod benching;
@@ -111,31 +109,12 @@ pub fn pretty_print_matrix2(v: &Vec<i8>) {
 
 pub fn main() {
     println!("Hello there!");
-    let zero: Complex<f64> = Complex { re: 0., im: 0. };
-    let n: usize = 2;
 
-    let mut m = DMatrix::from_vec(n, n, vec![zero; n * n]);
-    let mut v = DVector::from(vec![zero; n]);
+    let n: usize = 5;
+    let mut f = Filter::new(n);
 
-    println!("before modification: {}", matrix_is_zero_complex(&m));
-
-    m[n] = Complex { re: 1., im: 0. };
-    println!("after modification: {}", matrix_is_zero_complex(&m));
-
-    println!("m: {:?}", &m);
-    println!("v: {:?}", &v);
-
-    v[1] = Complex { re: 1., im: 0. };
-    v[0] = Complex { re: 1., im: 2. };
-    println!("v: {:?}", &v);
-
-    let scalar: Complex<f64> = Complex { re: 2.0, im: 1.0 };
-    multiply_vector_complex(&mut v, scalar);
-
-    println!("v: {:?}", &v);
-
-    println!("m: {:?}", &m);
-    m[n + 1] = Complex { re: 1., im: 2. };
-    multiply_matrix_complex(&mut m, scalar);
-    println!("m: {:?}", &m);
+    while !f.is_done() {
+        println!("{}", &f);
+        f.next();
+    }
 }

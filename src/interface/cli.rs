@@ -25,15 +25,15 @@ use structopt::StructOpt;
 /// more to be added after
 #[derive(Debug)]
 pub enum Task {
-    VERTB,    // verify tbox
-    GENCONTB, // generate consequence tree tbox
+    VerTB,    // verify tbox
+    GenConTB, // generate consequence tree tbox
     CTB,      // complete tbox
-    VERAB,    // verify abox
-    CLEANAB,  // clean from self conflicts
-    GENCONAB, // generate consequence tree abox
+    VerAB,    // verify abox
+    CleanAB,  // clean from self conflicts
+    GenConAB, // generate consequence tree abox
     CAB,      // complete abox
-    RNKAB,    // rank assertions on abox
-    UNDEFINED,
+    RankAB,   // rank assertions on abox
+    Undefined,
 }
 
 /// Implementing 'FromStr' allows to cast an string value as 'Task' enum
@@ -42,15 +42,15 @@ impl FromStr for Task {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.trim() {
-            "vertb" => Ok(Task::VERTB),
-            "gencontb" => Ok(Task::GENCONTB),
+            "vertb" => Ok(Task::VerTB),
+            "gencontb" => Ok(Task::GenConTB),
             "ctb" => Ok(Task::CTB),
-            "verab" => Ok(Task::VERAB),
-            "cleanab" => Ok(Task::CLEANAB),
-            "genconab" => Ok(Task::GENCONAB),
+            "verab" => Ok(Task::VerAB),
+            "cleanab" => Ok(Task::CleanAB),
+            "genconab" => Ok(Task::GenConAB),
             "cab" => Ok(Task::CAB),
-            "rankab" => Ok(Task::RNKAB),
-            _ => Ok(Task::UNDEFINED),
+            "rankab" => Ok(Task::RankAB),
+            _ => Ok(Task::Undefined),
         }
     }
 }
@@ -58,12 +58,12 @@ impl FromStr for Task {
 /// name of the aggregate operators for credibility of subsets
 #[derive(Debug)]
 pub enum AggrName {
-    MAX,
-    MIN,
-    SUM,
-    MEAN,
-    COUNT,
-    UNDEFINED,
+    Max,
+    Min,
+    Sum,
+    Mean,
+    Count,
+    Undefined,
 }
 
 /// to cast to enum from string
@@ -74,12 +74,12 @@ impl FromStr for AggrName {
         let s2 = s.trim();
 
         match s2 {
-            "sum" => Ok(AggrName::SUM),
-            "max" => Ok(AggrName::MAX),
-            "min" => Ok(AggrName::MIN),
-            "count" => Ok(AggrName::COUNT),
-            "mean" => Ok(AggrName::MEAN),
-            _ => Ok(AggrName::UNDEFINED),
+            "sum" => Ok(AggrName::Sum),
+            "max" => Ok(AggrName::Max),
+            "min" => Ok(AggrName::Min),
+            "count" => Ok(AggrName::Count),
+            "mean" => Ok(AggrName::Mean),
+            _ => Ok(AggrName::Undefined),
         }
     }
 }

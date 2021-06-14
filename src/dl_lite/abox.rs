@@ -350,10 +350,8 @@ impl AbqDllite {
                             || (abiq_j.item() == lside) && abiq_i.item().is_negation(rside);
 
                         // there a second test:
-                        if i != j {
-                            if abiq_j.item().is_negation(abiq_i.item()) {
-                                return true;
-                            }
+                        if i != j && abiq_j.item().is_negation(abiq_i.item()) {
+                            return true;
                         }
 
                         if is_match {

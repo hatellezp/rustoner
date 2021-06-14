@@ -161,7 +161,7 @@ pub fn main() {
 
     // now do what you are ask
     match task {
-        Task::VERTB | Task::GENCONTB | Task::CTB => {
+        Task::VerTB | Task::GenConTB | Task::CTB => {
             if let Some(some_path_tbox) = path_tbox_op {
                 // get the information from the file: name and bla bla
                 path_tbox = some_path_tbox.to_str().unwrap().to_string();
@@ -192,7 +192,7 @@ pub fn main() {
                 symbols = onto.symbols();
 
                 match task {
-                    Task::VERTB => {
+                    Task::VerTB => {
                         deduction_tree = false;
                         new_tb = onto.complete_tbox(deduction_tree, verbose);
 
@@ -444,7 +444,7 @@ pub fn main() {
                             }
                         }
                     }
-                    Task::GENCONTB => {
+                    Task::GenConTB => {
                         // complete by deduction
                         deduction_tree = true;
                         dont_write_trivial = true;
@@ -663,7 +663,7 @@ pub fn main() {
                 std::process::exit(exitcode::USAGE);
             }
         }
-        Task::VERAB | Task::CLEANAB | Task::CAB | Task::GENCONAB | Task::RNKAB => {
+        Task::VerAB | Task::CleanAB | Task::CAB | Task::GenConAB | Task::RankAB => {
             // some common stuff
             match (path_tbox_op, path_abox_op) {
                 (Some(some_tbox_path), Some(some_abox_path)) => {
@@ -716,7 +716,7 @@ pub fn main() {
                     match abox_completed_op {
                         Some(abox_completed) => {
                             match task {
-                                Task::VERAB => {
+                                Task::VerAB => {
                                     //change current abox
                                     let contradictions: Vec<(TbiDllite, Vec<AbiqDllite>)> =
                                         abox_completed
@@ -803,7 +803,7 @@ pub fn main() {
                                         }
                                     }
                                 }
-                                Task::CLEANAB => {
+                                Task::CleanAB => {
                                     let clean_name = format!("{}_clean", &ab_name);
                                     let dirty_name = format!("{}_dirty", &ab_name);
                                     let mut clean_ab = AbqDllite::new(&clean_name);
@@ -959,7 +959,7 @@ pub fn main() {
                                         Option::None => (),
                                     }
                                 }
-                                Task::GENCONAB => {
+                                Task::GenConAB => {
                                     let only_conflicts = false;
                                     let _tb_output = create_string_for_unravel_conflict_tbox(
                                         &new_tb,
@@ -1152,7 +1152,7 @@ pub fn main() {
                                         Option::None => (),
                                     }
                                 }
-                                Task::RNKAB => {
+                                Task::RankAB => {
                                     // the current abox is not the completed one
                                     let mut abox = onto.abox().unwrap().clone();
                                     deduction_tree = false;
@@ -1161,12 +1161,12 @@ pub fn main() {
                                     let aggr = match aggr_name_op {
                                         Option::None => AGGR_SUM,
                                         Some(aggr_name) => match aggr_name {
-                                            AggrName::UNDEFINED => AGGR_SUM,
-                                            AggrName::SUM => AGGR_SUM,
-                                            AggrName::MAX => AGGR_MAX,
-                                            AggrName::MIN => AGGR_MIN,
-                                            AggrName::MEAN => AGGR_MEAN,
-                                            AggrName::COUNT => AGGR_COUNT,
+                                            AggrName::Undefined => AGGR_SUM,
+                                            AggrName::Sum => AGGR_SUM,
+                                            AggrName::Max => AGGR_MAX,
+                                            AggrName::Min => AGGR_MIN,
+                                            AggrName::Mean => AGGR_MEAN,
+                                            AggrName::Count => AGGR_COUNT,
                                         },
                                     };
 
