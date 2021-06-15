@@ -19,11 +19,18 @@ along with this program.  If not, see https://www.gnu.org/licenses/.
 
 use std::fmt::Display;
 
-pub trait DataItem: Clone + Display {
+/// The ranking algorithm works not only with ontologies, but with any
+/// framework that allow for reasoning and where negation is allowed.
+/// This is abstracted in the following traits:
+///     - each assertion is a DataItem that allows for negation
+///     - a DataHolder which stored the data (virtually an array of DataItem(s))
+///     - an Oracle that can answer if a given DataHolder is consistent or not.
+
+pub trait DataItem: Clone {
     fn negate(&self) -> Self;
 }
 
-pub trait DataHolder: Clone + Display {
+pub trait DataHolder: Clone {
     type DI: DataItem;
 
     fn len(&self) -> usize;
@@ -33,7 +40,7 @@ pub trait DataHolder: Clone + Display {
 
     // This last method build a new DataHolder from an array of
     // indices,
-    // the array has always the same length, teh same as the DataHolder,
+    // the array has always the same length, the same as the DataHolder,
     // a true value at position i means DataItem at position i is in the
     // new DataHolder
     fn sub_data_holder(&self, indices: &[bool]) -> Self;
@@ -42,6 +49,7 @@ pub trait DataHolder: Clone + Display {
 pub trait Oracle {
     type DH: DataHolder;
 
+    // why both questions ? because there are some non binary logics
     fn is_consistent(&self, dh: &Self::DH) -> bool;
     fn is_inconsistent(&self, dh: &Self::DH) -> bool;
 }

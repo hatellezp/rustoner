@@ -17,250 +17,28 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
-use crate::alg_math::interface::{DataHolder, DataItem, Oracle};
-
-use rustoner::kb::knowledge_base::AggrFn;
 use std::cmp::min;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::ops::Deref;
 
-/// This file comprehends two main functions, computing the Indicator function,
-/// which is a hashmap, and building a matrix for computing the abox ranking.
+use crate::alg_math::interface::{DataHolder, DataItem, Oracle};
 
-pub struct Builder {
-    I: Box<Indicator>,
-    C: Box<Credibility>,
-    F: Box<Filter>,
-    built: bool,
-}
+use rustoner::kb::knowledge_base::AggrFn;
 
-impl Builder {
-    pub fn new(i: Indicator, c: Credibility, f: Filter) -> Builder {
-        let I = Box::new(i);
-        let C = Box::new(c);
-        let F = Box::new(f);
-        let built = false;
+/// Building the conflict matrix depend on three structures:
+///     - a Filter, that iterates over each subset of a given
+///       dataholder in an increasing size way
+///     - a Credibility holder, which hold the aggregated
+///       credibility values of each subset of a given dataholder
+///     - an Indicator, that stores the relation between each
+///       subset of a dataholder and each dataitem, when this
+///       relation is meaningful (not zero)
+/// The three constructs are used in the Builder struct, which
+/// will first gather the data necessary to build the matrix and
+/// secondly use this data to build the matrix
 
-        Builder { I, C, F, built }
-    }
-
-    pub fn reset(&mut self) {
-        self.I.reset();
-        self.C.reset();
-        self.F.reset();
-        self.built = false;
-    }
-
-    pub fn build_matrix<
-        DI: DataItem,
-        DH: DataHolder + DataHolder<DI = DI>,
-        O: Oracle + Oracle<DH = DH>,
-    >(
-        &mut self,
-        dh: &DH,
-        ora: &O,
-        credibility_vector: &[f64],
-        aggf: &AggrFn,
-        conflict_limit: Option<usize>,
-    ) -> Vec<f64> {
-        /*
-        this function supposes no assertion in the DataHolder structure is self-conflicting!
-         */
-
-        let length = dh.len(); // get the size
-        let mut matrix: Vec<f64> = vec![0_f64; length * length]; // matrix with the required dimension
-
-        // check if the builder has gathered information, otherwise reset and build
-        if !self.built {
-            self.reset();
-            self.build_values(dh, ora, credibility_vector, aggf, conflict_limit);
-        }
-
-        // do not iterate over indexes, iterate on the key of the indicator function
-        for (key, value) in self.I.deref().indicator() {
-            let alpha_index = key.0;
-            let b_index = key.1;
-
-            let positive_or_negative = value.0;
-            let beta_indices = &value.1;
-
-            // get the credibility value
-            let aggf_b_op = self.C.get(&b_index);
-
-            match aggf_b_op {
-                None => {
-                    println!("data corrupted, the built of values failed!");
-                    std::process::exit(exitcode::DATAERR)
-                }
-                Some(aggf_b) => {
-                    // update all a_ij in the matrix (vector) where
-                    // i = alpha_index
-                    // j is in the beta_indices array
-
-                    for beta_index in beta_indices {
-                        matrix[length * alpha_index + *beta_index] +=
-                            (positive_or_negative as f64) * (*aggf_b);
-                    }
-                }
-            }
-        }
-
-        matrix
-    }
-
-    // TODO: check for subsets before checking inconsistency
-    //       optimization: see the condition that allow for deduction of I values
-    //                     before computation
-    pub fn build_values<
-        DI: DataItem,
-        DH: DataHolder + DataHolder<DI = DI>,
-        O: Oracle + Oracle<DH = DH>,
-    >(
-        &mut self,
-        dh: &DH,
-        ora: &O,
-        credibility_vector: &[f64],
-        aggf: &AggrFn,
-        conflict_limit: Option<usize>,
-    ) {
-        // initialize or reinitialize the builder struct
-        self.reset();
-
-        let length = dh.len();
-        let real_conflict_limit = if matches!(conflict_limit, Some(_)) {
-            min(length, conflict_limit.unwrap())
-        } else {
-            length
-        };
-
-        // build the indicator function for each item in DataHolder
-        for index in 0..length {
-            let di_op: Option<&DI> = dh.get(index);
-
-            match di_op {
-                None => (),
-                Some(alpha) => {
-                    // now we have to build every entry in the indicator function and credibility function
-
-                    // here we keep track of already done subsets
-                    let mut subsets_done: Vec<Vec<usize>> = Vec::new();
-
-                    // first reset the filter (and only the filter)
-                    self.F.reset();
-
-                    while self.F.noo() <= real_conflict_limit {
-                        // get the indices if form of a filter of boolean
-                        let filter = self.F.filter();
-
-                        // this is the first thing to do, no need to analyze if index of
-                        // alpha is present in in filter
-                        // we need di not in this filter, otherwise we pass
-                        if !self.F.filter()[index] {
-                            // before everything I need a way to check no subset has been analysed yet
-                            // TODO: find a way to solve the problem above
-
-                            // present in B
-                            let mut b_indices: Vec<usize> = Vec::new();
-                            for (i, in_or_not) in filter.iter().enumerate().take(length) {
-                                if *in_or_not {
-                                    b_indices.push(i);
-                                }
-                            }
-                            b_indices.sort_unstable();
-                            // now B_indices has the index that are present in B (and sorted)
-
-                            // we need to compare B_indices with the already computed subsets
-                            // for the moment we will let it pass every time
-                            let mut no_subset_of_filter_present: bool = true;
-
-                            for subset in &subsets_done {
-                                if is_superset(subset, &b_indices) {
-                                    no_subset_of_filter_present = false;
-                                    break;
-                                }
-                            }
-                            // verification done
-
-                            if no_subset_of_filter_present {
-                                // two conditions passed for the moment:
-                                // - di is not in B
-                                // - B is minimal with respect to those done
-
-                                // now we can add the new indices to the subsets_done witness
-                                subsets_done.push(b_indices.clone());
-
-                                // di is not in this filter
-                                // create sub_dh
-                                let b_subset: DH = dh.sub_data_holder(filter);
-
-                                // check the third (and last) condition: B is consistent
-                                if ora.is_consistent(&b_subset) {
-                                    let _alpha_neg = alpha.negate();
-
-                                    let b_alpha_positive = b_subset.clone();
-                                    let b_alpha_negative = b_subset;
-
-                                    b_alpha_positive.add_item(alpha.clone());
-                                    b_alpha_negative.add_item(alpha.negate());
-
-                                    let b_implies_not_alpha =
-                                        ora.is_inconsistent(&b_alpha_positive);
-                                    let b_implies_alpha = ora.is_inconsistent(&b_alpha_negative);
-
-                                    // we filter each possibility
-                                    // both true means B is inconsistent (which should not arrive)
-                                    // and we let it pass
-                                    // if both false, we also let it pass
-                                    // only when one of and only one is true, there is information
-                                    // that we need to store
-
-                                    match (b_implies_not_alpha, b_implies_alpha) {
-                                        (false, false) | (true, true) => (),
-                                        (_, _) => {
-                                            // find the value of B
-                                            let aggf_b = compute_aggregation_from_filter(
-                                                &aggf,
-                                                credibility_vector,
-                                                &filter,
-                                            );
-
-                                            // and put it in credibility
-                                            // self.C.insert(index, aggf_b);
-
-                                            // the line just above is erroneous, the indentifier
-                                            // of aggf(B) is self.F.filter_index(),
-                                            // that is, the index of B, and not the index of alpha
-                                            // here I put it correctly
-                                            self.C.insert(self.F.filter_index(), aggf_b);
-
-                                            let ivalue: i8 = if b_implies_alpha { 1 } else { -1 };
-
-                                            self.I.insert(
-                                                (index, self.F.filter_index()),
-                                                (ivalue, b_indices),
-                                            );
-                                        }
-                                    };
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        self.built = true;
-    }
-}
-
-/// The indicator struct models the function Indicator.
-/// It has
-/// - an indicator field to store the result of the function,
-/// - a conflict limit size (that will default to length size if none is provided) to
-///   limit the search of conflict to a certain size
-/// - the actual length of the knowledge base in question
 /// - an id_generator, this function will generate a filter for subsets of the knowledge base
 ///   e.g. suppose length = 3, then the result of id_generator is the following
 ///   - id_generator(0) -> [false, false, false]
@@ -269,13 +47,35 @@ impl Builder {
 ///   - id_generator(3) -> [false, false, true]
 ///   - ...
 ///   - id_generator(7) -> [true, true, true]
-/// The id_generator function generates filter for the subsets of the knowledge base following
-/// first an order of size and for a fixed size a lexicographic order.
+
+pub struct Filter {
+    length: usize,
+    number_of_ones: usize,
+    lower_one: usize,
+    upper_one: usize,
+    filter_index: usize,
+    filter: Vec<bool>,
+}
+
+#[derive(Debug)]
+pub struct Credibility {
+    credibility_function: HashMap<usize, f64>,
+}
+
 #[derive(Debug)]
 pub struct Indicator {
-    // I(id of B, index of alpha) -> (value of I, index of beta in B)
+    // I(id of B, index of alpha) -> (value of I, index of betas in B)
     indicator: HashMap<(usize, usize), (i8, Vec<usize>)>,
 }
+pub struct Builder {
+    I: Box<Indicator>,
+    C: Box<Credibility>,
+    F: Box<Filter>,
+    built: bool,
+}
+
+// ============================================================================
+// IMPLEMENTATIONS
 
 impl Indicator {
     pub fn reset(&mut self) {
@@ -289,11 +89,6 @@ impl Indicator {
     pub fn indicator(&self) -> &HashMap<(usize, usize), (i8, Vec<usize>)> {
         &self.indicator
     }
-}
-
-#[derive(Debug)]
-pub struct Credibility {
-    credibility_function: HashMap<usize, f64>,
 }
 
 impl Credibility {
@@ -316,15 +111,6 @@ impl Credibility {
     pub fn get(&self, k: &usize) -> Option<&f64> {
         self.credibility_function.get(k)
     }
-}
-
-pub struct Filter {
-    length: usize,
-    number_of_ones: usize,
-    lower_one: usize,
-    upper_one: usize,
-    filter_index: usize,
-    filter: Vec<bool>,
 }
 
 impl Filter {
@@ -492,6 +278,234 @@ impl Display for Filter {
         );
 
         write!(f, "{}", s)
+    }
+}
+
+impl Builder {
+    pub fn new(i: Indicator, c: Credibility, f: Filter) -> Builder {
+        let I = Box::new(i);
+        let C = Box::new(c);
+        let F = Box::new(f);
+        let built = false;
+
+        Builder { I, C, F, built }
+    }
+
+    pub fn reset(&mut self) {
+        self.I.reset();
+        self.C.reset();
+        self.F.reset();
+        self.built = false;
+    }
+
+    pub fn build_matrix<
+        DI: DataItem,
+        DH: DataHolder + DataHolder<DI = DI>,
+        O: Oracle + Oracle<DH = DH>,
+    >(
+        &mut self,
+        dh: &DH,
+        ora: &O,
+        credibility_vector: &[f64],
+        aggf: &AggrFn,
+        conflict_limit: Option<usize>,
+    ) -> Vec<f64> {
+        /*
+        this function supposes no assertion in the DataHolder structure is self-conflicting!
+         */
+
+        let length = dh.len(); // get the size
+        let mut matrix: Vec<f64> = vec![0_f64; length * length]; // matrix with the required dimension
+
+        // check if the builder has gathered information, otherwise reset and build
+        if !self.built {
+            self.reset();
+            self.build_values(dh, ora, credibility_vector, aggf, conflict_limit);
+        }
+
+        // do not iterate over indices, iterate on the key of the indicator function
+        for (key, value) in self.I.deref().indicator() {
+            let alpha_index = key.0;
+            let b_index = key.1;
+
+            let positive_or_negative = value.0;
+            let beta_indices = &value.1;
+
+            // get the credibility value
+            let aggf_b_op = self.C.get(&b_index);
+
+            match aggf_b_op {
+                None => {
+                    println!("data corrupted, the built of values failed!");
+                    std::process::exit(exitcode::DATAERR)
+                }
+                Some(aggf_b) => {
+                    // update all a_ij in the matrix (vector) where
+                    // i = alpha_index
+                    // j is in the beta_indices array
+
+                    for beta_index in beta_indices {
+                        matrix[length * alpha_index + *beta_index] +=
+                            (positive_or_negative as f64) * (*aggf_b);
+                    }
+                }
+            }
+        }
+
+        matrix
+    }
+
+    // TODO: check for subsets before checking inconsistency
+    //       optimization: see the condition that allow for deduction of I values
+    //                     before computation
+    pub fn build_values<
+        DI: DataItem,
+        DH: DataHolder + DataHolder<DI = DI>,
+        O: Oracle + Oracle<DH = DH>,
+    >(
+        &mut self,
+        dh: &DH,
+        ora: &O,
+        credibility_vector: &[f64],
+        aggf: &AggrFn,
+        conflict_limit: Option<usize>,
+    ) {
+        // initialize or reinitialize the builder struct
+        self.reset();
+
+        // get the conflict limit, the real one, if none is provided then it is
+        // the length of the dataholder, otherwise it is the minimum between
+        // the conflict limit provided and the actual length of the dataholder
+        let length = dh.len();
+        let real_conflict_limit = if matches!(conflict_limit, Some(_)) {
+            min(length, conflict_limit.unwrap())
+        } else {
+            length
+        };
+
+        // build the indicator function for each item in DataHolder
+        for index in 0..length {
+            let di_op: Option<&DI> = dh.get(index); // the data item wrapped in an option
+
+            match di_op {
+                None => (),
+                Some(alpha) => {
+                    // now we have to build every entry in the indicator function and credibility function
+
+                    // here we keep track of already done subsets
+                    let mut subsets_done: Vec<Vec<usize>> = Vec::new();
+
+                    // first reset the filter (and only the filter)
+                    self.F.reset();
+
+                    // we search every subset up to real_conflict minus one,
+                    // because we add alpha each time it has to be
+                    // (real_conflict - 1)
+                    while self.F.noo() <= (real_conflict_limit - 1) {
+                        // the filter is updated each entry in the loop
+                        self.F.next();
+
+                        // get the indices if form of a filter of boolean
+                        let filter = self.F.filter();
+
+                        // this is the first thing to do, no need to analyze if index of
+                        // alpha is present in in filter
+                        // we need di not in this filter, otherwise we pass
+                        if !self.F.filter()[index] {
+                            // before everything I need a way to check no subset has been analysed yet
+                            // TODO: find a way to solve the problem above
+
+                            // present in B
+                            let mut b_indices: Vec<usize> = Vec::new();
+                            for (i, in_or_not) in filter.iter().enumerate().take(length) {
+                                if *in_or_not {
+                                    b_indices.push(i);
+                                }
+                            }
+                            b_indices.sort_unstable();
+                            // now b_indices has the index that are present in B (and sorted)
+
+                            // we need to compare b_indices with the already computed subsets
+                            // for the moment we will let it pass every time
+                            let mut no_subset_of_filter_present: bool = true;
+
+                            for subset in &subsets_done {
+                                if is_superset(subset, &b_indices) {
+                                    no_subset_of_filter_present = false;
+                                    break;
+                                }
+                            }
+                            // verification done
+
+                            if no_subset_of_filter_present {
+                                // two conditions passed for the moment:
+                                // - di is not in B
+                                // - B is minimal with respect to those done
+
+                                // now we can add the new indices to the subsets_done witness
+                                subsets_done.push(b_indices.clone());
+
+                                // di is not in this filter
+                                // create sub_dh
+                                let b_subset: DH = dh.sub_data_holder(filter);
+
+                                // check the third (and last) condition: B is consistent
+                                if ora.is_consistent(&b_subset) {
+                                    let _alpha_neg = alpha.negate();
+
+                                    let b_alpha_positive = b_subset.clone();
+                                    let b_alpha_negative = b_subset;
+
+                                    b_alpha_positive.add_item(alpha.clone());
+                                    b_alpha_negative.add_item(alpha.negate());
+
+                                    let b_implies_not_alpha =
+                                        ora.is_inconsistent(&b_alpha_positive);
+                                    let b_implies_alpha = ora.is_inconsistent(&b_alpha_negative);
+
+                                    // we filter each possibility
+                                    // both true means B is inconsistent (which should not arrive)
+                                    // and we let it pass
+                                    // if both false, we also let it pass
+                                    // only when one of and only one is true, there is information
+                                    // that we need to store
+
+                                    match (b_implies_not_alpha, b_implies_alpha) {
+                                        (false, false) | (true, true) => (),
+                                        (_, _) => {
+                                            // find the value of B
+                                            let aggf_b = compute_aggregation_from_filter(
+                                                &aggf,
+                                                credibility_vector,
+                                                &filter,
+                                            );
+
+                                            // and put it in credibility
+                                            // self.C.insert(index, aggf_b);
+
+                                            // the line just above is erroneous, the identifier
+                                            // of aggf(B) is self.F.filter_index(),
+                                            // that is, the index of B, and not the index of alpha
+                                            // here I put it correctly
+                                            self.C.insert(self.F.filter_index(), aggf_b);
+
+                                            let i_value: i8 = if b_implies_alpha { 1 } else { -1 };
+
+                                            self.I.insert(
+                                                (index, self.F.filter_index()),
+                                                (i_value, b_indices),
+                                            );
+                                        }
+                                    };
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        self.built = true;
     }
 }
 
