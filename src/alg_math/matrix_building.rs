@@ -415,32 +415,32 @@ impl Builder {
                             // before everything I need a way to check no subset has been analysed yet
                             // TODO: find a way to solve the problem above
 
-                            // present in B
-                            let mut b_indices: Vec<usize> = Vec::new();
-                            for (i, in_or_not) in filter.iter().enumerate().take(length) {
-                                if *in_or_not {
-                                    b_indices.push(i);
-                                }
-                            }
-                            b_indices.sort_unstable();
-                            // now b_indices has the index that are present in B (and sorted)
-
                             // we need to compare b_indices with the already computed subsets
                             // for the moment we will let it pass every time
                             let mut no_subset_of_filter_present: bool = true;
 
                             for subset in &subsets_done {
-                                if is_superset(subset, &b_indices) {
+                                if filter_has_subset(&filter, subset) {
                                     no_subset_of_filter_present = false;
                                     break;
                                 }
                             }
-                            // verification done
 
                             if no_subset_of_filter_present {
                                 // two conditions passed for the moment:
                                 // - di is not in B
                                 // - B is minimal with respect to those done
+
+                                // we build the B indices and add it
+                                // present in B
+                                let mut b_indices: Vec<usize> = Vec::new();
+                                for (i, in_or_not) in filter.iter().enumerate().take(length) {
+                                    if *in_or_not {
+                                        b_indices.push(i);
+                                    }
+                                }
+                                b_indices.sort_unstable();
+                                // now b_indices has the index that are present in B (and sorted)
 
                                 // now we can add the new indices to the subsets_done witness
                                 subsets_done.push(b_indices.clone());
@@ -530,6 +530,22 @@ pub fn compute_aggregation_from_filter(
 
         aggf(condensed)
     }
+}
+
+pub fn filter_has_subset(filter: &[bool], subset: &[usize]) -> bool {
+    let length = filter.len();
+    for index in subset {
+        if *index >= length {
+            // and index out of bounds, this filter cannot be good
+            return false;
+        }
+        if !filter[*index] {
+            // the index is false, thus this element is not present
+            return false;
+        }
+    }
+
+    true
 }
 
 pub fn is_superset(subset: &[usize], superset: &[usize]) -> bool {
