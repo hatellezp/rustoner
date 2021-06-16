@@ -65,7 +65,7 @@ pub struct Credibility {
 #[derive(Debug)]
 pub struct Indicator {
     // I(id of B, index of alpha) -> (value of I, index of betas in B)
-    indicator: HashMap<(usize, usize), (i8, Vec<usize>)>,
+    indicator: HashMap<(usize, usize, usize), i8>,
 }
 pub struct Builder {
     I: Box<Indicator>,
@@ -82,11 +82,11 @@ impl Indicator {
         self.indicator = HashMap::new();
     }
 
-    pub fn insert(&mut self, k: (usize, usize), v: (i8, Vec<usize>)) -> Option<(i8, Vec<usize>)> {
+    pub fn insert(&mut self, k: (usize, usize, usize), v: i8) -> Option<i8> {
         self.indicator.insert(k, v)
     }
 
-    pub fn indicator(&self) -> &HashMap<(usize, usize), (i8, Vec<usize>)> {
+    pub fn indicator(&self) -> &HashMap<(usize, usize, usize), i8> {
         &self.indicator
     }
 }
@@ -324,12 +324,10 @@ impl Builder {
         }
 
         // do not iterate over indices, iterate on the key of the indicator function
-        for (key, value) in self.I.deref().indicator() {
-            let alpha_index = key.0;
-            let b_index = key.1;
-
-            let positive_or_negative = value.0;
-            let beta_indices = &value.1;
+        for (key, i_value) in self.I.deref().indicator() {
+            let b_index = key.0;
+            let alpha_index = key.1;
+            let beta_index = key.2;
 
             // get the credibility value
             let aggf_b_op = self.C.get(&b_index);
@@ -344,10 +342,7 @@ impl Builder {
                     // i = alpha_index
                     // j is in the beta_indices array
 
-                    for beta_index in beta_indices {
-                        matrix[length * alpha_index + *beta_index] +=
-                            (positive_or_negative as f64) * (*aggf_b);
-                    }
+                    matrix[length * alpha_index + beta_index] += (*i_value as f64) * (*aggf_b);
                 }
             }
         }
@@ -365,7 +360,7 @@ impl Builder {
     >(
         &mut self,
         dh: &DH,
-        ora: &O,
+        oracle: &O,
         credibility_vector: &[f64],
         aggf: &AggrFn,
         conflict_limit: Option<usize>,
@@ -384,10 +379,10 @@ impl Builder {
         };
 
         // build the indicator function for each item in DataHolder
-        for index in 0..length {
-            let di_op: Option<&DI> = dh.get(index); // the data item wrapped in an option
+        for alpha_index in 0..length {
+            let alpha_op: Option<&DI> = dh.get(alpha_index); // the data item wrapped in an option
 
-            match di_op {
+            match alpha_op {
                 None => (),
                 Some(alpha) => {
                     // now we have to build every entry in the indicator function and credibility function
@@ -411,7 +406,7 @@ impl Builder {
                         // this is the first thing to do, no need to analyze if index of
                         // alpha is present in in filter
                         // we need di not in this filter, otherwise we pass
-                        if !self.F.filter()[index] {
+                        if !self.F.filter()[alpha_index] {
                             // before everything I need a way to check no subset has been analysed yet
                             // TODO: find a way to solve the problem above
 
@@ -428,8 +423,8 @@ impl Builder {
 
                             if no_subset_of_filter_present {
                                 // two conditions passed for the moment:
-                                // - di is not in B
-                                // - B is minimal with respect to those done
+                                // - alpha is not in B
+                                // - B is inclusion-minimal with respect to those subsets done
 
                                 // we build the B indices and add it
                                 // present in B
@@ -439,29 +434,30 @@ impl Builder {
                                         b_indices.push(i);
                                     }
                                 }
-                                b_indices.sort_unstable();
+                                // I'm commenting the line below, it is not necessary for the
+                                // current implementation
+                                // b_indices.sort_unstable();
                                 // now b_indices has the index that are present in B (and sorted)
 
                                 // now we can add the new indices to the subsets_done witness
                                 subsets_done.push(b_indices.clone());
 
-                                // di is not in this filter
+                                // alpha is not in this filter
                                 // create sub_dh
                                 let b_subset: DH = dh.sub_data_holder(filter);
 
                                 // check the third (and last) condition: B is consistent
-                                if ora.is_consistent(&b_subset) {
-                                    let _alpha_neg = alpha.negate();
+                                if oracle.is_consistent(&b_subset) {
 
                                     let b_alpha_positive = b_subset.clone();
                                     let b_alpha_negative = b_subset;
 
+                                    b_alpha_negative.add_item((&alpha).negate());
                                     b_alpha_positive.add_item(alpha.clone());
-                                    b_alpha_negative.add_item(alpha.negate());
 
                                     let b_implies_not_alpha =
-                                        ora.is_inconsistent(&b_alpha_positive);
-                                    let b_implies_alpha = ora.is_inconsistent(&b_alpha_negative);
+                                        oracle.is_inconsistent(&b_alpha_positive);
+                                    let b_implies_alpha = oracle.is_inconsistent(&b_alpha_negative);
 
                                     // we filter each possibility
                                     // both true means B is inconsistent (which should not arrive)
@@ -491,10 +487,12 @@ impl Builder {
 
                                             let i_value: i8 = if b_implies_alpha { 1 } else { -1 };
 
-                                            self.I.insert(
-                                                (index, self.F.filter_index()),
-                                                (i_value, b_indices),
-                                            );
+                                            for beta_index in b_indices {
+                                                self.I.insert(
+                                                    (self.F.filter_index(), alpha_index, beta_index),
+                                                    i_value
+                                                );
+                                            }
                                         }
                                     };
                                 }
