@@ -662,7 +662,7 @@ You can find the examples here in the ```examples``` directory.
 
 Benchmarks are currently being implemented with the 
 [Criterion crate](https://bheisler.github.io/criterion.rs/book/index.html) as
-well as some inner banchmarks, everything lives in the ```benches``` directory.
+well as some inner benchmarks, everything lives in the ```benches``` directory.
 
 You can compile yourself the project or simply take the binary in ```bin```.
 
