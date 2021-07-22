@@ -110,11 +110,20 @@ pub fn pretty_print_matrix2(v: &Vec<i8>) {
 pub fn main() {
     println!("Hello there!");
 
-    let n: usize = 5;
-    let mut f = Filter::new(n);
+    for n in 5..11 {
+        let mut f = Filter::new(n as usize);
 
-    while !f.is_done() {
-        println!("{}", &f);
-        f.next();
+        while !f.is_done() {
+            // println!("      {}", &f);
+            f.next();
+        }
+
+        let case_c = f.cc();
+        let case_sum = case_c.0 + case_c.1 + case_c.2 + case_c.3;
+
+        let avg_comp: f64 = 1_f64 * ((case_c.0 + case_c.2) as f64) + (n as f64) * ((case_c.1 + case_c.3) as f64);
+
+        println!("size {}: {:?}, sum: {}, total avg: {}, real avg: {}", n, case_c, case_sum, avg_comp, avg_comp / (case_sum as f64));
     }
+
 }

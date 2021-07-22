@@ -55,6 +55,8 @@ pub struct Filter {
     upper_one: usize,
     filter_index: usize,
     filter: Vec<bool>,
+    // this is for me
+    case_counter: (usize, usize, usize, usize),
 }
 
 #[derive(Debug)]
@@ -121,6 +123,7 @@ impl Filter {
         let lower_one: usize = 0;
         let upper_one: usize = 0;
         let filter_index: usize = 0;
+        let case_counter: (usize, usize, usize, usize) = (0, 0, 0, 0);
 
         Filter {
             length,
@@ -129,6 +132,7 @@ impl Filter {
             upper_one,
             filter_index,
             filter,
+            case_counter,
         }
     }
 
@@ -160,6 +164,10 @@ impl Filter {
         &mut self.filter
     }
 
+    pub fn cc(&self) -> (usize, usize, usize, usize) {
+        self.case_counter
+    }
+
     pub fn reset(&mut self) {
         self.filter = vec![false; self.length];
         self.number_of_ones = 0;
@@ -182,16 +190,19 @@ impl Filter {
         let upper_one = self.upper_one;
 
         if total_size != self.number_of_ones {
-            // update the filter
+            // update the filter index
             self.filter_index += 1;
 
             if number_of_ones == 0 {
+                // println!("          case 1");
                 self.filter[0] = true;
 
                 self.number_of_ones = 1;
                 self.lower_one = 0;
                 self.upper_one = 0;
+                self.case_counter.0 += 1;
             } else if (total_size - number_of_ones) == lower_one {
+                // println!("          case 2");
                 let new_number_of_ones = number_of_ones + 1;
                 let new_lower_one: usize = 0;
                 let new_upper_one: usize = number_of_ones;
@@ -207,7 +218,9 @@ impl Filter {
                 self.number_of_ones = new_number_of_ones;
                 self.lower_one = new_lower_one;
                 self.upper_one = new_upper_one;
+                self.case_counter.1 += 1;
             } else if upper_one < (total_size - 1) {
+                // println!("          case 3");
                 self.filter[upper_one] = false;
                 self.filter[upper_one + 1] = true;
 
@@ -221,7 +234,9 @@ impl Filter {
                 self.number_of_ones = number_of_ones;
                 self.lower_one = new_lower_one;
                 self.upper_one = new_upper_one;
+                self.case_counter.2 += 1;
             } else {
+                // println!("          case 4");
                 // we need to find the before to last one in the filter
                 let mut zero_index: usize = total_size - 1;
                 let mut one_index: usize = total_size - 2;
@@ -245,7 +260,7 @@ impl Filter {
                 // the one index must be set to false
                 self.filter[one_index] = false;
 
-                let new_lower_one = zero_index;
+                let new_lower_one = if lower_one == one_index { zero_index } else { lower_one };
                 let mut new_upper_one: usize = 0;
 
                 for i in zero_index..total_size {
@@ -263,6 +278,7 @@ impl Filter {
 
                 self.lower_one = new_lower_one;
                 self.upper_one = new_upper_one;
+                self.case_counter.3 += 1;
             }
         }
     }
