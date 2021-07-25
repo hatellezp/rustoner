@@ -709,6 +709,7 @@ pub fn main() {
                     new_tb = onto.complete_tbox(false, verbose); // I put false here because I only need deduction for abox
                     onto.add_tbis_from_vec(new_tb.items()); // add what you don't have
 
+                    // I think this early completion is an error, and using the deduction tree this early is not good
                     let abox_completed_op = onto.complete_abox(deduction_tree, verbose);
 
                     symbols = onto.symbols();

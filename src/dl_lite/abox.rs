@@ -176,6 +176,20 @@ impl AbqDllite {
         }
     }
 
+    // create a list of refs to analyse, different from "sub_box" function that creates
+    // a new abox, this only creates references to the actual values
+    pub fn sub_abox_refs_only(&self, index: Vec<usize>) -> Vec<&AbiqDllite> {
+        let mut refs: Vec<&AbiqDllite> = Vec::new();
+
+        for i in index {
+            if i < self.length {
+                refs.push(&self.items[i]);
+            }
+        }
+
+        refs
+    }
+
     /// Checks if self is inconsistent with respect to the
     /// TBox tb provided. Once an ABox is completed checking for
     /// inconsistency is comparing each ABox assertion (or couple of
@@ -289,6 +303,50 @@ impl AbqDllite {
         }
 
         contradictions
+    }
+
+    // this function will return true if **refs** is inconsistent with respect to **tb**
+    pub fn is_inconsistent_refs_only(refs: Vec<&AbiqDllite>, tb: &TBDllite, _verbose: bool) -> bool {
+        // for each tbi in tb does a check in refs, whenever a conflict is found returns
+
+        // first go to get the items
+        let tbis = tb.items();
+
+        // size of refs
+        let refs_length = refs.len();
+
+        for tbi in tbis {
+            let lside = tbi.lside();
+            let rside = tbi.rside();
+
+            for i in 0..refs_length {
+                let abiq_i = refs[i];
+
+                // early returning if a:Bottom is present
+                if abiq_i.abi().symbol().t() == DLType::Bottom {
+                    return true
+                }
+
+                // test for (a:A, A < -A)
+                // this is the case a:A and A<(-A)
+                if abiq_i.item() == lside && abiq_i.item().is_negation(rside) {
+                    return true;
+                }
+
+                // only now we check for the next element
+                if abiq_i.item() == lside && i < (refs_length - 1) {
+                    for j in (i+1)..refs_length {
+                        let abiq_j = refs[j];
+
+                        if abiq_i.same_nominal(abiq_j) && abiq_i.item().is_negation(abiq_j.item()){
+                           return true
+                        }
+                    }
+                }
+            }
+        }
+
+        false
     }
 
     /// This version of the function check for inconsistency without giving

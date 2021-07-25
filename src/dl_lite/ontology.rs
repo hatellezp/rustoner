@@ -361,6 +361,165 @@ impl OntologyDllite {
             .map(|ab| ab.complete(self.tbox(), deduction_tree, verbose))
     }
 
+    // this function **suppose** that not self-conflicting assertions are present!
+    // UPDATE: fix the needless hypothesis, all aboxes are accepted now
+    pub fn conflict_matrix_refs_only(
+        &self,
+        abq: AbqDllite,
+        deduction_tree: bool,
+        verbose: bool
+    ) -> ConflictMatrixDict {
+        /*
+       so the idea here is to first detect self conflicting nodes and not include them in
+       the afore computation, the second vector helps to keep track of which abi is mapped to
+       which abi
+
+       WARNING: if the order of elements is changed this matrix is worthless
+        */
+        let abq_length = abq.len();
+        let matrix: Vec<i8> = Vec::new();
+
+        // map to both sides
+        let mut real_to_virtual: HashMap<usize, Option<usize>> = HashMap::new();
+        let mut virtual_to_real: HashMap<usize, usize> = HashMap::new();
+
+        // let inner_verbose = false;
+        let inner_verbose = verbose;
+        let mut already_computed: HashMap<(usize, usize), i8> = HashMap::new();
+
+        if abq_length == 0 {
+            if verbose {
+                println!(" -- Ontology::conflict_matrix: abox is empty, nothing to analyse");
+            }
+
+            (matrix, real_to_virtual, virtual_to_real)
+        } else {
+            // first find every self conflicting node
+            let mut self_conflicting: Vec<usize> = Vec::new();
+
+            for index in 0..abq_length {
+                if verbose {
+                    println!(
+                        " -- Ontology::conflict_matrix: analysing if {:?} is self conflicting",
+                        abq.get(index)
+                    );
+                }
+
+                // using get_unchecked force me to label the function unsafe, thus passing
+                if AbqDllite::is_inconsistent_refs_only(vec![abq.items().get(index).unwrap()], self.tbox(), verbose) {
+                    if verbose {
+                        println!(
+                            " -- Ontology::conflict_matrix: {:?} found to be self conflicting",
+                            abq.get(index)
+                        );
+                    }
+
+                    self_conflicting.push(index);
+                } else if verbose {
+                    println!(
+                        " -- Ontology::conflict_matrix: {:?} found to be NOT self conflicting",
+                        abq.get(index)
+                    );
+                }
+            }
+            // now we know which are the self conflicting elements
+
+            // before the matrix create a vector pointing to the good values
+            let mut current_length: usize = 0;
+
+            for index in 0..abq_length {
+                if !self_conflicting.contains(&index) {
+                    real_to_virtual.insert(index, Some(current_length));
+                    virtual_to_real.insert(current_length, index);
+                    current_length += 1;
+                } else {
+                    real_to_virtual.insert(index, Option::None);
+                }
+            }
+
+            // now we have two mappers:
+            // real_to_virtual: given a real index of abq it will output the index of the item in the virtual list
+            // virtual_to_real: given a virtual index it outputs the real index
+
+            // now the matrix
+            let virtual_length = virtual_to_real.len();
+            let mut matrix: Vec<i8> = vec![0; virtual_length * virtual_length];
+
+            // conflicts are always binary at this point
+            /*
+            we capture two different things:
+            a => b with [a, -b] is inconsistent
+            a => -b with [a,b] is inconsistent
+
+            normally we can't have both, we weed out the self conflicting nodes...
+             */
+            for i in 0..virtual_length {
+                let real_index_i = virtual_to_real.get(&i).unwrap();
+
+                let abiq_i = abq.get(*real_index_i).unwrap();
+
+                if verbose {
+                    println!(
+                        " -- Ontology::conflict_matrix: filling column {} for item {}",
+                        i, abiq_i
+                    );
+                }
+
+                for j in 0..virtual_length {
+                    // no need of same element analysis
+                    if i != j {
+                        if already_computed.contains_key(&(i, j))
+                            && already_computed.get(&(i, j)).unwrap() == &(-1)
+                        {
+                            matrix[virtual_length * i + j] = -1;
+                            already_computed.insert((j, i), -1);
+
+                            if verbose {
+                                println!(" -- Ontology::conflict_matrix: already found negative coefficient for index: ({}, {}), passing", i, j);
+                            }
+                        } else {
+                            let real_index_j = virtual_to_real.get(&j).unwrap();
+
+                            let abiq_j = abq.get(*real_index_j).unwrap();
+
+                            // first analyse if (i) implies (not j)
+                            let mut deduction_found = false;
+                            if AbqDllite::is_inconsistent_refs_only(vec![abiq_i, abiq_j], self.tbox(), verbose) {
+                                if verbose {
+                                    println!(" -- Ontology::conflict_matrix: setting position ({}, {}) to -1", j, i);
+                                }
+
+                                matrix[virtual_length * j + i] = -1;
+                                already_computed.insert((i, j), -1);
+                                deduction_found = true;
+                            }
+
+                            // if not deduction was found then
+                            // check if (i) implies (j)
+                            if !deduction_found {
+                                let abiq_j_neg = abiq_j.negate();
+
+                                if AbqDllite::is_inconsistent_refs_only(vec![abiq_i, &abiq_j_neg], self.tbox(), verbose) {
+                                    if verbose {
+                                        println!(
+                                            " -- Ontology::conflict_matrix: setting position ({}, {}) to 1",
+                                            j, i
+                                        );
+                                    }
+
+                                    matrix[virtual_length * j + i] = 1;
+                                    already_computed.insert((i, j), 1);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            (matrix, real_to_virtual, virtual_to_real)
+        }
+    }
+
     // please note that this matrix detect also implications
     pub fn conflict_matrix(
         &self,

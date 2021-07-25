@@ -185,6 +185,14 @@ impl TBDllite {
         neg_tbi
     }
 
+    // TODO: this is maybe the most important function, to update !!!!
+    pub fn cln_completion(&self, negative_closure: bool, deduction_tree: bool, verbose: bool) -> TBDllite {
+
+        let mut cln_tbox = TBDllite::new();
+
+        cln_tbox
+    }
+
     pub fn complete(&self, deduction_tree: bool, verbose: bool) -> TBDllite {
         // TESTING: for type constriction
         type T = TbiDllite;

@@ -244,6 +244,13 @@ impl AbiqDllite {
         self.abi.same_nominal(&other.abi)
     }
 
+    pub fn negate_no_mod(&self) -> AbiqDllite {
+        let abi_neg = self.abi.negate();
+
+        // really dangerous here
+        AbiqDllite::new(abi_neg, Some(self.credibility), self.value, self.level)
+    }
+
     /// Deduction rule is applied if possible to an array of ABox items.
     /// args:
     /// - an array of ABox items
