@@ -140,7 +140,6 @@ impl DLType {
 /// are tracked by the CR (count rules) type
 #[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]
 pub enum CR {
-    Zero,
     First,
     Second,
     Third,
@@ -149,13 +148,14 @@ pub enum CR {
     Sixth,
     Seventh,
     Eight,
+    Ninth,
+    Tenth,
 }
 
 impl CR {
     /// cast to usize
     pub fn to_usize(&self) -> usize {
         match self {
-            CR::Zero => 0,
             CR::First => 1,
             CR::Second => 2,
             CR::Third => 3,
@@ -164,21 +164,17 @@ impl CR {
             CR::Sixth => 6,
             CR::Seventh => 7,
             CR::Eight => 8,
+            CR::Ninth => 9,
+            CR::Tenth => 10,
         }
     }
 
+    // TODO: come back here to repairs the rules !!
     /// Pretty printer for rules, the 'for_tbi' bool says
     /// if rules is to be formatted for TBox rules or ABox rules
     pub fn description(&self, for_tbi: bool) -> String {
         if cfg!(target_os = "windows") {
             match self {
-                CR::Zero => {
-                    if for_tbi {
-                        String::from("X -> BOTTOM < X, X < TOP")
-                    } else {
-                        String::from("R0: NONE")
-                    }
-                }
                 CR::First => {
                     if for_tbi {
                         String::from("X < NOT Y -> Y < NOT X")
@@ -243,24 +239,10 @@ impl CR {
                         String::from("R8: NONE")
                     }
                 }
+                _ => String::from("to be implemented!!!"),
             }
         } else {
             match self {
-                CR::Zero => {
-                    if for_tbi {
-                        format!(
-                            "{}: X {} X{}{}, {}{}X",
-                            self.identifier(),
-                            UNICODE_RIGHTARROW,
-                            UNICODE_SQSUBSETEQ,
-                            UNICODE_TOP,
-                            UNICODE_BOT,
-                            UNICODE_SQSUBSETEQ
-                        )
-                    } else {
-                        String::from("R0: NONE")
-                    }
-                }
                 CR::First => {
                     if for_tbi {
                         format!(
@@ -412,6 +394,7 @@ impl CR {
                         String::from("R8: NONE")
                     }
                 }
+                _ => String::from("to be implemented!!!"),
             }
         }
     }
@@ -442,7 +425,6 @@ impl Ord for CR {
 impl Display for CR {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            CR::Zero => write!(f, "zero"),
             CR::First => write!(f, "first"),
             CR::Second => write!(f, "second"),
             CR::Third => write!(f, "third"),
@@ -451,6 +433,8 @@ impl Display for CR {
             CR::Sixth => write!(f, "sixth"),
             CR::Seventh => write!(f, "seventh"),
             CR::Eight => write!(f, "eight"),
+            CR::Ninth => write!(f, "ninth"),
+            CR::Tenth => write!(f, "tenth"),
         }
     }
 }

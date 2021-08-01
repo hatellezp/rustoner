@@ -35,6 +35,7 @@ use crate::kb::types::FileType;
 
 use crate::interface::utilities::write_str_to_file;
 
+use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 
@@ -52,6 +53,7 @@ type ConflictMatrixDict = (
     HashMap<usize, Option<usize>>,
     HashMap<usize, usize>,
 );
+
 /*
 an ontology model
     - name is the name of the ontology
@@ -61,11 +63,14 @@ an ontology model
     - number_of_tbi is the current number of tbi
     - latest_id is higher number present in the symbols dictionary
  */
+
 #[derive(PartialEq, Clone, Debug)]
 pub struct OntologyDllite {
     name: String,
     symbols: SymbolDict,
     tbox: TBDllite,
+    cln_positive: TBDllite,
+    cln_negative: TBDllite,
     current_abox: Option<AbqDllite>,
 }
 
@@ -123,6 +128,8 @@ impl OntologyDllite {
             name: s,
             symbols,
             tbox: TBDllite::new(),
+            cln_negative: TBDllite::new(),
+            cln_positive: TBDllite::new(),
             current_abox: Option::None,
         }
     }
@@ -131,30 +138,19 @@ impl OntologyDllite {
         &self.tbox
     }
 
+    pub fn cln(&self, positive: bool) -> &TBDllite {
+        match positive {
+            true => &self.cln_positive,
+            false => &self.cln_negative,
+        }
+    }
+
     pub fn abox(&self) -> Option<&AbqDllite> {
         match &self.current_abox {
             Option::None => Option::None,
             Some(ab) => Some(ab),
         }
     }
-
-    /*
-    pub fn abox_as_mut(&mut self) -> Option<&mut AbqDllite> {
-        self.current_abox.as_mut()
-    }
-
-    pub fn abox_name(&self) -> String {
-        match &self.current_abox {
-            Option::None => String::from("NONE"),
-            Some(ab) => String::from(ab.name()),
-        }
-    }
-
-    pub fn symbols_as_mut(&mut self) -> &mut SymbolDict {
-        &mut self.symbols
-    }
-
-     */
 
     // ------------------------------------------------------------------------
     // modifications of the ontology
@@ -235,13 +231,6 @@ impl OntologyDllite {
             println!("warning: no symbols detected, no tbox item will be added");
         }
     }
-
-    /*
-    pub fn new_abox_from_aboxq(&mut self, ab: AbqDllite) {
-        self.current_abox = Some(ab);
-    }
-
-     */
 
     pub fn new_abox_from_file_quantum(
         &mut self,
@@ -351,6 +340,7 @@ impl OntologyDllite {
     // here I define a very important method, it will find conflicts in a abox with
     // respect to a tbox and store them in a matrix
 
+    /*
     pub fn complete_tbox(&self, deduction_tree: bool, verbose: bool) -> TBDllite {
         self.tbox.complete(deduction_tree, verbose)
     }
@@ -361,21 +351,37 @@ impl OntologyDllite {
             .map(|ab| ab.complete(self.tbox(), deduction_tree, verbose))
     }
 
+     */
+
+    // this generate both closures for the matrix
+    // if you only need the negative closure then pass a negative number,
+    // for the positive closure pass a positive number
+    // and for both pass 0
+    pub fn generate_cln(&mut self, deduction_tree: bool, verbose: bool, positive_or_negative: i8) {
+        match positive_or_negative.cmp(&0) {
+            Ordering::Less => {
+                self.cln_negative = self.tbox.cln_completion(true, deduction_tree, verbose)
+            }
+            Ordering::Equal => {
+                self.cln_negative = self.tbox.cln_completion(true, deduction_tree, verbose);
+                self.cln_positive = self.tbox.cln_completion(false, deduction_tree, verbose);
+            }
+            Ordering::Greater => {
+                self.cln_positive = self.tbox.cln_completion(false, deduction_tree, verbose)
+            }
+        }
+    }
+
     // this function **suppose** that not self-conflicting assertions are present!
     // UPDATE: fix the needless hypothesis, all aboxes are accepted now
-    pub fn conflict_matrix_refs_only(
-        &self,
-        abq: AbqDllite,
-        deduction_tree: bool,
-        verbose: bool
-    ) -> ConflictMatrixDict {
+    pub fn conflict_matrix_refs_only(&self, abq: &AbqDllite, verbose: bool) -> ConflictMatrixDict {
         /*
-       so the idea here is to first detect self conflicting nodes and not include them in
-       the afore computation, the second vector helps to keep track of which abi is mapped to
-       which abi
+        so the idea here is to first detect self conflicting nodes and not include them in
+        the afore computation, the second vector helps to keep track of which abi is mapped to
+        which abi
 
-       WARNING: if the order of elements is changed this matrix is worthless
-        */
+        WARNING: if the order of elements is changed this matrix is worthless
+         */
         let abq_length = abq.len();
         let matrix: Vec<i8> = Vec::new();
 
@@ -383,8 +389,6 @@ impl OntologyDllite {
         let mut real_to_virtual: HashMap<usize, Option<usize>> = HashMap::new();
         let mut virtual_to_real: HashMap<usize, usize> = HashMap::new();
 
-        // let inner_verbose = false;
-        let inner_verbose = verbose;
         let mut already_computed: HashMap<(usize, usize), i8> = HashMap::new();
 
         if abq_length == 0 {
@@ -405,8 +409,19 @@ impl OntologyDllite {
                     );
                 }
 
+                /*
+                   when analysing if an item is self-conflicting, it comes from the original
+                   abox and thus is not negated, the negative closure is the only one needed
+                   to find a contradcition
+                */
+
                 // using get_unchecked force me to label the function unsafe, thus passing
-                if AbqDllite::is_inconsistent_refs_only(vec![abq.items().get(index).unwrap()], self.tbox(), verbose) {
+                let (abox_is_inconsistent, _) = AbqDllite::is_inconsistent_refs_only(
+                    vec![abq.items().get(index).unwrap()],
+                    self.cln(false),
+                    false,
+                );
+                if abox_is_inconsistent {
                     if verbose {
                         println!(
                             " -- Ontology::conflict_matrix: {:?} found to be self conflicting",
@@ -483,8 +498,19 @@ impl OntologyDllite {
                             let abiq_j = abq.get(*real_index_j).unwrap();
 
                             // first analyse if (i) implies (not j)
+
+                            /*
+                               again, for this is the negative closure that is needed
+                            */
+
                             let mut deduction_found = false;
-                            if AbqDllite::is_inconsistent_refs_only(vec![abiq_i, abiq_j], self.tbox(), verbose) {
+                            let (abox_is_inconsistent, _) = AbqDllite::is_inconsistent_refs_only(
+                                vec![abiq_i, abiq_j],
+                                self.cln(false),
+                                false,
+                            );
+
+                            if abox_is_inconsistent {
                                 if verbose {
                                     println!(" -- Ontology::conflict_matrix: setting position ({}, {}) to -1", j, i);
                                 }
@@ -496,10 +522,22 @@ impl OntologyDllite {
 
                             // if not deduction was found then
                             // check if (i) implies (j)
+
+                            /*
+                               now we use the positive closure, that have all consequences
+                            */
+
                             if !deduction_found {
                                 let abiq_j_neg = abiq_j.negate();
 
-                                if AbqDllite::is_inconsistent_refs_only(vec![abiq_i, &abiq_j_neg], self.tbox(), verbose) {
+                                let (abox_is_inconsistent, _) =
+                                    AbqDllite::is_inconsistent_refs_only(
+                                        vec![abiq_i, &abiq_j_neg],
+                                        self.cln(true),
+                                        false,
+                                    );
+
+                                if abox_is_inconsistent {
                                     if verbose {
                                         println!(
                                             " -- Ontology::conflict_matrix: setting position ({}, {}) to 1",
@@ -717,10 +755,10 @@ impl OntologyDllite {
         let mut conflict_index_hashset: HashSet<usize> = HashSet::new();
         let mut conflict_clean: Vec<usize> = Vec::new();
 
-        let nsquared = matrix.len();
-        let n = (nsquared as f64).sqrt() as usize;
+        let n_squared = matrix.len();
+        let n = (n_squared as f64).sqrt() as usize;
 
-        if n * n != nsquared {
+        if n * n != n_squared {
             Option::None
         } else {
             for i in 0..n {
@@ -744,7 +782,7 @@ impl OntologyDllite {
         }
     }
 
-    pub fn from_conflict_to_clean_matrix(matrix: &[i8], _verbose: bool) -> CleanMatrixDictOpt {
+    pub fn from_conflict_to_clean_matrix(matrix: &[i8]) -> CleanMatrixDictOpt {
         let res_op = OntologyDllite::clean_index_matrix(matrix);
 
         let mut chosen_index: Option<(usize, usize)> = Option::None;

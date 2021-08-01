@@ -191,4 +191,11 @@ impl AbiDllite {
             (_, _) => false,
         }
     }
+
+    pub fn decompact_nominals_refs(&self) -> Vec<&ItemDllite> {
+        match self {
+            AbiDllite::CA(_, a) => vec![a],
+            AbiDllite::RA(_, a, b) => vec![a, b],
+        }
+    }
 }

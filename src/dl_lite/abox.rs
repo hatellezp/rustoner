@@ -34,6 +34,7 @@ use crate::dl_lite::tbox_item::TbiDllite;
 use crate::kb::knowledge_base::{ABox, ABoxItem, AbRule, Item, LeveledItem, TBox, TBoxItem};
 use crate::kb::types::{DLType, CR};
 
+use crate::dl_lite::abox_item::AbiDllite;
 use crate::dl_lite::utilities::get_max_level_abstract;
 
 /// An ABox is basically an array of ABox items.
@@ -176,6 +177,13 @@ impl AbqDllite {
         }
     }
 
+    // TODO: verify this
+    pub fn items_by_ref(&self) -> Vec<&AbiqDllite> {
+        let index = (0..self.len()).collect::<Vec<usize>>();
+
+        self.sub_abox_refs_only(index)
+    }
+
     // create a list of refs to analyse, different from "sub_box" function that creates
     // a new abox, this only creates references to the actual values
     pub fn sub_abox_refs_only(&self, index: Vec<usize>) -> Vec<&AbiqDllite> {
@@ -262,7 +270,7 @@ impl AbqDllite {
                         if abq_i.same_nominal(abq_j) && node_j == (&right_negated) {
                             if verbose {
                                 println!(
-                                    " -- ABQ::is_inconsistent: found conflict, adding ton conflicts"
+                                    " -- ABQ::is_inconsistent: found conflict, adding to conflicts"
                                 );
                             }
 
@@ -306,47 +314,177 @@ impl AbqDllite {
     }
 
     // this function will return true if **refs** is inconsistent with respect to **tb**
-    pub fn is_inconsistent_refs_only(refs: Vec<&AbiqDllite>, tb: &TBDllite, _verbose: bool) -> bool {
+    pub fn is_inconsistent_refs_only<'a>(
+        refs: Vec<&'a AbiqDllite>,
+        tb: &'a TBDllite,
+        detailed: bool,
+    ) -> (
+        bool,
+        Option<Vec<(Option<&'a TbiDllite>, Vec<&'a AbiqDllite>)>>,
+    ) {
         // for each tbi in tb does a check in refs, whenever a conflict is found returns
+
+        /*
+           if detailed is set to true then there is no early return and we must populate
+           contradictions
+        */
+
+        /*
+           there was something missing from my test:
+               (a,b):r -->  a: E.r AND b:E.r^-
+           I need to decompact this time of items and add them to the refs used
+        */
+        let mut decompacted: Vec<(AbiqDllite, &AbiqDllite)> = Vec::new();
+        for abiq in &refs {
+            if abiq.abi().symbol().t().is_role_type() && !abiq.abi().symbol().is_purely_negated() {
+                let nominals = abiq.abi().decompact_nominals_refs();
+                let role_name = abiq.abi().symbol();
+
+                let role_inversed = role_name.clone().inverse().unwrap();
+                let exists_role_inversed = role_inversed.exists().unwrap();
+
+                let exists_role = role_name.clone().exists().unwrap();
+
+                /*
+                   TODO: come back here and see why my logic of the 'for_completion' item is bad
+                */
+                let new_ca_exists =
+                    AbiDllite::new_ca(exists_role, nominals[0].clone(), true).unwrap();
+                let new_ca_exists_inverse =
+                    AbiDllite::new_ca(exists_role_inversed, nominals[1].clone(), true).unwrap();
+
+                let new_abiq = AbiqDllite::new(
+                    new_ca_exists,
+                    Some(abiq.credibility()),
+                    abiq.value(),
+                    abiq.level(),
+                );
+                let new_abiq_inverse = AbiqDllite::new(
+                    new_ca_exists_inverse,
+                    Some(abiq.credibility()),
+                    abiq.value(),
+                    abiq.level(),
+                );
+
+                decompacted.push((new_abiq, *abiq));
+                decompacted.push((new_abiq_inverse, *abiq));
+            }
+        }
+
+        let mut contradictions_found = false;
+        let mut contradictions: Option<Vec<(Option<&TbiDllite>, Vec<&AbiqDllite>)>>;
+        // store contradictions here
+        if detailed {
+            contradictions = Some(Vec::new());
+        } else {
+            contradictions = None;
+        }
 
         // first go to get the items
         let tbis = tb.items();
 
-        // size of refs
-        let refs_length = refs.len();
+        // inner_refs keep refs to the original items and the decompacted ones
+        let mut inner_refs: Vec<(&AbiqDllite, &AbiqDllite)> = Vec::new();
+
+        // add originals
+        for item in &refs {
+            inner_refs.push((*item, *item));
+        }
+
+        // add decompacted ones
+        for item in &decompacted {
+            let (decomp, its_ref) = item;
+            inner_refs.push((decomp, *its_ref));
+        }
+
+        // keep the refs length
+        let _refs_length = inner_refs.len();
+
+        let push_to_contradiction_closure =
+            |contradictions: &mut Option<Vec<(Option<&'a TbiDllite>, Vec<&'a AbiqDllite>)>>,
+             new_contradiction: (Option<&'a TbiDllite>, Vec<&'a AbiqDllite>)| {
+                if !&contradictions
+                    .as_ref()
+                    .unwrap()
+                    .contains(&new_contradiction)
+                {
+                    contradictions.as_mut().unwrap().push(new_contradiction);
+                }
+            };
 
         for tbi in tbis {
             let lside = tbi.lside();
             let rside = tbi.rside();
 
-            for i in 0..refs_length {
-                let abiq_i = refs[i];
-
+            for (abiq_i, its_ref_i) in &inner_refs {
                 // early returning if a:Bottom is present
-                if abiq_i.abi().symbol().t() == DLType::Bottom {
-                    return true
+                if (*abiq_i).abi().symbol().t() == DLType::Bottom {
+                    if detailed {
+                        contradictions_found = true;
+
+                        let new_contradiction = (None, vec![*its_ref_i]);
+                        push_to_contradiction_closure(&mut contradictions, new_contradiction);
+                    } else {
+                        return (true, contradictions);
+                    }
                 }
 
                 // test for (a:A, A < -A)
                 // this is the case a:A and A<(-A)
-                if abiq_i.item() == lside && abiq_i.item().is_negation(rside) {
-                    return true;
+                if (*abiq_i).item() == lside && (*abiq_i).item().is_negation(rside) {
+                    if detailed {
+                        contradictions_found = true;
+
+                        let new_contradiction = (Some(tbi), vec![*its_ref_i]);
+                        push_to_contradiction_closure(&mut contradictions, new_contradiction);
+                    } else {
+                        return (true, contradictions);
+                    }
                 }
 
                 // only now we check for the next element
-                if abiq_i.item() == lside && i < (refs_length - 1) {
-                    for j in (i+1)..refs_length {
-                        let abiq_j = refs[j];
+                if (*abiq_i).item() == lside {
+                    // && i < (refs_length - 1) {
 
-                        if abiq_i.same_nominal(abiq_j) && abiq_i.item().is_negation(abiq_j.item()){
-                           return true
+                    for (abiq_j, its_ref_j) in &inner_refs {
+                        if *abiq_i != *abiq_j {
+                            /*
+                               two type of contradictions:
+                                   a:A and a:-A
+                                   a:A and a:B and A < -B
+                            */
+                            let is_contradiction = (*abiq_i).same_nominal(*abiq_j)
+                                && ((*abiq_i).item().is_negation((*abiq_j).item())
+                                    || ((*abiq_i).item() == lside
+                                        && (*abiq_j).item().is_negation(rside)));
+
+                            if is_contradiction {
+                                if detailed {
+                                    let new_contradiction: (Option<&TbiDllite>, Vec<&AbiqDllite>);
+
+                                    if *its_ref_i != *its_ref_j {
+                                        new_contradiction =
+                                            (Some(tbi), vec![*its_ref_i, *its_ref_j]);
+                                    } else {
+                                        new_contradiction = (Some(tbi), vec![*its_ref_i]);
+                                    }
+                                    push_to_contradiction_closure(
+                                        &mut contradictions,
+                                        new_contradiction,
+                                    );
+
+                                    contradictions_found = true;
+                                } else {
+                                    return (true, contradictions);
+                                }
+                            }
                         }
                     }
                 }
             }
         }
 
-        false
+        (contradictions_found, contradictions)
     }
 
     /// This version of the function check for inconsistency without giving
@@ -496,10 +634,10 @@ impl AbqDllite {
             let rule_two: AbRule<T, A> = dl_lite_abox_rule_two;
             let rule_three: AbRule<T, A> = dl_lite_abox_rule_three;
 
-            let number_of_rules: usize = 3;
             let rules: [&AbRule<T, A>; 3] = [&rule_one, &rule_two, &rule_three];
 
             let rule_ordinal = [CR::First, CR::Second, CR::Third];
+            let rules_used: [usize; 3] = [1, 2, 3];
 
             /*
             RULES DECLARATION END HERE
@@ -619,58 +757,63 @@ impl AbqDllite {
                     let items = items.lock().unwrap();
                     let mut items_temporal = items_temporal.lock().unwrap();
 
+                    // closure to avoid code duplication
+                    let mut complete_closure =
+                        |v: Option<Vec<AbiqDllite>>, it: &AbiqDllite, ro: CR| {
+                            match v {
+                                None => (),
+                                Some(new_items) => {
+                                    length_temporal = complete_helper_add_if_necessary_general(
+                                        &items,
+                                        &mut items_temporal,
+                                        vec![&current_item, it],
+                                        &new_items, // always one element
+                                        length_temporal,
+                                        verbose,
+                                        ro,
+                                    );
+                                }
+                            }
+                        };
+
+                    let mut apply_to_two_items =
+                        |item: &AbiqDllite, current_item: &AbiqDllite, tbi: &TbiDllite| {
+                            if item != current_item {
+                                for rule_index in &rules_used {
+                                    let rule: &AbRule<T, A> = rules[rule_index - 1];
+                                    let rule_ord = rule_ordinal[rule_index - 1];
+
+                                    // added deduction tree
+                                    let new_items1 = AbiqDllite::apply_rule(
+                                        &[current_item, item],
+                                        &[tbi],
+                                        rule,
+                                        deduction_tree,
+                                    );
+
+                                    let new_items2 = AbiqDllite::apply_rule(
+                                        &[item, current_item],
+                                        &[tbi],
+                                        rule,
+                                        deduction_tree,
+                                    );
+
+                                    complete_closure(new_items1, item, rule_ord);
+                                    complete_closure(new_items2, item, rule_ord);
+                                }
+                            }
+                        };
+
                     // current_length has to have the exact value
                     for index in 0..length {
                         let item = &items[index];
 
-                        for rule_index in 0..number_of_rules {
-                            let rule: &AbRule<T, A> = rules[rule_index];
-                            let rule_ord = rule_ordinal[rule_index];
-
-                            // use each item
-                            for tbi in tbox.items() {
-                                // three different vectors
-
-                                if verbose {
-                                    println!(" -- ABQ::complete: comparing with tbi: {}", tbi);
-                                }
-
-                                let new_item_vec3 = AbiqDllite::apply_rule(
-                                    vec![&current_item, &item],
-                                    vec![tbi],
-                                    rule,
-                                    deduction_tree,
-                                );
-
-                                for optional_vec in &[&new_item_vec3] {
-                                    // if the rule succeeded
-
-                                    // println!("--- in abox complete, optional vec is : {:?}", &optional_vec);
-
-                                    if optional_vec.is_some() {
-                                        let mut abis_to_add: Vec<AbiqDllite> = Vec::new();
-                                        let iterator = optional_vec.as_ref().unwrap();
-
-                                        let _abi_already_exits = false;
-
-                                        for abi_to_be_added in iterator {
-                                            abis_to_add.push(abi_to_be_added.clone());
-                                        }
-
-                                        // println!("--- optional vec will attempt to be added: {:?}", abis_to_add);
-
-                                        length_temporal = complete_helper_add_if_necessary_general(
-                                            &items,
-                                            &mut items_temporal,
-                                            vec![&current_item, &item],
-                                            &abis_to_add, // always one element
-                                            length_temporal,
-                                            verbose,
-                                            rule_ord,
-                                        );
-                                    }
-                                }
+                        for tbi in tbox.items() {
+                            if verbose {
+                                println!(" -- ABQ::complete: comparing with tbi: {}", tbi);
                             }
+
+                            apply_to_two_items(&current_item, item, tbi);
                         }
                     }
                 }
@@ -776,9 +919,8 @@ impl AbqDllite {
 
     pub fn get_abis_by_level(
         &self,
-        _tb: &TBDllite,
         only_conflicts: bool,
-        contradictions: &[(TbiDllite, Vec<AbiqDllite>)],
+        contradictions: &[(Option<&TbiDllite>, Vec<&AbiqDllite>)],
     ) -> Vec<usize> {
         let max_level = self.get_max_level();
         let mut levels: Vec<usize> = vec![0; max_level + 1];

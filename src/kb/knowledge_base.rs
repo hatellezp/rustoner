@@ -200,8 +200,8 @@ pub type SymbolDict = HashMap<String, (usize, DLType)>;
 ///    number of ABox items and produce a variable number of new ABox items.
 /// Both types of rule have a swtich (deduction tree activated or not) to keep track
 /// of which items produced each new item.
-pub type TbRule<T> = fn(Vec<&T>, bool) -> Option<Vec<T>>;
-pub type AbRule<T, A> = fn(Vec<&A>, Vec<&T>, bool) -> Option<Vec<A>>;
+pub type TbRule<T> = fn(&[&T], bool) -> Option<Vec<T>>;
+pub type AbRule<T, A> = fn(&[&A], &[&T], bool) -> Option<Vec<A>>;
 
 /// Aggregate operators produce new credibility values for subsets of an ABox
 /// following each aggregation

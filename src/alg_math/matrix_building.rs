@@ -70,9 +70,9 @@ pub struct Indicator {
     indicator: HashMap<(usize, usize, usize), i8>,
 }
 pub struct Builder {
-    I: Box<Indicator>,
-    C: Box<Credibility>,
-    F: Box<Filter>,
+    indicator: Box<Indicator>,
+    credibility: Box<Credibility>,
+    filter: Box<Filter>,
     built: bool,
 }
 
@@ -260,7 +260,11 @@ impl Filter {
                 // the one index must be set to false
                 self.filter[one_index] = false;
 
-                let new_lower_one = if lower_one == one_index { zero_index } else { lower_one };
+                let new_lower_one = if lower_one == one_index {
+                    zero_index
+                } else {
+                    lower_one
+                };
                 let mut new_upper_one: usize = 0;
 
                 for i in zero_index..total_size {
@@ -299,18 +303,23 @@ impl Display for Filter {
 
 impl Builder {
     pub fn new(i: Indicator, c: Credibility, f: Filter) -> Builder {
-        let I = Box::new(i);
-        let C = Box::new(c);
-        let F = Box::new(f);
+        let indicator = Box::new(i);
+        let credibility = Box::new(c);
+        let filter = Box::new(f);
         let built = false;
 
-        Builder { I, C, F, built }
+        Builder {
+            indicator,
+            credibility,
+            filter,
+            built,
+        }
     }
 
     pub fn reset(&mut self) {
-        self.I.reset();
-        self.C.reset();
-        self.F.reset();
+        self.indicator.reset();
+        self.credibility.reset();
+        self.filter.reset();
         self.built = false;
     }
 
@@ -340,13 +349,13 @@ impl Builder {
         }
 
         // do not iterate over indices, iterate on the key of the indicator function
-        for (key, i_value) in self.I.deref().indicator() {
+        for (key, i_value) in self.indicator.deref().indicator() {
             let b_index = key.0;
             let alpha_index = key.1;
             let beta_index = key.2;
 
             // get the credibility value
-            let aggf_b_op = self.C.get(&b_index);
+            let aggf_b_op = self.credibility.get(&b_index);
 
             match aggf_b_op {
                 None => {
@@ -407,22 +416,22 @@ impl Builder {
                     let mut subsets_done: Vec<Vec<usize>> = Vec::new();
 
                     // first reset the filter (and only the filter)
-                    self.F.reset();
+                    self.filter.reset();
 
                     // we search every subset up to real_conflict minus one,
                     // because we add alpha each time it has to be
                     // (real_conflict - 1)
-                    while self.F.noo() <= (real_conflict_limit - 1) {
+                    while self.filter.noo() <= (real_conflict_limit - 1) {
                         // the filter is updated each entry in the loop
-                        self.F.next();
+                        self.filter.next();
 
                         // get the indices if form of a filter of boolean
-                        let filter = self.F.filter();
+                        let filter = self.filter.filter();
 
                         // this is the first thing to do, no need to analyze if index of
                         // alpha is present in in filter
                         // we need di not in this filter, otherwise we pass
-                        if !self.F.filter()[alpha_index] {
+                        if !self.filter.filter()[alpha_index] {
                             // before everything I need a way to check no subset has been analysed yet
                             // TODO: find a way to solve the problem above
 
@@ -464,7 +473,6 @@ impl Builder {
 
                                 // check the third (and last) condition: B is consistent
                                 if oracle.is_consistent(&b_subset) {
-
                                     let b_alpha_positive = b_subset.clone();
                                     let b_alpha_negative = b_subset;
 
@@ -499,14 +507,19 @@ impl Builder {
                                             // of aggf(B) is self.F.filter_index(),
                                             // that is, the index of B, and not the index of alpha
                                             // here I put it correctly
-                                            self.C.insert(self.F.filter_index(), aggf_b);
+                                            self.credibility
+                                                .insert(self.filter.filter_index(), aggf_b);
 
                                             let i_value: i8 = if b_implies_alpha { 1 } else { -1 };
 
                                             for beta_index in b_indices {
-                                                self.I.insert(
-                                                    (self.F.filter_index(), alpha_index, beta_index),
-                                                    i_value
+                                                self.indicator.insert(
+                                                    (
+                                                        self.filter.filter_index(),
+                                                        alpha_index,
+                                                        beta_index,
+                                                    ),
+                                                    i_value,
                                                 );
                                             }
                                         }

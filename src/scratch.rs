@@ -121,9 +121,16 @@ pub fn main() {
         let case_c = f.cc();
         let case_sum = case_c.0 + case_c.1 + case_c.2 + case_c.3;
 
-        let avg_comp: f64 = 1_f64 * ((case_c.0 + case_c.2) as f64) + (n as f64) * ((case_c.1 + case_c.3) as f64);
+        let avg_comp: f64 =
+            1_f64 * ((case_c.0 + case_c.2) as f64) + (n as f64) * ((case_c.1 + case_c.3) as f64);
 
-        println!("size {}: {:?}, sum: {}, total avg: {}, real avg: {}", n, case_c, case_sum, avg_comp, avg_comp / (case_sum as f64));
+        println!(
+            "size {}: {:?}, sum: {}, total avg: {}, real avg: {}",
+            n,
+            case_c,
+            case_sum,
+            avg_comp,
+            avg_comp / (case_sum as f64)
+        );
     }
-
 }

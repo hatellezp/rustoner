@@ -261,21 +261,21 @@ impl AbiqDllite {
     /// Result is wrapped in an Option, it will return None when the rule
     /// fails to be applied.
     pub fn apply_rule(
-        abiqs: Vec<&AbiqDllite>,
-        tbis: Vec<&TbiDllite>,
+        abiqs: &[&AbiqDllite],
+        tbis: &[&TbiDllite],
         rule: &AbRule<TbiDllite, AbiqDllite>,
         deduction_tree: bool,
     ) -> Option<Vec<AbiqDllite>> {
-        let prov_vec = match tbis.len() {
-            1 => rule(abiqs, tbis, deduction_tree),
-            2 => rule(abiqs, tbis, deduction_tree),
-            _ => Option::None,
+        let prov_vec: Option<Vec<AbiqDllite>> = match abiqs.len() {
+            0 | 1 => None,
+            _ => rule(abiqs, tbis, deduction_tree),
         };
 
-        if let Some(some_vec) = prov_vec {
+        if let Some(mut some_vec) = prov_vec {
             let mut final_vec: Vec<AbiqDllite> = Vec::new();
 
-            for item in some_vec {
+            while !some_vec.is_empty() {
+                let item = some_vec.pop().unwrap();
                 if !item.abi().is_trivial() {
                     // purge trivial assertions
                     final_vec.push(item);

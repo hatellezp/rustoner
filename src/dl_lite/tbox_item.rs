@@ -262,7 +262,7 @@ impl TbiDllite {
     /// item: 'A' and 'A' matches with X
     /// then ('r', 'A') -> 'Y'
     pub fn apply_rule(
-        tbis: Vec<&TbiDllite>,
+        tbis: &[&TbiDllite],
         rule: &TbRule<TbiDllite>,
         deduction_tree: bool,
     ) -> Option<Vec<TbiDllite>> {
@@ -273,31 +273,31 @@ impl TbiDllite {
 
         // rules are only applied if the tbis array length match the size of
         // deduction rules defined in the 'rule.rs' file
-        let prov_vec = match tbis.len() {
-            1 => rule(tbis, deduction_tree),
-            2 => rule(tbis, deduction_tree),
-            _ => Option::None,
+        let prov_vec: Option<Vec<TbiDllite>> = match tbis.len() {
+            0 | 1 => None,
+            _ => rule(tbis, deduction_tree),
         };
 
         match prov_vec {
-            Option::None => Option::None,
-            Some(prov_vec_unwrapped) => {
+            None => None,
+            Some(mut prov_vec_unwrapped) => {
                 let mut final_vec: Vec<TbiDllite> = Vec::new();
 
                 // purge redundant items from the consequences
-                for item in &prov_vec_unwrapped {
-                    if !item.is_redundant() {
-                        final_vec.push(item.clone());
+                while !prov_vec_unwrapped.is_empty() {
+                    let item = prov_vec_unwrapped.pop().unwrap();
+
+                    if !&item.is_redundant() {
+                        final_vec.push(item);
                     }
                 }
-
                 Some(final_vec)
             }
         }
     }
 
     /// Find the minimum or maximum level in an array of TBox items.
-    pub fn get_extrema_level(v: Vec<&TbiDllite>, max_index: usize, get_max: bool) -> usize {
+    pub fn get_extrema_level(v: &[&TbiDllite], max_index: usize, get_max: bool) -> usize {
         // for max or min
         let mut extrema_level: usize = if get_max { 0 } else { usize::MAX };
 

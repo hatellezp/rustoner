@@ -23,16 +23,16 @@ use structopt::StructOpt;
 
 /// Every task the the binary dl_lite_r can do, each is explained as a comment.
 /// more to be added after
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum Task {
     VerTB,    // verify tbox
     GenConTB, // generate consequence tree tbox
-    CTB,      // complete tbox
+    // CTB,      // complete tbox
     VerAB,    // verify abox
     CleanAB,  // clean from self conflicts
     GenConAB, // generate consequence tree abox
-    CAB,      // complete abox
-    RankAB,   // rank assertions on abox
+    // CAB,      // complete abox
+    RankAB, // rank assertions on abox
     Undefined,
 }
 
@@ -44,11 +44,9 @@ impl FromStr for Task {
         match s.trim() {
             "vertb" => Ok(Task::VerTB),
             "gencontb" => Ok(Task::GenConTB),
-            "ctb" => Ok(Task::CTB),
             "verab" => Ok(Task::VerAB),
             "cleanab" => Ok(Task::CleanAB),
             "genconab" => Ok(Task::GenConAB),
-            "cab" => Ok(Task::CAB),
             "rankab" => Ok(Task::RankAB),
             _ => Ok(Task::Undefined),
         }
@@ -92,7 +90,7 @@ pub struct Cli {
     #[structopt(
         short = "t",
         long = "task",
-        help = "describes the wanted task, (vertb|gencontb|ctb|verab|genconab|cleanab|cab|rankab)"
+        help = "describes the wanted task, (vertb|gencontb|verab|genconab|cleanab|rankab)"
     )]
     pub task: Task,
 

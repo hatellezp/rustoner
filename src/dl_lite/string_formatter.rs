@@ -754,40 +754,46 @@ pub fn abiq_to_string(abiq: &AbiqDllite, symbols: &SymbolDict, to_native: bool) 
 }
 
 pub fn pretty_print_abiq_conflict(
-    conflict_tuple: (&TbiDllite, &Vec<AbiqDllite>),
+    tbi_op: &Option<&TbiDllite>,
+    abi_vec: &[&AbiqDllite],
     symbols: &SymbolDict,
 ) -> String {
     /*
     quelque chose comme
     [
-        tbi: fdkfjldfj
-        abisq: dlgjglkfjglfj
-               dlkjgljfglfkjgljg
-               flgjflkgjlfkgj
+        tbi:    fdkfjldfj
+        abisq:  dlgjglkfjglfj
+                dlkjgljfglfkjgljg
+                flgjflkgjlfkgj
     ]
      */
 
     let mut s = String::from("  {\n");
     let to_native = false;
 
-    let tbi = conflict_tuple.0;
-    let v_abiq = conflict_tuple.1;
-    let v_abiq_len = v_abiq.len();
+    let tbi_string = if tbi_op.is_some() {
+        Some(tbi_to_string(tbi_op.unwrap(), symbols).unwrap())
+    } else {
+        None
+    };
 
-    let tbi_string = tbi_to_string(tbi, symbols).unwrap();
+    if let Some(inner_string) = tbi_string {
+        s.push_str("      tbi: ");
+        s.push_str(&inner_string);
+        s.push('\n');
+    }
 
-    s.push_str("      tbi: ");
-    s.push_str(&tbi_string);
-    s.push('\n');
-
-    let abiq_zero_string = abiq_to_string(v_abiq.get(0).unwrap(), symbols, to_native).unwrap();
+    let abiq_zero_string = abiq_to_string(abi_vec[0], symbols, to_native).unwrap();
 
     s.push_str("      abis: ");
     s.push_str(&abiq_zero_string);
     s.push('\n');
 
-    for i in 1..v_abiq_len {
-        let abiq_string = abiq_to_string(v_abiq.get(i).unwrap(), symbols, to_native).unwrap();
+    let abi_vec_length = abi_vec.len();
+
+    // TODO: come back to verify this instruction does not make the code to panic
+    for abiq in abi_vec.iter().take(abi_vec_length).skip(1) {
+        let abiq_string = abiq_to_string(*abiq, symbols, to_native).unwrap();
 
         s.push_str("            ");
         s.push_str(&abiq_string);
@@ -842,7 +848,6 @@ pub fn create_string_for_gencontb(
     tb: &TBDllite,
     symbols: &SymbolDict,
     dont_write_trivial: bool,
-    _verbose: bool,
 ) -> String {
     let mut s = String::new();
     let mut temp_s: String;
@@ -1106,11 +1111,10 @@ pub fn create_string_for_unravel_conflict_abiq(
 }
 
 pub fn create_string_for_unravel_conflict_abox(
-    tb: &TBDllite,
     ab: &AbqDllite,
     symbols: &SymbolDict,
     only_conflicts: bool,
-    contradictions: &[(TbiDllite, Vec<AbiqDllite>)],
+    contradictions: &[(Option<&TbiDllite>, Vec<&AbiqDllite>)],
 ) -> String {
     // we only consider abis_contradictions if only_conflicts is present
 
@@ -1118,7 +1122,7 @@ pub fn create_string_for_unravel_conflict_abox(
     let mut s = String::from("");
     let mut temp_s: String;
     let mut actual_level: usize;
-    let abis_by_level = ab.get_abis_by_level(tb, only_conflicts, contradictions);
+    let abis_by_level = ab.get_abis_by_level(only_conflicts, contradictions);
     let pad: usize = 0;
 
     s.push_str("[\n");
@@ -1147,13 +1151,11 @@ pub fn create_string_for_unravel_conflict_abox(
     s
 }
 
-pub fn abiq_in_vec_of_vec(abiq: &AbiqDllite, v: &[(TbiDllite, Vec<AbiqDllite>)]) -> bool {
-    let mut abiq_vec: &Vec<AbiqDllite>;
-
+pub fn abiq_in_vec_of_vec(abiq: &AbiqDllite, v: &[(Option<&TbiDllite>, Vec<&AbiqDllite>)]) -> bool {
     for inner_v in v {
-        abiq_vec = &inner_v.1;
+        let abiq_vec = &inner_v.1;
 
-        if abiq_vec.contains(abiq) {
+        if abiq_vec.contains(&abiq) {
             return true;
         }
     }

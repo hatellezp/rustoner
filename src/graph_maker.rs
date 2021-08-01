@@ -35,8 +35,7 @@ use crate::dl_lite::abox::AbqDllite;
 use crate::dl_lite::abox_item_quantum::AbiqDllite;
 
 // identifier for the rules
-const RULE_IDS: [CR; 9] = [
-    CR::Zero,
+const RULE_IDS: [CR; 10] = [
     CR::First,
     CR::Second,
     CR::Third,
@@ -45,9 +44,11 @@ const RULE_IDS: [CR; 9] = [
     CR::Sixth,
     CR::Seventh,
     CR::Eight,
+    CR::Ninth,
+    CR::Tenth,
 ];
 
-const RULE_STR_IDS: [&str; 9] = ["R0", "R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8"];
+const RULE_STR_IDS: [&str; 10] = ["R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "10"];
 
 // first function: create graph from tbox with impliers
 // in this function true for edges stand for tbi and false stand for rule
@@ -121,7 +122,7 @@ pub fn create_graph_for_tbox_unraveling(
 
 pub fn create_graph_for_aboxq_unraveling(
     abox: &AbqDllite,
-    tbox: &TBDllite,
+    _tbox: &TBDllite,
     symbols: &SymbolDict,
 ) -> Graph<String, (), Directed, u32> {
     let mut graph: Graph<String, ()> = Graph::new();
@@ -129,8 +130,8 @@ pub fn create_graph_for_aboxq_unraveling(
     let max_level = abox.get_max_level();
 
     let only_conflicts = false;
-    let tbis_by_level = tbox.get_tbis_by_level(only_conflicts);
-    let _abis_by_level = abox.get_abis_by_level(tbox, only_conflicts, &[]);
+    // let tbis_by_level = tbox.get_tbis_by_level(only_conflicts);
+    let abiqs_by_level = abox.get_abis_by_level(only_conflicts, &[]);
     let mut added: HashMap<String, NodeIndex<u32>> = HashMap::new();
 
     let mut rules_added: Vec<usize> = Vec::new();
@@ -145,7 +146,7 @@ pub fn create_graph_for_aboxq_unraveling(
     // square for rules
     for lev in 0..(max_level + 1) {
         let actual_level = max_level - lev;
-        if tbis_by_level[actual_level] > 0 {
+        if abiqs_by_level[actual_level] > 0 {
             for abiq in abox.items() {
                 if abiq.level() == actual_level && !abiq.is_trivial() {
                     let abi_string = abi_to_string(abiq.abi(), symbols).unwrap();

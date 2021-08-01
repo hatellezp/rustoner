@@ -27,8 +27,10 @@ use crate::dl_lite::helpers_and_utilities::{
     complete_helper_add_if_necessary_general, complete_helper_dump_from_mutex_temporal_to_current,
 };
 use crate::dl_lite::rule::{
-    dl_lite_rule_eight, dl_lite_rule_five, dl_lite_rule_four, dl_lite_rule_one, dl_lite_rule_seven,
-    dl_lite_rule_six, dl_lite_rule_three, dl_lite_rule_two, dl_lite_rule_zero,
+    dl_lite_closure_negative_five, dl_lite_closure_negative_four, dl_lite_closure_negative_one,
+    dl_lite_closure_negative_three, dl_lite_closure_negative_two, dl_lite_closure_positive_eight,
+    dl_lite_closure_positive_nine, dl_lite_closure_positive_seven, dl_lite_closure_positive_six,
+    dl_lite_closure_positive_ten,
 };
 use crate::dl_lite::tbox_item::TbiDllite;
 use crate::dl_lite::utilities::get_max_level_abstract;
@@ -145,33 +147,6 @@ impl TBDllite {
         levels
     }
 
-    /*
-    pub fn completed(&self) -> &bool {
-        &(self.completed)
-    }
-
-    pub fn is_completed(&self) -> bool {
-        self.completed
-    }
-
-    pub fn remove_trivial(&mut self) {
-        if !self.items.is_empty() {
-            let mut new_items: Vec<TBI_DLlite> = Vec::new();
-
-            while !self.items.is_empty() {
-                let tbi = self.items.pop().unwrap();
-
-                if !(&tbi).is_trivial() {
-                    new_items.push(tbi);
-                }
-            }
-
-            self.items = new_items;
-        }
-    }
-
-     */
-
     // get a list to negative inclusions
     pub fn negative_inclusions(&self, take_trivial: bool) -> Vec<&TbiDllite> {
         let mut neg_tbi: Vec<&TbiDllite> = Vec::new();
@@ -186,23 +161,23 @@ impl TBDllite {
     }
 
     // TODO: this is maybe the most important function, to update !!!!
-    pub fn cln_completion(&self, negative_closure: bool, deduction_tree: bool, verbose: bool) -> TBDllite {
-
+    pub fn cln_completion(
+        &self,
+        negative_closure: bool,
+        deduction_tree: bool,
+        verbose: bool,
+    ) -> TBDllite {
         let mut cln_tbox = TBDllite::new();
 
-        cln_tbox
-    }
-
-    pub fn complete(&self, deduction_tree: bool, verbose: bool) -> TBDllite {
         // TESTING: for type constriction
         type T = TbiDllite;
 
         if self.items.is_empty() {
             if verbose {
-                println!("the tbox is empty, nothing to complete");
+                println!("the tbox is empty, no closure to complete");
             }
 
-            TBDllite::new()
+            cln_tbox
         } else {
             /*
             the strategy is as follows, for each Vec or VecDeque keeps two, one that change during the
@@ -237,27 +212,27 @@ impl TBDllite {
             /*
             I WILL PUT THE RULES HERE, WE CAN ADD OTHERS IF NEEDED
             */
-            let rule_zero: TbRule<T> = dl_lite_rule_zero;
-            let rule_one: TbRule<T> = dl_lite_rule_one;
-            let rule_two: TbRule<T> = dl_lite_rule_two;
-            let rule_three: TbRule<T> = dl_lite_rule_three;
-            let rule_four: TbRule<T> = dl_lite_rule_four;
-            let rule_five: TbRule<T> = dl_lite_rule_five;
-            let rule_six: TbRule<T> = dl_lite_rule_six;
-            let rule_seven: TbRule<T> = dl_lite_rule_seven;
-            let rule_eight: TbRule<T> = dl_lite_rule_eight;
 
-            let number_of_rules: usize = 7;
-            let rules: [&TbRule<T>; 7] = [
-                &rule_two,
-                &rule_three,
-                &rule_four,
-                &rule_five,
-                &rule_six,
-                &rule_seven,
-                &rule_eight,
-            ];
-            let rule_ordinal = [
+            // RULES ARE TO BE DECLARED HERE TO BE USED LATER
+
+            let rules_used: Vec<usize>;
+
+            // negative rules
+            let rule_one: TbRule<T> = dl_lite_closure_negative_one;
+            let rule_two: TbRule<T> = dl_lite_closure_negative_two;
+            let rule_three: TbRule<T> = dl_lite_closure_negative_three;
+            let rule_four: TbRule<T> = dl_lite_closure_negative_four;
+            let rule_five: TbRule<T> = dl_lite_closure_negative_five;
+
+            // positive rules
+            let rule_six: TbRule<T> = dl_lite_closure_positive_six;
+            let rule_seven: TbRule<T> = dl_lite_closure_positive_seven;
+            let rule_eight: TbRule<T> = dl_lite_closure_positive_eight;
+            let rule_nine: TbRule<T> = dl_lite_closure_positive_nine;
+            let rule_ten: TbRule<T> = dl_lite_closure_positive_ten;
+
+            let rule_ordinal: [CR; 10] = [
+                CR::First,
                 CR::Second,
                 CR::Third,
                 CR::Fourth,
@@ -265,7 +240,47 @@ impl TBDllite {
                 CR::Sixth,
                 CR::Seventh,
                 CR::Eight,
+                CR::Ninth,
+                CR::Tenth,
             ];
+
+            let rules: [&TbRule<T>; 10] = [
+                &rule_one,
+                &rule_two,
+                &rule_three,
+                &rule_four,
+                &rule_five,
+                &rule_six,
+                &rule_seven,
+                &rule_eight,
+                &rule_nine,
+                &rule_ten,
+            ];
+
+            // rules to be used are not the same
+            if negative_closure {
+                // the negative closure is the usual test
+                // only negative rules are used here
+
+                /*
+                   here I'm testing the hypothesis that closure_one
+                   generalizes closure_four, thus I'm testing if
+                   closure_one is enough
+                */
+
+                rules_used = vec![1, 2, 3, 4, 5];
+                // rules_used = vec![1, 2, 3, 5];
+            } else {
+                // the positive closure is more complicated
+                // all rules are to be used here
+
+                /*
+                   I'm still testing the idea that some rules generalizes others
+                */
+
+                rules_used = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+                // rules_used = vec![2, 3, 5, 6, 7, 8, 10];
+            }
 
             /*
             RULES DECLARATION END HERE
@@ -276,112 +291,25 @@ impl TBDllite {
                 // initialize the length
                 length = 0;
 
+                // all items do not go inside, if we are doing the negative
+                // closure then only negative tbi are included
+
                 // lock 'items' for you
                 let mut items = items.lock().unwrap();
 
                 for item in &self.items {
-                    items.insert(length, item.clone());
+                    // we only put an item in the 'items' if negative closure is active and
+                    // the item is indeed a negative inclusion OR if we allow for every
+                    // item in the case we are with a global or positive closure
+                    if !negative_closure || item.is_negative_inclusion() {
+                        // thanks clippy for boolean simplification
+                        items.insert(length, item.clone());
 
-                    // update the length
-                    length += 1;
-                }
-            }
-
-            // apply zero rule before the main loop
-            // X=>Top and Bottom=>Y
-            {
-                // first put everything in 'items_temporal'
-                {
-                    length_temporal = 0;
-                    let items = items.lock().unwrap();
-                    let mut items_temporal = items_temporal.lock().unwrap();
-
-                    for index in 0..length {
-                        let item = &items[index];
-
-                        // here we add the deduction tree switch
-                        let new_item_vec =
-                            TbiDllite::apply_rule(vec![item], &rule_zero, deduction_tree);
-
-                        // here there is some unnecessary clone stuff
-                        if let Some(some_vec) = new_item_vec {
-                            length_temporal = complete_helper_add_if_necessary_general(
-                                &items,
-                                &mut items_temporal,
-                                vec![item],
-                                &some_vec, // always one element
-                                length_temporal,
-                                verbose,
-                                CR::Zero,
-                            );
-                        }
+                        // update the length
+                        length += 1;
                     }
                 }
-
-                // then dump everything in 'items' from 'items_temporal'
-                {
-                    let mut items = items.lock().unwrap();
-                    let mut items_temporal = items_temporal.lock().unwrap();
-
-                    length = complete_helper_dump_from_mutex_temporal_to_current(
-                        &mut items,
-                        &mut items_temporal,
-                        length,
-                        length_temporal,
-                        Option::None,
-                        verbose,
-                    );
-                }
             }
-            // end of zero rule
-
-            // apply first rule before the main loop
-            // A=>notB then B=>notA
-            {
-                // first put everything in 'items_temporal'
-                {
-                    length_temporal = 0;
-                    let items = items.lock().unwrap();
-                    let mut items_temporal = items_temporal.lock().unwrap();
-
-                    for index in 0..length {
-                        let item = &items[index];
-
-                        // added deduction tree here
-                        let new_item_vec =
-                            TbiDllite::apply_rule(vec![item], &rule_one, deduction_tree);
-
-                        // here there is some unnecessary clone stuff
-                        if let Some(some_vec) = new_item_vec {
-                            length_temporal = complete_helper_add_if_necessary_general(
-                                &items,
-                                &mut items_temporal,
-                                vec![item],
-                                &some_vec, // always one element
-                                length_temporal,
-                                verbose,
-                                CR::First,
-                            );
-                        }
-                    }
-                }
-
-                // then dump everything in 'items' from 'items_temporal'
-                {
-                    let mut items = items.lock().unwrap();
-                    let mut items_temporal = items_temporal.lock().unwrap();
-
-                    length = complete_helper_dump_from_mutex_temporal_to_current(
-                        &mut items,
-                        &mut items_temporal,
-                        length,
-                        length_temporal,
-                        Option::None,
-                        verbose,
-                    );
-                }
-            }
-            // end of first rule
 
             // now update 'to_treat'
             {
@@ -454,13 +382,13 @@ impl TBDllite {
                     // if the item was already treated, pass to the next
                     continue;
                 } else {
-                    // otherwise continue with the loop, but the add the index to the already treated ones
+                    // otherwise continue with the loop, but then add the index to the already treated ones
                     let mut already_treated_temporal = already_treated_temporal.lock().unwrap();
                     already_treated_temporal.push_front(current_index);
 
-                    // also udpate the current_item
+                    // also update the current_item
                     let items = items.lock().unwrap();
-                    current_item = items[current_index].clone();
+                    current_item = (&items[current_index]).clone();
 
                     // now current_item has the necessary item inside
                     if verbose {
@@ -481,65 +409,64 @@ impl TBDllite {
                     let items = items.lock().unwrap();
                     let mut items_temporal = items_temporal.lock().unwrap();
 
-                    // current_length has to have the exact value
-                    for index in 0..length {
-                        let item = &items[index];
-
-                        for rule_index in 0..number_of_rules {
-                            let rule: &TbRule<T> = rules[rule_index];
-                            let rule_ord = rule_ordinal[rule_index];
-
-                            // three different vectors
-                            // added deduction tree
-                            let new_item_vec3 = TbiDllite::apply_rule(
-                                vec![&current_item, &item],
-                                rule,
-                                deduction_tree,
-                            );
-
-                            for optional_vec in &[&new_item_vec3] {
-                                // if the rule succeeded
-
-                                if optional_vec.is_some() {
-                                    let mut tbis_to_add: Vec<TbiDllite> = Vec::new();
-                                    let iterator = optional_vec.as_ref().unwrap();
-                                    // try to apply rule zero and one
-                                    for tbi in iterator {
-                                        // added deduction tree
-                                        let zero_tbi = TbiDllite::apply_rule(
-                                            vec![tbi],
-                                            &rule_zero,
-                                            deduction_tree,
-                                        );
-                                        let one_tbi = TbiDllite::apply_rule(
-                                            vec![tbi],
-                                            &rule_one,
-                                            deduction_tree,
-                                        );
-
-                                        tbis_to_add.push(tbi.clone());
-
-                                        if let Some(some_tbi) = zero_tbi {
-                                            tbis_to_add.push(some_tbi[0].clone());
-                                        }
-
-                                        if let Some(some_tbi) = one_tbi {
-                                            tbis_to_add.push(some_tbi[0].clone());
-                                        }
-                                    }
-
+                    // closure to avoid code duplication
+                    let mut complete_closure =
+                        |v: Option<Vec<TbiDllite>>, it: &TbiDllite, ro: CR| {
+                            match v {
+                                None => (),
+                                Some(new_items) => {
                                     length_temporal = complete_helper_add_if_necessary_general(
                                         &items,
                                         &mut items_temporal,
-                                        vec![&current_item, &item],
-                                        &tbis_to_add, // always one element
+                                        vec![&current_item, it],
+                                        &new_items, // always one element
                                         length_temporal,
                                         verbose,
-                                        rule_ord,
+                                        ro,
                                     );
                                 }
                             }
+                        };
+
+                    let mut apply_to_two_items = |item: &TbiDllite, current_item: &TbiDllite| {
+                        if item != current_item {
+                            for rule_index in &rules_used {
+                                let rule: &TbRule<T> = rules[rule_index - 1];
+                                let rule_ord = rule_ordinal[rule_index - 1];
+
+                                // added deduction tree
+                                let new_items1 = TbiDllite::apply_rule(
+                                    &[current_item, item],
+                                    rule,
+                                    deduction_tree,
+                                );
+
+                                let new_items2 = TbiDllite::apply_rule(
+                                    &[item, current_item],
+                                    rule,
+                                    deduction_tree,
+                                );
+
+                                complete_closure(new_items1, item, rule_ord);
+                                complete_closure(new_items2, item, rule_ord);
+                            }
                         }
+                    };
+
+                    /*
+                       we will also compare against the items in the original tbox
+                    */
+                    for item in &self.items {
+                        apply_to_two_items(item, &current_item);
+                    }
+
+                    // current_length has to have the exact value
+                    /*
+                       we compare against items in the closure too
+                    */
+                    for index in 0..length {
+                        let item = &items[index];
+                        apply_to_two_items(item, &current_item);
                     }
                 }
 
@@ -602,34 +529,18 @@ impl TBDllite {
                 iterations += 1;
             }
 
-            let mut new_tb = TBDllite::new();
             {
                 let mut items = items.lock().unwrap();
                 while !items.is_empty() {
-                    new_tb.add(items.pop_front().unwrap());
+                    cln_tbox.add(items.pop_front().unwrap());
                 }
             }
 
             // of course, set completed to 'true' in the new tbox
-            new_tb.completed = true;
-            new_tb
+            cln_tbox.completed = true;
+            cln_tbox
         }
     }
-
-    /*
-    pub fn is_satisfiable(&self, deduction_tree: bool, verbose: bool) -> bool {
-        let new_tb = self.complete(deduction_tree, verbose);
-
-        for tbi in new_tb.items {
-            if tbi.is_contradiction() && !tbi.is_trivial() {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-     */
 
     pub fn get_tbis_by_level(&self, only_conflicts: bool) -> Vec<usize> {
         let max_level = self.get_max_level();

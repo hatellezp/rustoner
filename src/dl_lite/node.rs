@@ -280,6 +280,10 @@ impl ItemDllite {
         }
     }
 
+    pub fn is_purely_negated(&self) -> bool {
+        matches!(self, ItemDllite::X(Mod::N, _))
+    }
+
     /// tries to build an Exists concept from self, will fail if self is not
     /// of the right form
     /// e.g. 'teaches' is a role: 'teaches' -> Some('EXISTS teaches')
@@ -328,6 +332,16 @@ impl ItemDllite {
             ItemDllite::R(_) => Some(ItemDllite::X(Mod::I, Box::new(self))),
             ItemDllite::X(Mod::I, bn) => Some(*bn),
             _ => Option::None,
+        }
+    }
+
+    /// check if other is the inverse of self, this implicitly
+    /// implies that both other and self are roles
+    pub fn is_inverse(&self, other: &Self) -> bool {
+        match (self, other) {
+            (ItemDllite::X(Mod::I, bn), _) => bn.deref() == other,
+            (_, ItemDllite::X(Mod::I, bn)) => self == bn.deref(),
+            (_, _) => false,
         }
     }
 }

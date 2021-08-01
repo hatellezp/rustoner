@@ -17,8 +17,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
-use std::fmt::Display;
-
 /// The ranking algorithm works not only with ontologies, but with any
 /// framework that allow for reasoning and where negation is allowed.
 /// This is abstracted in the following traits:

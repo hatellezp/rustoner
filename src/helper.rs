@@ -24,25 +24,29 @@ along with this program.  If not, see https://www.gnu.org/licenses/.
 // =================================================================================================
 // IMPORTS
 
+use std::collections::HashMap;
+use std::io::ErrorKind;
+// error to detect absence of command
+use std::ops::DivAssign;
+// what is this ???
+use std::process::Command;
+
+use petgraph::Graph;
+// creation of graphs
+use petgraph::graph::EdgeReference;
+
+// to the rankab task, which is rank abox assertion
+use crate::alg_math::bounds::find_bound_complex_wrapper;
+use crate::alg_math::utilities::{median, solve_system_wrapper_only_id_mod};
 // Ontology and ABox (quantified) realizations for dl_lite
 use crate::dl_lite::abox::AbqDllite;
 use crate::dl_lite::ontology::OntologyDllite;
 // abstract structs and widely use types
 use crate::kb::knowledge_base::{ABox, AggrFn};
 use crate::kb::types::ConflictType;
+use crate::Adjusters;
 
-// to the rankab task, which is rank abox assertion
-use crate::alg_math::bounds::find_bound_complex_wrapper;
-use crate::alg_math::utilities::{median, solve_system_wrapper_only_id_mod};
-
-// creation of graphs
-use petgraph::graph::EdgeReference;
-use petgraph::Graph;
-use std::collections::HashMap;
-
-use std::io::ErrorKind; // error to detect absence of command
-use std::ops::DivAssign; // what is this ???
-use std::process::Command; // execute a command
+// execute a command
 
 // END OF IMPORTS
 // =================================================================================================
@@ -53,14 +57,16 @@ type RankRemainder = (Vec<i8>, HashMap<usize, usize>, HashMap<usize, ConflictTyp
 pub fn rank_abox(
     onto: &OntologyDllite,
     abq: &mut AbqDllite,
-    deduction_tree: bool,
+    _deduction_tree: bool,
     aggr: AggrFn,
-    tolerance: f64,
-    m_scale: f64,
-    b_translate: f64,
+    adjusters: Adjusters,
     verbose: bool,
 ) -> RankRemainder {
     // before everything we need to normalize
+
+    // unpack the adjuster
+    let (tolerance, m_scale, b_translate) = adjusters;
+
     let mut prevalues = abq
         .items()
         .iter()
@@ -68,17 +74,15 @@ pub fn rank_abox(
         .collect::<Vec<f64>>();
     let normalization_scale = normalize_vector(&mut prevalues);
 
-    let _abq_length = abq.len();
-
     for (i, abqi) in abq.items_mut().iter_mut().enumerate().take(prevalues.len()) {
         abqi.set_credibility(prevalues[i]);
     }
 
     let (before_matrix, real_to_virtual, virtual_to_real) =
-        onto.conflict_matrix(abq, deduction_tree, verbose);
+        onto.conflict_matrix_refs_only(abq, verbose);
 
     let (done_matrix, before_to_done_matrix, _done_to_before_matrix, clean_index_tuple_op) =
-        OntologyDllite::from_conflict_to_clean_matrix(&before_matrix, verbose).unwrap();
+        OntologyDllite::from_conflict_to_clean_matrix(&before_matrix).unwrap();
 
     let mut conflict_type: HashMap<usize, ConflictType> = HashMap::new();
 
