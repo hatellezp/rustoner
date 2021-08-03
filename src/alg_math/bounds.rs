@@ -31,13 +31,13 @@ along with this program.  If not, see https://www.gnu.org/licenses/.
 use fftw::array::AlignedVec;
 use fftw::plan::*;
 use fftw::types::*;
+use nalgebra::{DMatrix, DVector};
+use nalgebra::Complex;
 
 use crate::alg_math::utilities::{
     create_unity_roots, matrix_is_zero_complex, matrix_subtraction, multiply_matrix_complex,
     multiply_vector_complex, round_to_15_f64,
 };
-use nalgebra::Complex;
-use nalgebra::{DMatrix, DVector};
 
 /// will compute a bound for the 'a' value (you should know what it is)
 /// such that solutions for the matrix equation given by the matrix  'matrix'
@@ -299,3 +299,6 @@ pub fn find_bound_complex_wrapper(
         find_bound_complex(matrix, tolerance, m_scale, b_translate)
     }
 }
+
+// type for the numeric adjusters
+pub type Adjusters = (f64, f64, f64);

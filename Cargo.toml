@@ -11,6 +11,7 @@ edition = "2018"
 name = "rustoner_dlliter"
 path = "src/main_dl_lite.rs"
 
+# I'm using for benches purpopses
 # [[bin]]
 # name = "bench"
 # path = "src/bencher.rs"

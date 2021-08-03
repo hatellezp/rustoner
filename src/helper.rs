@@ -44,7 +44,7 @@ use crate::dl_lite::ontology::OntologyDllite;
 // abstract structs and widely use types
 use crate::kb::knowledge_base::{ABox, AggrFn};
 use crate::kb::types::ConflictType;
-use crate::Adjusters;
+use crate::alg_math::bounds::Adjusters;
 
 // execute a command
 
@@ -202,15 +202,13 @@ pub fn rank_abox(
                 }
 
                 // now that we have upscale if possible, we put the value in the abox
-                let mut real_index: usize;
-                let mut value: usize;
                 for (key, value_op) in &before_to_done_matrix {
                     if value_op.is_none() {
-                        real_index = *(virtual_to_real.get(&key).unwrap());
+                        let real_index = *(virtual_to_real.get(&key).unwrap());
                         abq.get_mut(real_index).unwrap().set_value(1.);
                     } else {
-                        value = value_op.unwrap();
-                        real_index = *(virtual_to_real.get(&key).unwrap());
+                        let value = value_op.unwrap();
+                        let real_index = *(virtual_to_real.get(&key).unwrap());
                         abq.get_mut(real_index).unwrap().set_value(rank[value]);
                     }
                 }
@@ -219,7 +217,9 @@ pub fn rank_abox(
                 for i in 0..abq.len() {
                     let abqi = abq.get_mut(i).unwrap();
                     let prevalue = abqi.credibility();
-                    let value = abqi.value().unwrap();
+
+                    // TODO: verify why this is necessary, this value should have been updated in the block before
+                    let value = abqi.value().unwrap_or(1_f64);
 
                     abqi.set_credibility(prevalue * normalization_scale);
                     abqi.set_value(value * normalization_scale);

@@ -1,29 +1,34 @@
 mod alg_math;
-// mod benching;
 
 mod dl_lite;
 mod helper;
 mod interface;
 mod kb;
+mod benching;
 
-use dl_lite::ontology::OntologyDllite;
-use dl_lite::tbox::TBDllite;
-use dl_lite::tbox_item::TbiDllite;
-use helper::rank_abox;
-use interface::format_constants::*;
-use kb::aggr_functions::*;
-use kb::knowledge_base::{ABox, ABoxItem, Implier, Item, TBox, TBoxItem};
-use kb::types::FileType;
 
-use alg_math::bounds::find_bound_complex_wrapper;
+use crate::dl_lite::ontology::OntologyDllite;
+use crate::dl_lite::tbox::TBDllite;
+use crate::dl_lite::tbox_item::TbiDllite;
+use crate::helper::rank_abox;
+use crate::interface::format_constants::*;
+use crate::kb::aggr_functions::*;
+use crate::kb::knowledge_base::{ABox, ABoxItem, Implier, Item, TBox, TBoxItem};
+use crate::kb::types::FileType;
+
+use crate::alg_math::bounds::find_bound_complex_wrapper;
 
 use rand::Rng;
 use std::time::{Duration, Instant};
 
-use crate::benching::generate_tests::{
+/*
+use benching::generate_tests::{
     bench_find_bound_complex_wrapper_simple, generate_random_aggr_matrix_simple,
     generate_random_prevalues_simple,
 };
+
+ */
+
 use crate::benching::utilities::pretty_print_matrix;
 use nalgebra::{max, min};
 
@@ -36,6 +41,9 @@ use regex::Regex;
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::{fs, io};
+use crate::dl_lite::abox::AbqDllite;
+
+use crate::alg_math::bounds::Adjusters;
 
 /*
 What I need to do:
@@ -50,7 +58,7 @@ What I need to do:
 
 const onto_path: &str = "benchmark_files/onto/";
 const symbols_path: &str = "benchmark_files/onto/symbols.txt";
-const all_file_type: FileType = FileType::NATIVE;
+const all_file_type: FileType = FileType::Native;
 const verbose: bool = false;
 const bench_time_file_path: &str = "benchmark_files/bench_time.csv";
 
@@ -78,6 +86,7 @@ pub fn main() {
 
     let densities: Vec<f64> = vec![0.2, 0.4, 0.6, 0.8, 1_f64];
 
+    /*
     bench_bound_finding(
         lower_size,
         upper_size,
@@ -87,6 +96,9 @@ pub fn main() {
         &densities,
         filename,
     );
+
+     */
+    compute_all_benches();
 }
 
 pub fn bench_bound_finding(
@@ -223,7 +235,7 @@ pub fn compute_all_benches() {
     println!("writting header line to {}", &bench_time_file_path);
     {
         let mut file = File::create(bench_time_file_path).unwrap();
-        write!(file, "id,chain,depth,tbis,iteration,abis,verify_tbox,unravel_tbox,complete_tbox,verify_abox,complete_abox,unravel_abox,conflict_matrix,rank_abox\n");
+        write!(file, "id,chain,depth,tbis,iteration,abis,verify_tbox,unravel_tbox,verify_abox,unravel_abox,conflict_matrix,rank_abox\n");
     }
 
     let mut entries = fs::read_dir(onto_path)
@@ -240,7 +252,7 @@ pub fn compute_all_benches() {
     //                          abox unraveling time, conflict matrix generation time, bound computing time)
     let mut time_hashmap: HashMap<
         (usize, usize, usize, usize, usize, usize),
-        (f64, f64, f64, f64, f64, f64, f64, f64),
+        (f64, f64, f64, f64, f64, f64),
     > = HashMap::new();
 
     for p in entries {
@@ -283,13 +295,16 @@ pub fn compute_all_benches() {
 
         // measure verify tbox
         let deduction_tree = false;
+        let negative_only = 1_i8;
+        let which_closure = true;
 
         let now = Instant::now();
 
-        let new_tb = onto.complete_tbox(deduction_tree, verbose);
+        onto.generate_cln(deduction_tree, verbose, negative_only);
+        let full_closure = onto.cln(which_closure);
 
         let mut tbox_contradiction_counter: usize = 0;
-        for tbi in new_tb.items() {
+        for tbi in full_closure.items() {
             if tbi.is_contradiction() && !tbi.is_trivial() {
                 tbox_contradiction_counter += 1;
                 break;
@@ -312,24 +327,14 @@ pub fn compute_all_benches() {
 
         let now = Instant::now();
 
-        let new_tb = onto.complete_tbox(deduction_tree, verbose);
+        onto.generate_cln(deduction_tree, verbose, negative_only);
+        let full_closure = onto.cln(which_closure);
 
         let unravel_tbox_time = now.elapsed().as_secs_f64();
 
         println!("  --  unravel tbox time:  {}", unravel_tbox_time);
         // end of unravel tbox
 
-        // measure complete tbox
-        let deduction_tree = false;
-
-        let now = Instant::now();
-
-        let new_tb = onto.complete_tbox(deduction_tree, verbose);
-
-        let complete_tbox_time = now.elapsed().as_secs_f64();
-
-        println!("  --  complete tbox time: {}", complete_tbox_time);
-        // end of complete tbox
         // end of tbox related tasks
 
         // here we create the tbox that we need for the other tasks
@@ -337,15 +342,19 @@ pub fn compute_all_benches() {
         onto.add_symbols_from_file(symbols_path, all_file_type, verbose);
         onto.add_tbis_from_file(&path_to_tbox, all_file_type, verbose);
 
-        let new_tb = onto.complete_tbox(true, verbose);
-        // let tbis_to_add: Vec<&TbiDllite> = new_tb.items().map(|x| x).collect::<Vec<&TbiDllite>>();
-        onto.add_tbis_from_vec(new_tb.items());
+        onto.generate_cln(false, false, 0_i8);
+        let neg_closure = onto.cln(false).clone();
+        let full_closure = onto.cln(true).clone();
 
         // now this tbox is complete for the task
 
         for inner_p in inner_entries {
             let inner_p_str = inner_p.to_str().unwrap();
             let (abox_name, a) = extract_abox_from_path(inner_p_str);
+
+            if a >= 2000 {
+                continue
+            }
 
             let path_to_abox = String::from(inner_p_str);
 
@@ -385,45 +394,34 @@ pub fn compute_all_benches() {
                 // measure verify abox
                 onto.new_abox_from_file_quantum(&path_to_abox, all_file_type, verbose);
 
-                let deduction_tree = true;
+                let abox = onto.abox().unwrap();
+                let deduction_tree = false;
 
                 let now = Instant::now();
 
-                let abox_completed = onto.complete_abox(deduction_tree, verbose).unwrap();
-
-                let contradictions = abox_completed.is_inconsistent_detailed(onto.tbox(), verbose);
+                let (abox_is_inconsistent, _) = AbqDllite::is_inconsistent_refs_only(abox.items_by_ref(), &neg_closure, false);
 
                 let verify_abox_time = now.elapsed().as_secs_f64();
 
-                if !contradictions.is_empty() {
+                if abox_is_inconsistent {
                     println!("    --  INFO: abox is inconsistent");
                 }
 
                 println!("    --  verify abox time: {}", verify_abox_time);
                 // end verify abox
 
-                // measure complete abox
-                onto.new_abox_from_file_quantum(&path_to_abox, all_file_type, verbose);
-
-                let deduction_tree = false;
-
-                let now = Instant::now();
-
-                let abox_completed = onto.complete_abox(deduction_tree, verbose).unwrap();
-
-                let complete_abox_time = now.elapsed().as_secs_f64();
-
-                println!("    --  complete abox time: {}", complete_abox_time);
-                // end complete abox
-
                 // measure unravel abox
                 onto.new_abox_from_file_quantum(&path_to_abox, all_file_type, verbose);
+                let abox = onto.abox().unwrap();
 
                 let deduction_tree = true;
 
                 let now = Instant::now();
 
-                let abox_complete = onto.complete_abox(deduction_tree, verbose).unwrap();
+                /*
+                for the moment I'm forgetting this one, is really expensive and only exploratory
+                let abox_complete = abox.complete(&full_closure, true, false);
+                 */
 
                 let unravel_abox_time = now.elapsed().as_secs_f64();
 
@@ -432,13 +430,14 @@ pub fn compute_all_benches() {
 
                 // measure conflict matrix
                 onto.new_abox_from_file_quantum(&path_to_abox, all_file_type, verbose);
+                let abox = onto.abox().unwrap();
 
                 let deduction_tree = false;
 
                 let now = Instant::now();
 
                 let (before_matrix, real_to_virtual, virtual_to_real) =
-                    onto.conflict_matrix(onto.abox().unwrap(), deduction_tree, verbose);
+                    onto.conflict_matrix_refs_only(onto.abox().unwrap(), false);
 
                 let conflict_matrix_time = now.elapsed().as_secs_f64();
 
@@ -447,27 +446,26 @@ pub fn compute_all_benches() {
 
                 // measure rank abox
                 onto.new_abox_from_file_quantum(&path_to_abox, all_file_type, verbose);
+                let mut abox = onto.abox().unwrap().clone();
 
                 let deduction_tree = false;
                 let aggr = AGGR_SUM;
-                let mut abox = onto.abox().unwrap().clone();
 
                 let now = Instant::now();
 
                 // to remove the matrix computation from the rank computation
                 let (before_matrix, real_to_virtual, virtual_to_real) =
-                    onto.conflict_matrix(onto.abox().unwrap(), deduction_tree, verbose);
+                    onto.conflict_matrix_refs_only(onto.abox().unwrap(), false);
 
                 let conflict_matrix_time_prov = now.elapsed().as_secs_f64();
 
+                let adjusters: Adjusters = (TOLERANCE, M_SCALER, B_TRANSLATE);
                 let (before_matrix, virtual_to_real, conflict_type) = rank_abox(
                     &onto,
                     &mut abox,
                     deduction_tree,
                     aggr,
-                    TOLERANCE,
-                    M_SCALER,
-                    B_TRANSLATE,
+                    adjusters,
                     verbose,
                 );
 
@@ -482,9 +480,7 @@ pub fn compute_all_benches() {
                     (
                         verify_tbox_time,
                         unravel_tbox_time,
-                        complete_tbox_time,
                         verify_abox_time,
-                        complete_abox_time,
                         unravel_abox_time,
                         conflict_matrix_time,
                         rank_abox_time,
@@ -496,9 +492,7 @@ pub fn compute_all_benches() {
                     (
                         verify_tbox_time,
                         unravel_tbox_time,
-                        complete_tbox_time,
                         verify_abox_time,
-                        complete_abox_time,
                         unravel_abox_time,
                         conflict_matrix_time,
                         rank_abox_time
@@ -514,7 +508,7 @@ pub fn compute_all_benches() {
                         .unwrap();
 
                     let line = format!(
-                        "{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
+                        "{},{},{},{},{},{},{},{},{},{},{},{}\n",
                         counter,
                         c,
                         d,
@@ -523,9 +517,7 @@ pub fn compute_all_benches() {
                         a,
                         verify_tbox_time,
                         unravel_tbox_time,
-                        complete_tbox_time,
                         verify_abox_time,
-                        complete_abox_time,
                         unravel_abox_time,
                         conflict_matrix_time,
                         rank_abox_time
@@ -591,46 +583,4 @@ pub fn extract_onto_from_path(s: &str) -> String {
     }
 
     v[0].clone()
-}
-
-pub fn some_test() {
-    let n: usize = 3;
-    let low = -10;
-    let high = 10;
-    let sparcity: f64 = 0.4;
-    let epsilon = 0.3;
-    let p = 0.5;
-
-    let iterations: usize = 1000;
-    let N = 100;
-
-    let f = File::create("find_bound_complex_wrapper_simple_bench.csv").unwrap();
-    let mut buf_writter = BufWriter::new(f);
-
-    write!(buf_writter, "size,min, mean, max\n");
-
-    for i in 0..N {
-        let mut min_time = 20_f64;
-        let mut max_time = 0_f64;
-        let mut accum_time = 0_f64;
-
-        for j in 0..iterations {
-            let aggr_matrix = generate_random_aggr_matrix_simple(i, low, high, sparcity);
-
-            let elapsed = bench_find_bound_complex_wrapper_simple(aggr_matrix);
-
-            min_time = min_time.min(elapsed);
-            max_time = max_time.max(elapsed);
-            accum_time += elapsed;
-        }
-
-        let mean_time = accum_time / (iterations as f64);
-        println!("for size {}: <range: {}, iterations: {}, interval: [{}, {}], sparcity: {}>\n  min:  {}\n  max:  {}\n  mean: {}", i, N, iterations, low, high, sparcity, min_time, max_time, mean_time);
-
-        write!(
-            buf_writter,
-            "{},{},{},{}\n",
-            i, min_time, mean_time, max_time
-        );
-    }
 }

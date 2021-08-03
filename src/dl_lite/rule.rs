@@ -402,14 +402,13 @@ pub fn dl_lite_closure_negative_five(
         (_, _) => None,
     };
 
-    if DLType::all_roles(tbi.lside().t(), tbi.rside().t()) && tbi.lside().is_negation(tbi.rside()) {
+    if DLType::all_roles(tbi.lside().t(), tbi.rside().t()) && tbi.lside().is_negation(tbi.rside()) && !tbi.lside().is_purely_negated() {
         let r_inv = tbi.lside().clone().inverse().unwrap();
-        let r_inv_neg = r_inv.clone().negate();
 
-        let tbi1_op = TbiDllite::new(r_inv.exists().unwrap(), r_inv_neg.exists().unwrap(), level);
+        let tbi1_op = TbiDllite::new(r_inv.clone().exists().unwrap(), r_inv.exists().unwrap().negate(), level);
         let tbi2_op = TbiDllite::new(
             tbi.lside().clone().exists().unwrap(),
-            tbi.rside().clone().exists().unwrap(),
+            tbi.lside().clone().exists().unwrap().negate(),
             level,
         );
 
@@ -457,7 +456,7 @@ pub fn dl_lite_closure_positive_seven(
 ) -> Option<Vec<TbiDllite>> {
     let (tbi1, tbi2, level) = dl_lite_closure_decompact_vec(&vec);
 
-    if DLType::all_roles(tbi1.lside().t(), tbi1.lside().t())
+    if DLType::all_roles(tbi1.lside().t(), tbi1.lside().t()) && !tbi1.rside().is_purely_negated()
         && tbi2.rside().t() == DLType::ExistsConcept
         && ItemDllite::child(Some(tbi2.rside()), 1).unwrap()[0] == tbi1.lside()
     {
@@ -480,7 +479,7 @@ pub fn dl_lite_closure_positive_eight(
 ) -> Option<Vec<TbiDllite>> {
     let (tbi1, tbi2, level) = dl_lite_closure_decompact_vec(&vec);
 
-    if DLType::all_roles(tbi1.lside().t(), tbi1.rside().t())
+    if DLType::all_roles(tbi1.lside().t(), tbi1.rside().t()) && !tbi1.rside().is_purely_negated()
         && tbi2.rside().t() == DLType::ExistsConcept
         && ItemDllite::child(Some(tbi2.rside()), 1).unwrap()[0].is_inverse(tbi1.lside())
     {

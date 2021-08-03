@@ -20,6 +20,16 @@ along with this program.  If not, see https://www.gnu.org/licenses/.
 // =================================================================================================
 // MODULE DECLARATION
 
+use std::path::PathBuf;
+
+// for cli interface, need to import it so the interface module works
+use structopt::StructOpt;
+
+// from the interface module
+use crate::interface::cli::{AggrName, Cli, Task};
+// (for dot -args blabla, create a pdf image)
+use crate::tasks::{task_abox_related, task_tbox_related};
+
 mod alg_math; // this module is for computing the rank, matrix manipulation and interpolation are
               // defined here
 mod dl_lite; // dl_lite reasoner is in this module
@@ -34,16 +44,6 @@ mod tasks;
 
 // =================================================================================================
 // STRUCTS AND FUNCTION IMPORTS
-
-// for cli interface, need to import it so the interface module works
-use structopt::StructOpt;
-
-// from the interface module
-use crate::interface::cli::{AggrName, Cli, Task};
-
-// (for dot -args blabla, create a pdf image)
-use crate::tasks::{task_abox_related, task_tbox_related};
-use std::path::PathBuf;
 
 // END OF IMPORTS
 // =================================================================================================
@@ -61,9 +61,6 @@ type ABoxRelatedPaths<'a> = (
     &'a Option<PathBuf>,
     &'a Option<PathBuf>,
 );
-
-// type for the numeric adjusters
-pub type Adjusters = (f64, f64, f64);
 
 // END OF TYPE DECLARATION
 // =================================================================================================
