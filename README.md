@@ -17,7 +17,7 @@ questions (queries), know if there are problems in your data (consistency verifi
 for implicit information in your data (reason and inference).
 
 ### Why
-There are already several __DL__ reasoners, even for more complex logics than *dl_line_r*,
+There are already several __DL__ reasoners, even for more complex logics than *dl_lite_r*,
 you can go [here](http://owl.cs.manchester.ac.uk/tools/list-of-reasoners/) for a 
 (non exhaustive) list of them.
 The objective of this reasoner is to implement quantification of inconsistency.
@@ -61,7 +61,7 @@ README functions also as a tutorial and it's shipped with both types of releases
 ### Notation
 
 While support is being added for other syntax, the more easy one is the native one.
-To declare a tbox write a file (for example) __are_me_mortals__:
+To declare a tbox write a file (for example) __are_men_mortals__:
 ```
 // this file is: are_men_mortals
 BEGINSYMBOL
