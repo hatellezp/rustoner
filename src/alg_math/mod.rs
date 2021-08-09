@@ -23,6 +23,7 @@ along with this program.  If not, see https://www.gnu.org/licenses/.
 //! manipulation and Fast Fourier Transform operations.
 
 pub mod bounds;
+pub mod polynomial_roots;
 pub mod interface;
 pub mod matrix_building;
 pub mod utilities;
