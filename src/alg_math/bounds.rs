@@ -38,6 +38,7 @@ use crate::alg_math::utilities::{
 };
 use nalgebra::Complex;
 use nalgebra::{DMatrix, DVector};
+use crate::alg_math::polynomial_roots::{find_bound_on_polynomial_roots, Method};
 
 /// will compute a bound for the 'a' value (you should know what it is)
 /// such that solutions for the matrix equation given by the matrix  'matrix'
@@ -197,8 +198,6 @@ fn find_bound_complex(
            each polynomial is not necessarily of degree n-2, to compute the bound (Cauchy bound)
             on the roots we need the real degree of each of those polynomials
         */
-        let mut possible_coeff_real: f64;
-        let mut max_coeff: f64;
         current_max = 1.; // to avoid zero related problems
 
         for ind_pi in 0..(n - 1) {
@@ -228,47 +227,49 @@ fn find_bound_complex(
                                                                     // tolerance is there to avoid 0 related problems
 
                 // we still need to find the real degree
-                let mut real_degree: Option<usize> = Option::None;
 
-                // the tolerance value set what we consider as zero or not
-                possible_coeff_real = tolerance / 2.;
-                max_coeff = tolerance / 2.;
+                // create vector from the real part of out_vector
+                // I think I will round every element that I pass to the polynomial
+                // rounding is done before passing the polynomial to root finding algorithms
+                let mut polynomial: Vec<f64> = out_vector.iter().map(|x| round_to_15_f64(x.re)).collect::<Vec<f64>>();
+                let methods = [Method::CauchyOriginal, Method::CauchySquare];
+                let polynomial_length = polynomial.len();
+                let mut bound_found = 0_f64;
+                let mut a_bound_was_found = false;
 
-                for i in 0..n_samples {
-                    // this scaling is unnecessary
-                    possible_coeff_real = out_vector[n_samples - i - 1].re;
+                println!("polynomial: {:?}", &polynomial);
+                for method in &methods {
+                    let new_bound_found = find_bound_on_polynomial_roots(&mut polynomial, polynomial_length, tolerance, *method);
 
-                    /*
-                    also here I'm introducing the rounding, this purges rounding errors due
-                    to sine and cosine computations
-                     */
-                    possible_coeff_real = round_to_15_f64(possible_coeff_real);
+                    println!("  {:?}: {}", method, new_bound_found);
 
-                    if possible_coeff_real.abs() > tolerance {
-                        real_degree = Some(n_samples - i - 1);
-                        max_coeff = possible_coeff_real;
-                        break;
+                    if a_bound_was_found {
+                        bound_found = bound_found.min(new_bound_found);
                     } else {
-                        continue;
+                        bound_found = new_bound_found;
+                        a_bound_was_found = true;
                     }
-                }
 
-                // recast real_degree
-                let real_degree = real_degree.unwrap_or(0); // something bad happened here
-
-                // now that we have the real degree we compute the bound
-                // where the max comprehend all polynomials
-                for i in 0..real_degree {
-                    let real_value_coeff: f64 = -out_vector[i].re;
-                    let result = real_value_coeff / max_coeff;
-                    current_max = current_max.max(result);
                 }
+                println!("-----------------------------------------------------------------------");
+
+                // update, don't overwrite
+
+                println!("current max before update: {}", current_max);
+                current_max = current_max.max(bound_found);
+                println!("current max after update: {}", current_max);
             }
         }
 
         // now unscale (the value was scaled because of the matrix) and deplace to avoid
         // undefined effects near the bound
-        let bound = (current_max + b_translate) * (1. * prov_scale);
+        // let bound = (current_max + b_translate) * (1. * prov_scale);
+
+
+        println!("prebound: {} and scale: {}", current_max, prov_scale);
+        let bound = (current_max) * (0.5 + prov_scale);
+
+        println!("the bound found is : {}", bound);
 
         Some(bound)
     }
