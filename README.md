@@ -675,3 +675,12 @@ You can compile yourself the project or simply take the binary in ```bin```.
 ### LICENSE
 
 [GPLV3+](LICENSE)
+
+### Trivia
+
+The complexity curve of the ranking algorithm looks like this (benching 
+interpolation, should have done
+with Fourier too...):
+```
+-3.20298×10^-15 x^6 + 4.93717×10^-12 x^5 - 1.62767×10^-9 x^4 + 2.97294×10^-7 x^3 - 1.06346×10^-6 x^2 - 0.000120952 x + 0.00170206
+```
