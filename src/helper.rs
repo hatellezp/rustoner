@@ -42,9 +42,9 @@ use crate::alg_math::utilities::{median, solve_system_wrapper_only_id_mod};
 use crate::dl_lite::abox::AbqDllite;
 use crate::dl_lite::ontology::OntologyDllite;
 // abstract structs and widely use types
+use crate::alg_math::bounds::Adjusters;
 use crate::kb::knowledge_base::{ABox, AggrFn};
 use crate::kb::types::ConflictType;
-use crate::alg_math::bounds::Adjusters;
 
 // execute a command
 

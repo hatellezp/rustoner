@@ -31,8 +31,8 @@ along with this program.  If not, see https://www.gnu.org/licenses/.
 use fftw::array::AlignedVec;
 use fftw::plan::*;
 use fftw::types::*;
-use nalgebra::{DMatrix, DVector};
 use nalgebra::Complex;
+use nalgebra::{DMatrix, DVector};
 
 use crate::alg_math::utilities::{
     create_unity_roots, matrix_is_zero_complex, matrix_subtraction, multiply_matrix_complex,
@@ -45,10 +45,10 @@ use crate::alg_math::polynomial_roots::{find_bound_on_polynomial_roots, Method};
 /// such that solutions for the matrix equation given by the matrix  'matrix'
 /// are rank equivalent (you should also know what it is)
 fn find_bound_complex(
-    mut matrix: DMatrix<Complex<f64>>,
+    matrix: &mut DMatrix<Complex<f64>>,
     tolerance: f64,
     m_scale: f64,
-    b_translate: f64,
+    _b_translate: f64,
 ) -> Option<f64> {
     // I love to keep values these values such that I can stop calling for them
     let rows = matrix.nrows();
@@ -72,7 +72,7 @@ fn find_bound_complex(
         }
 
         // if the matrix is null the bound is 1, easy peasy
-        if matrix_is_zero_complex(&matrix) {
+        if matrix_is_zero_complex(matrix) {
             return Some(1_f64);
         }
 
@@ -88,7 +88,8 @@ fn find_bound_complex(
             current_max = 0.;
 
             for j in 0..n {
-                let complex_abs = (&matrix)[(i, j)].norm_sqr().sqrt();
+                // let complex_abs = (&matrix)[(i, j)].norm_sqr().sqrt();
+                let complex_abs = (matrix)[(i, j)].norm_sqr().sqrt();
 
                 current_max += complex_abs;
             }
@@ -104,7 +105,8 @@ fn find_bound_complex(
         };
 
         // scale the matrix to guaranteed invertibility
-        multiply_matrix_complex(&mut matrix, scale);
+        // multiply_matrix_complex(&mut matrix, scale);
+        multiply_matrix_complex(matrix, scale);
 
         /*
             so at this point the matrix has been scaled (don't forget this)
@@ -157,7 +159,8 @@ fn find_bound_complex(
 
             // compute (un*1 - m)
             multiply_matrix_complex(&mut identity, root);
-            matrix_subtraction(&mut identity, &matrix);
+            // matrix_subtraction(&mut identity, &matrix);
+            matrix_subtraction(&mut identity, matrix);
 
             // temp indentity to LU decomposition
             let mut temp_identity: DMatrix<Complex<f64>> =
@@ -232,17 +235,30 @@ fn find_bound_complex(
                 // create vector from the real part of out_vector
                 // I think I will round every element that I pass to the polynomial
                 // rounding is done before passing the polynomial to root finding algorithms
-                let mut polynomial: Vec<f64> = out_vector.iter().map(|x| round_to_15_f64(x.re)).collect::<Vec<f64>>();
-                let methods = [Method::CauchyOriginal, Method::CauchySquare];
+                let mut polynomial: Vec<f64> = out_vector
+                    .iter()
+                    .map(|x| round_to_15_f64(x.re))
+                    .collect::<Vec<f64>>();
+                let methods = [
+                    // Method::CauchyOriginal,
+                    // Method::CauchySquare,
+                    Method::CauchyCubic,
+                    // Method::CauchyQuad,
+                ];
                 let polynomial_length = polynomial.len();
                 let mut bound_found = 0_f64;
                 let mut a_bound_was_found = false;
 
-                println!("polynomial: {:?}", &polynomial);
+                // println!("polynomial: {:?}", &polynomial);
                 for method in &methods {
-                    let new_bound_found = find_bound_on_polynomial_roots(&mut polynomial, polynomial_length, tolerance, *method);
+                    let new_bound_found = find_bound_on_polynomial_roots(
+                        &mut polynomial,
+                        polynomial_length,
+                        tolerance,
+                        *method,
+                    );
 
-                    println!("  {:?}: {}", method, new_bound_found);
+                    // println!("  --  {:?}: {}", method, new_bound_found);
 
                     if a_bound_was_found {
                         bound_found = bound_found.min(new_bound_found);
@@ -250,15 +266,15 @@ fn find_bound_complex(
                         bound_found = new_bound_found;
                         a_bound_was_found = true;
                     }
-
                 }
-                println!("-----------------------------------------------------------------------");
+                // println!("");
+                // println!("-----------------------------------------------------------------------");
 
                 // update, don't overwrite
 
-                println!("current max before update: {}", current_max);
+                // println!("current max before update: {}", current_max);
                 current_max = current_max.max(bound_found);
-                println!("current max after update: {}", current_max);
+                // println!("current max after update: {}", current_max);
             }
         }
 
@@ -266,11 +282,9 @@ fn find_bound_complex(
         // undefined effects near the bound
         // let bound = (current_max + b_translate) * (1. * prov_scale);
 
-
-        println!("prebound: {} and scale: {}", current_max, prov_scale);
+        // println!("prebound: {} and scale: {}", current_max, prov_scale);
         let bound = (current_max) * (0.5 + prov_scale);
-
-        println!("the bound found is : {}", bound);
+        // println!("  --  the bound found is : {}", bound);
 
         Some(bound)
     }
@@ -296,9 +310,9 @@ pub fn find_bound_complex_wrapper(
         Option::None
     } else {
         let matrix: DMatrix<f64> = DMatrix::from_vec(n, n, v);
-        let matrix: DMatrix<Complex<f64>> = matrix.cast::<Complex<f64>>();
+        let mut matrix: DMatrix<Complex<f64>> = matrix.cast::<Complex<f64>>();
 
-        find_bound_complex(matrix, tolerance, m_scale, b_translate)
+        find_bound_complex(&mut matrix, tolerance, m_scale, b_translate)
     }
 }
 

@@ -7,19 +7,15 @@ use tempfile::NamedTempFile;
 
 use crate::alg_math::bounds::Adjusters;
 
-use crate::{
-    ABoxRelatedPaths, B_TRANSLATE, COMMAND_SHELL_LINUX, COMMAND_SHELL_WINDOWS,
-    DOT_COMMAND_LINUX, DOT_COMMAND_WINDOWS, M_SCALE, TBoxRelatedPaths, TOLERANCE,
-};
 use crate::alg_math::utilities::null_vector;
 use crate::dl_lite::abox::AbqDllite;
 use crate::dl_lite::native_filetype_utilities::abox_to_native_string_quantum;
 use crate::dl_lite::ontology::OntologyDllite;
+use crate::dl_lite::string_formatter::create_string_for_unravel_conflict_abox;
+use crate::dl_lite::string_formatter::pretty_print_abiq_conflict;
 use crate::dl_lite::string_formatter::{
     create_string_for_gencontb, create_string_for_unravel_conflict_tbox, tbi_to_string,
 };
-use crate::dl_lite::string_formatter::create_string_for_unravel_conflict_abox;
-use crate::dl_lite::string_formatter::pretty_print_abiq_conflict;
 use crate::dl_lite::tbox_item::TbiDllite;
 use crate::dl_lite::utilities::create_aboxq_graph_dot;
 use crate::graph_maker::{
@@ -31,8 +27,12 @@ use crate::interface::cli::AggrName;
 use crate::interface::cli::Task;
 use crate::interface::utilities::{get_filetype, parse_name_from_filename, write_str_to_file};
 use crate::kb::aggr_functions::{AGGR_COUNT, AGGR_MAX, AGGR_MEAN, AGGR_MIN, AGGR_SUM};
-use crate::kb::knowledge_base::{TBox, TBoxItem};
 use crate::kb::knowledge_base::ABox;
+use crate::kb::knowledge_base::{TBox, TBoxItem};
+use crate::{
+    ABoxRelatedPaths, TBoxRelatedPaths, B_TRANSLATE, COMMAND_SHELL_LINUX, COMMAND_SHELL_WINDOWS,
+    DOT_COMMAND_LINUX, DOT_COMMAND_WINDOWS, M_SCALE, TOLERANCE,
+};
 
 // ===============================================================================================
 // THESE ARE THE TASKS RELATED TO TBOXES

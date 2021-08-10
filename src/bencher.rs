@@ -1,25 +1,23 @@
 mod alg_math;
 
+mod benching;
 mod dl_lite;
 mod helper;
 mod interface;
 mod kb;
-mod benching;
-
 
 use crate::dl_lite::ontology::OntologyDllite;
-use crate::dl_lite::tbox::TBDllite;
-use crate::dl_lite::tbox_item::TbiDllite;
+
 use crate::helper::rank_abox;
-use crate::interface::format_constants::*;
+
 use crate::kb::aggr_functions::*;
-use crate::kb::knowledge_base::{ABox, ABoxItem, Implier, Item, TBox, TBoxItem};
+use crate::kb::knowledge_base::{ABox, TBox, TBoxItem};
 use crate::kb::types::FileType;
 
 use crate::alg_math::bounds::find_bound_complex_wrapper;
 
 use rand::Rng;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 /*
 use benching::generate_tests::{
@@ -29,19 +27,14 @@ use benching::generate_tests::{
 
  */
 
-use crate::benching::utilities::pretty_print_matrix;
-use nalgebra::{max, min};
-
 use std::fs::{File, OpenOptions};
 use std::io::prelude::*;
-use std::io::BufWriter;
-use std::ptr::write_bytes;
 
+use crate::dl_lite::abox::AbqDllite;
 use regex::Regex;
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::{fs, io};
-use crate::dl_lite::abox::AbqDllite;
 
 use crate::alg_math::bounds::Adjusters;
 
@@ -86,7 +79,7 @@ pub fn main() {
 
     let densities: Vec<f64> = vec![0.2, 0.4, 0.6, 0.8, 1_f64];
 
-    /*
+    // /*
     bench_bound_finding(
         lower_size,
         upper_size,
@@ -97,8 +90,8 @@ pub fn main() {
         filename,
     );
 
-     */
-    compute_all_benches();
+    // */
+    // compute_all_benches();
 }
 
 pub fn bench_bound_finding(
@@ -112,7 +105,7 @@ pub fn bench_bound_finding(
 ) {
     // prepare file:
     // first remove file
-    let o = fs::remove_file(filename);
+    let _o = fs::remove_file(filename);
 
     println!(
         "INFO: size between [{}, {}], iterations: {}, values in [{}, {}], file name: {}",
@@ -127,9 +120,8 @@ pub fn bench_bound_finding(
 
     let mut rng = rand::thread_rng();
 
-
     // we keep: (size, density, iteration): (time, ratio of zeroes, ratio of clean values)
-    let mut stats: Vec<((usize, f64, usize), (f64, f64, f64))> = Vec::new();
+    let _stats: Vec<((usize, f64, usize), (f64, f64, f64))> = Vec::new();
 
     let mut counter: usize = 0;
 
@@ -230,7 +222,7 @@ pub fn compute_all_benches() {
 
     // prepare file:
     // first remove file
-    let o = fs::remove_file(bench_time_file_path);
+    let _o = fs::remove_file(bench_time_file_path);
 
     println!("writting header line to {}", &bench_time_file_path);
     {
@@ -238,7 +230,7 @@ pub fn compute_all_benches() {
         write!(file, "id,chain,depth,tbis,iteration,abis,verify_tbox,unravel_tbox,verify_abox,unravel_abox,conflict_matrix,rank_abox\n");
     }
 
-    let mut entries = fs::read_dir(onto_path)
+    let entries = fs::read_dir(onto_path)
         .unwrap()
         .map(|res| res.map(|e| e.path()))
         .collect::<Result<Vec<_>, io::Error>>()
@@ -274,7 +266,7 @@ pub fn compute_all_benches() {
         // println!("path to aboxes: {:?}", &path_to_aboxes);
         // println!("path to tbox: {:?}", &path_to_tbox);
 
-        let mut inner_entries = fs::read_dir(path_to_aboxes)
+        let inner_entries = fs::read_dir(path_to_aboxes)
             .unwrap()
             .map(|res| res.map(|e| e.path()))
             .collect::<Result<Vec<_>, io::Error>>()
@@ -323,12 +315,12 @@ pub fn compute_all_benches() {
 
         // measure unravel tbox time
         let deduction_tree = true;
-        let dont_write_trivial = true;
+        let _dont_write_trivial = true;
 
         let now = Instant::now();
 
         onto.generate_cln(deduction_tree, verbose, negative_only);
-        let full_closure = onto.cln(which_closure);
+        let _full_closure = onto.cln(which_closure);
 
         let unravel_tbox_time = now.elapsed().as_secs_f64();
 
@@ -344,7 +336,7 @@ pub fn compute_all_benches() {
 
         onto.generate_cln(false, false, 0_i8);
         let neg_closure = onto.cln(false).clone();
-        let full_closure = onto.cln(true).clone();
+        let _full_closure = onto.cln(true).clone();
 
         // now this tbox is complete for the task
 
@@ -353,7 +345,7 @@ pub fn compute_all_benches() {
             let (abox_name, a) = extract_abox_from_path(inner_p_str);
 
             if a >= 2000 {
-                continue
+                continue;
             }
 
             let path_to_abox = String::from(inner_p_str);
@@ -361,7 +353,7 @@ pub fn compute_all_benches() {
             // println!("    aboxes: {:?}, abox name: {}, a: {}", &inner_p, &abox_name, a);
             let clone_tbox_name = tbox_name.clone();
 
-            let value = (
+            let _value = (
                 counter,
                 String::from(p.to_str().unwrap()),
                 String::from(path_to_tbox),
@@ -375,7 +367,7 @@ pub fn compute_all_benches() {
                 a,
             );
 
-            let mut tbox_abox_complexity = a * tbi;
+            let tbox_abox_complexity = a * tbi;
             let tbox_abox_complexity = (tbox_abox_complexity as f64) / (COMPLEXITY_LIMIT as f64);
 
             if tbox_abox_complexity <= 1_f64 {
@@ -395,11 +387,12 @@ pub fn compute_all_benches() {
                 onto.new_abox_from_file_quantum(&path_to_abox, all_file_type, verbose);
 
                 let abox = onto.abox().unwrap();
-                let deduction_tree = false;
+                let _deduction_tree = false;
 
                 let now = Instant::now();
 
-                let (abox_is_inconsistent, _) = AbqDllite::is_inconsistent_refs_only(abox.items_by_ref(), &neg_closure, false);
+                let (abox_is_inconsistent, _) =
+                    AbqDllite::is_inconsistent_refs_only(abox.items_by_ref(), &neg_closure, false);
 
                 let verify_abox_time = now.elapsed().as_secs_f64();
 
@@ -412,9 +405,9 @@ pub fn compute_all_benches() {
 
                 // measure unravel abox
                 onto.new_abox_from_file_quantum(&path_to_abox, all_file_type, verbose);
-                let abox = onto.abox().unwrap();
+                let _abox = onto.abox().unwrap();
 
-                let deduction_tree = true;
+                let _deduction_tree = true;
 
                 let now = Instant::now();
 
@@ -430,13 +423,13 @@ pub fn compute_all_benches() {
 
                 // measure conflict matrix
                 onto.new_abox_from_file_quantum(&path_to_abox, all_file_type, verbose);
-                let abox = onto.abox().unwrap();
+                let _abox = onto.abox().unwrap();
 
-                let deduction_tree = false;
+                let _deduction_tree = false;
 
                 let now = Instant::now();
 
-                let (before_matrix, real_to_virtual, virtual_to_real) =
+                let (_before_matrix, _real_to_virtual, _virtual_to_real) =
                     onto.conflict_matrix_refs_only(onto.abox().unwrap(), false);
 
                 let conflict_matrix_time = now.elapsed().as_secs_f64();
@@ -454,20 +447,14 @@ pub fn compute_all_benches() {
                 let now = Instant::now();
 
                 // to remove the matrix computation from the rank computation
-                let (before_matrix, real_to_virtual, virtual_to_real) =
+                let (_before_matrix, _real_to_virtual, _virtual_to_real) =
                     onto.conflict_matrix_refs_only(onto.abox().unwrap(), false);
 
                 let conflict_matrix_time_prov = now.elapsed().as_secs_f64();
 
                 let adjusters: Adjusters = (TOLERANCE, M_SCALER, B_TRANSLATE);
-                let (before_matrix, virtual_to_real, conflict_type) = rank_abox(
-                    &onto,
-                    &mut abox,
-                    deduction_tree,
-                    aggr,
-                    adjusters,
-                    verbose,
-                );
+                let (_before_matrix, _virtual_to_real, _conflict_type) =
+                    rank_abox(&onto, &mut abox, deduction_tree, aggr, adjusters, verbose);
 
                 let rank_abox_time = now.elapsed().as_secs_f64() - conflict_matrix_time_prov;
 
