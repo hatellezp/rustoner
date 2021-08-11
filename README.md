@@ -4,20 +4,20 @@
 
 [Description Logics](http://dl.kr.org) allow for fast and accurate reasoner systems. 
 It is the main objective of DLs.
-They are the theoric base for [Semantic Web.](https://en.wikipedia.org/wiki/Semantic_Web)
+They are the theoric base for the [Semantic Web.](https://en.wikipedia.org/wiki/Semantic_Web)
 This project has a first objective to implement in [rust](https://www.rust-lang.org/) a reasoner for the simple logic
-[dl_lite_r](https://link.springer.com/article/10.1007/s10817-007-9078-x).
+[__DL_lite_r__](https://link.springer.com/article/10.1007/s10817-007-9078-x).
 
 
 DLs works like model theory, where you have axioms (that we put in a __TBox__) and also some 
 grounded knowledge
 (that we put in __ABoxes__).
-From this you can, under the limitations of the logic that you use (*dl_lite_r* here), ask
+From this you can, under the limitations of the logic that you use (__DL_lite_r__ here), ask
 questions (queries), know if there are problems in your data (consistency verification) and sometimes ask
-for implicit information in your data (reason and inference).
+for implicit information in your data (reasoning and inference).
 
 ### Why
-There are already several __DL__ reasoners, even for more complex logics than *dl_lite_r*,
+There are already several __DL__ reasoners, even for more complex logics than __DL_lite_r__,
 you can go [here](http://owl.cs.manchester.ac.uk/tools/list-of-reasoners/) for a 
 (non exhaustive) list of them.
 The objective of this reasoner is to implement quantification of inconsistency.
@@ -60,7 +60,7 @@ README functions also as a tutorial and it's shipped with both types of releases
 
 ### Notation
 
-While support is being added for other syntax, the more easy one is the native one.
+While support is being added for other syntax, the more easy way in the present is the native syntax.
 To declare a tbox write a file (for example) __are_men_mortals__:
 ```
 // this file is: are_men_mortals
@@ -81,7 +81,7 @@ ENDTBOX
 ```
 
 This tbox says that a man is a human, a human is a mortal, a chicken is also mortal and 
-that human are not chickens.
+that humans are not chickens.
 You begin by declaring the symbols that use and their type:
 ```
 concept: Human
@@ -142,11 +142,11 @@ You have a variety of tasks:
 - TBox related:
     - verify tbox: see if they are potentially contradictions in you axioms
     - generate tree: create tree where edges go from group of axioms to axioms implied by them
-    - complete tbox: generate a tbox with no hidden implications
+   <!---  - complete tbox: generate a tbox with no hidden implications --->
 - ABox related:
   - verify abox: same as tbox, for here conflicts are not potential
   - clean abox: produce a new abox without self conflicting facts
-  - complete abox
+  <!--- - complete abox --->
   - rank abox: produce a rank for the facts in the abox that should reflect their quality
     with respect to inner structure (given by the tbox) and an initial (optional)
     opinion coming from you
