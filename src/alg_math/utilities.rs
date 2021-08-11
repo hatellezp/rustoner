@@ -82,6 +82,17 @@ pub fn create_unity_roots(roots: &mut DVector<Complex<f64>>, n: usize, inverse: 
     }
 }
 
+#[inline]
+pub fn output_unity_root(n: usize, k: usize, inverse: bool) -> Complex<f64> {
+    let t: f64 = if inverse { -1_f64 } else { 1_f64 };
+
+    let arg = (t * 2_f64 * PI * (k as f64)) / (n as f64);
+    let re = round_to_15_f64(arg.cos());
+    let im = round_to_15_f64(arg.sin());
+
+    Complex { re, im }
+}
+
 /// verify that matrix is an all zero matrix
 pub fn matrix_is_zero_complex(matrix: &DMatrix<Complex<f64>>) -> bool {
     // this implementation is more elegant and rust will optimize it for us

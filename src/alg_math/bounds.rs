@@ -35,8 +35,8 @@ use nalgebra::Complex;
 use nalgebra::{DMatrix, DVector};
 
 use crate::alg_math::utilities::{
-    create_unity_roots, matrix_is_zero_complex, matrix_subtraction, multiply_matrix_complex,
-    multiply_vector_complex, round_to_15_f64,
+    matrix_is_zero_complex, matrix_subtraction, multiply_matrix_complex, multiply_vector_complex,
+    output_unity_root, round_to_15_f64,
 };
 
 use crate::alg_math::polynomial_roots::{find_bound_on_polynomial_roots, Method};
@@ -116,9 +116,15 @@ fn find_bound_complex(
 
         // create vector for unity roots, this is a fast fourier transform, we need
         // n-1 unity roots to be capable of interpolate
+
+        // the block below was changed to a unique function that supplies on demand the root,
+        // no need to allocate memory for this
+        /*
         let mut roots: DVector<Complex<f64>> =
             DVector::from_vec(vec![Complex { re: 0., im: 0. }; n_samples]);
         create_unity_roots(&mut roots, n_samples, inverse_roots);
+
+         */
 
         // vector that stores every result
         // N samples
@@ -155,20 +161,37 @@ fn find_bound_complex(
             identity.fill_with_identity();
 
             // retrieve the current root
-            root = roots[ind_sample];
+            // root = roots[ind_sample];
+            // now root is a simple call and no need to store the information somewhere
+            root = output_unity_root(n_samples, ind_sample, inverse_roots);
 
             // compute (un*1 - m)
             multiply_matrix_complex(&mut identity, root);
             // matrix_subtraction(&mut identity, &matrix);
             matrix_subtraction(&mut identity, matrix);
 
+            // TODO: come back here and read the nalgebra documentation
+            //       I think there is something that can be done
+
             // temp indentity to LU decomposition
+            /*
             let mut temp_identity: DMatrix<Complex<f64>> =
                 DMatrix::from_vec(n, n, vec![Complex { re: 0., im: 0. }; n * n]);
             temp_identity.copy_from(&identity);
 
+             */
+
             // solve the system and compute also the determinant
-            let decomp = temp_identity.lu();
+            // let decomp = temp_identity.lu();
+
+            // let decomp = identity.lu();
+            let decomp = identity.clone().lu();
+            /*
+               in any case know that LU decomposition is the faster, but not the
+               most stable, in our case stability is good enough thanks to the
+               Fourier approach, thus for decomposition we prioritize speed
+            */
+
             let mut x: DVector<Complex<f64>> = decomp.solve(&right_vector).unwrap(); // usually this is always solvable
             det = decomp.determinant();
 
@@ -239,6 +262,16 @@ fn find_bound_complex(
                     .iter()
                     .map(|x| round_to_15_f64(x.re))
                     .collect::<Vec<f64>>();
+
+                let polynomial_length = polynomial.len();
+                let bound_found = find_bound_on_polynomial_roots(
+                    &mut polynomial,
+                    polynomial_length,
+                    tolerance,
+                    Method::CauchyCubic,
+                );
+
+                /*
                 let methods = [
                     // Method::CauchyOriginal,
                     // Method::CauchySquare,
@@ -269,6 +302,8 @@ fn find_bound_complex(
                 }
                 // println!("");
                 // println!("-----------------------------------------------------------------------");
+
+                 */
 
                 // update, don't overwrite
 

@@ -8,7 +8,7 @@ pub enum Method {
     CauchyQuad,
 }
 
-pub const principal_cubic_root: (f64, f64) = (-0.5_f64, 0.5_f64 * 1.73205080757_f64);
+// pub const PRINCIPAL_CUBIC_ROOT: (f64, f64) = (-0.5_f64, 0.5_f64 * 1.73205080757_f64);
 
 /*
    something to know here, there is an assumption made for polynomials as arrays:
@@ -73,12 +73,11 @@ pub fn find_bound_on_polynomial_roots(
                the arguments are the following:
                    - polynomial: a ref to an array of doubles
                    - max_coeff, the value of the coefficient of the biggest degree element in polynomial that is not zero
-                   - degree: the length of the polynomial
                    - real degree: the real degree of the polynomial stored, an index between 0 and 'degree', it
                      is a real index, you can (must) use it as an index
             */
 
-            // if the polynomial has degree 2 or less we use original cauchy regardless of the
+            // if the polynomial has degree 3 or less we use original cauchy regardless of the
             // method chosen
 
             if real_degree < 4 {
@@ -95,16 +94,12 @@ pub fn find_bound_on_polynomial_roots(
                     max_coeff,
                     real_degree,
                 ),
-                Method::CauchySquare => find_bound_on_polynomial_roots_cauchy_square(
-                    polynomial,
-                    max_coeff,
-                    real_degree,
-                ),
-                Method::CauchyCubic => find_bound_on_polynomial_roots_cauchy_cubic(
-                    polynomial,
-                    max_coeff,
-                    real_degree,
-                ),
+                Method::CauchySquare => {
+                    find_bound_on_polynomial_roots_cauchy_square(polynomial, max_coeff, real_degree)
+                }
+                Method::CauchyCubic => {
+                    find_bound_on_polynomial_roots_cauchy_cubic(polynomial, max_coeff, real_degree)
+                }
                 Method::CauchyQuad => find_bound_on_polynomial_roots_cauchy_quadratic(
                     polynomial,
                     max_coeff,
@@ -190,6 +185,7 @@ pub fn find_bound_on_polynomial_roots_cauchy_cubic(
     let b = 2_f64 - a_n1;
     let c = 1_f64 - a_n1 - a_n2;
 
+    // TODO: I'm sure this can be implemented by me !!!
     let r = find_roots_cubic(1_f64, b, c, -bound);
 
     1_f64
