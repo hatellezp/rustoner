@@ -73,13 +73,17 @@ pub fn main() {
 
     let lower_size: usize = 500;
     let upper_size: usize = 600;
-    let iterations: usize = 5;
+
+    // let iterations: usize = 5;
+    let iterations: usize = 1;
+
     let lower_value: f64 = 0.5;
     let upper_value: f64 = 1.5;
 
-    let densities: Vec<f64> = vec![0.2, 0.4, 0.6, 0.8, 1_f64];
+    // let densities: Vec<f64> = vec![0.2, 0.4, 0.6, 0.8, 1_f64];
+    let densities: Vec<f64> = vec![0.6];
 
-    // /*
+    /*
     bench_bound_finding(
         lower_size,
         upper_size,
@@ -90,8 +94,8 @@ pub fn main() {
         filename,
     );
 
-    // */
-    // compute_all_benches();
+    */
+    compute_all_benches();
 }
 
 pub fn bench_bound_finding(
@@ -125,7 +129,11 @@ pub fn bench_bound_finding(
 
     let mut counter: usize = 0;
 
-    for size in lower_size..(upper_size + 1) {
+    for ref_size in [10, 20, 50, 100, 200, 400, 800].iter() {
+        let size = *ref_size;
+        println!("size is: {}", size);
+
+    // for size in lower_size..(upper_size + 1) {
         for density in densities {
             let sqrt_density = (1_f64 - *density).sqrt();
 

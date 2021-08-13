@@ -34,6 +34,9 @@ use fftw::types::*;
 use nalgebra::Complex;
 use nalgebra::{DMatrix, DVector};
 
+
+// use num_traits::{ Float, Zero };
+
 use crate::alg_math::utilities::{
     matrix_is_zero_complex, matrix_subtraction, multiply_matrix_complex, multiply_vector_complex,
     output_unity_root, round_to_15_f64,
@@ -172,20 +175,8 @@ fn find_bound_complex(
 
             // TODO: come back here and read the nalgebra documentation
             //       I think there is something that can be done
-
-            // temp indentity to LU decomposition
-            /*
-            let mut temp_identity: DMatrix<Complex<f64>> =
-                DMatrix::from_vec(n, n, vec![Complex { re: 0., im: 0. }; n * n]);
-            temp_identity.copy_from(&identity);
-
-             */
-
-            // solve the system and compute also the determinant
-            // let decomp = temp_identity.lu();
-
-            // let decomp = identity.lu();
             let decomp = identity.clone().lu();
+
             /*
                in any case know that LU decomposition is the faster, but not the
                most stable, in our case stability is good enough thanks to the

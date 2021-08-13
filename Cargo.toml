@@ -27,6 +27,9 @@ path = "src/scratch.rs"
 serde = { version = "*", features = ["derive"] }
 serde_json = "*"
 
+# make the functions using float generics
+num-traits = "0.2"
+
 # for cli interface
 structopt = { version = "0.3", features = ["paw"] }
 paw = "1.0"
