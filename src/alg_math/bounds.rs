@@ -34,7 +34,6 @@ use fftw::types::*;
 use nalgebra::Complex;
 use nalgebra::{DMatrix, DVector};
 
-
 // use num_traits::{ Float, Zero };
 
 use crate::alg_math::utilities::{

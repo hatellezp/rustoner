@@ -230,6 +230,7 @@ pub fn task_generate_consequences_tbox(
                 dot_command_name,
                 tbox_name,
                 silent,
+                false,
             );
         }
     }
@@ -590,7 +591,13 @@ pub fn task_generate_consequences_abox(
         let print_output = ask_question(question_print);
 
         if print_output == Answer::YES {
-            generate_visual_and_dot_output(&dot_notation_output, dot_command_name, ab_name, silent);
+            generate_visual_and_dot_output(
+                &dot_notation_output,
+                dot_command_name,
+                ab_name,
+                silent,
+                false,
+            );
         }
     }
 
@@ -714,7 +721,13 @@ pub fn task_rank_abox(
         let print_output = ask_question(question_print);
 
         if print_output == Answer::YES {
-            generate_visual_and_dot_output(&dot_notation_output, dot_command_name, ab_name, silent);
+            generate_visual_and_dot_output(
+                &dot_notation_output,
+                dot_command_name,
+                ab_name,
+                silent,
+                true,
+            );
         }
     }
 
@@ -749,6 +762,7 @@ pub fn generate_visual_and_dot_output(
     dot_command_name: &str,
     tbox_name: &str,
     silent: bool,
+    ranking: bool,
 ) {
     // here create a temporary file
     let temp_dot_file_res = NamedTempFile::new();
@@ -772,8 +786,11 @@ pub fn generate_visual_and_dot_output(
 
                     let dot_output_format = "pdf";
 
-                    let name_output_file =
-                        format!("{}_consequences.{}", tbox_name, dot_output_format);
+                    let name_output_file = if ranking {
+                        format!("{}_ranking.{}", tbox_name, dot_output_format)
+                    } else {
+                        format!("{}_consequences.{}", tbox_name, dot_output_format)
+                    };
                     let command = format!(
                         "{} -T{} {} -o {}",
                         dot_command_name, dot_output_format, path_to_temp, &name_output_file
