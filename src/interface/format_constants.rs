@@ -85,3 +85,10 @@ pub const UNICODE_RIGHTARROW: &str = "\u{2192}";
 
 // \neg
 pub const UNICODE_NEG: &str = "\u{00AC}";
+
+// \wedge (and)
+pub const UNICODE_WEDGE: &str = "\u{22C0}";
+
+// \vee (or)
+pub const UNICODE_VEE: &str = "\u{22C1}";
+
