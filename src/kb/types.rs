@@ -171,13 +171,14 @@ impl CR {
     /// if rules is to be formatted for TBox rules or ABox rules
     pub fn description(&self, for_tbi: bool) -> String {
         if cfg!(target_os = "windows") {
+            // TODO: correctly format for windows !!
             match self {
                 CR::First => {
                     if for_tbi {
-                        String::from("X < NOT Y -> Y < NOT X")
+                        format!("T{}: X < NOT Y -> Y < NOT X", self.identifier())
                     } else {
                         // if (a,b):r then a:Er and b:Er^⁻
-                        String::from("(a,b): r -> a: Exists r, b: Exists r^-")
+                        format!("A{}: (a,b): r -> a: Exists r, b: Exists r^-", self.identifier())
                     }
                 }
                 CR::Second => {
@@ -243,7 +244,7 @@ impl CR {
                 CR::First => {
                     if for_tbi {
                         format!(
-                            "{}: X{}{}Y {} Y{}{}X",
+                            "T{}: X{}{}Y {} Y{}{}X",
                             self.identifier(),
                             UNICODE_SQSUBSETEQ,
                             UNICODE_NEG,
@@ -254,7 +255,7 @@ impl CR {
                     } else {
                         // if (a,b):r then a:Er and b:Er^⁻
                         format!(
-                            "{}: (a,b):r {} a:{}r, b:{}r^-",
+                            "A{}: (a,b):r {} a:{}r, b:{}r^-",
                             self.identifier(),
                             UNICODE_RIGHTARROW,
                             UNICODE_EXISTS,
@@ -265,7 +266,7 @@ impl CR {
                 CR::Second => {
                     if for_tbi {
                         // r < s AND ( E.s < -X OR X < -E.s) THEN E.r < -X
-                        format!("{}: r{}s {} ({}.s{}{}X {} X{}{}{}.s) {} {}.r{}{}X",
+                        format!("T{}: r{}s {} ({}.s{}{}X {} X{}{}{}.s) {} {}.r{}{}X",
                             self.identifier(),
                             UNICODE_SUBSETEQ,
                             UNICODE_WEDGE,
@@ -284,7 +285,7 @@ impl CR {
                     } else {
                         // if (a,b):r and r < s then (a,b):s
                         format!(
-                            "{}: (a,b):r, r{}s {} (a,b):s",
+                            "A{}: (a,b):r, r{}s {} (a,b):s",
                             self.identifier(),
                             UNICODE_SUBSETEQ,
                             UNICODE_RIGHTARROW,
@@ -295,7 +296,7 @@ impl CR {
                     // third rule: r1=>r2 and B=>notExists_r2 then B=>notExists_r1 and Exists_r1=>notB
                     if for_tbi {
                         // r < s AND ( E.s^- < -X OR X < -E.s^-) THEN E.r^- < -X
-                        format!("{}: r{}s {} ({}.s^-{}{}X {} X{}{}{}.s^-) {} {}.r^-{}{}X",
+                        format!("T{}: r{}s {} ({}.s^-{}{}X {} X{}{}{}.s^-) {} {}.r^-{}{}X",
                             self.identifier(),
                             UNICODE_SUBSETEQ,
                             UNICODE_WEDGE,
@@ -314,7 +315,7 @@ impl CR {
                     } else {
                         // if a:c and c < d then a:d
                         format!(
-                            "{}: a:X, X{}Y {} a:Y",
+                            "A{}: a:X, X{}Y {} a:Y",
                             self.identifier(),
                             UNICODE_SQSUBSETEQ,
                             UNICODE_RIGHTARROW,
@@ -325,7 +326,7 @@ impl CR {
                     // fourth rule: r1=>r2 and B=>notExists_r2_inv then B=>notExists_r1_inv
                     if for_tbi {
                         // r < s AND ( s < -q OR q < -s ) THEN r < -q
-                        format!("{}: r{}s {} (s{}{}q {} q{}{}s) {} r{}{}q",
+                        format!("T{}: r{}s {} (s{}{}q {} q{}{}s) {} r{}{}q",
                             self.identifier(),
                             UNICODE_SUBSETEQ,
                             UNICODE_WEDGE,
@@ -340,7 +341,7 @@ impl CR {
                         )
 
                     } else {
-                        String::from("R4: NONE")
+                        String::from("AR4: NONE")
                     }
                 }
                 CR::Fifth => {
@@ -349,7 +350,7 @@ impl CR {
                         // ( E.r < -E.r OR E.r^- < -E.r^- OR r < -r ) THEN ( E.r < -E.r AND E.r^- < -E.r^- AND r < -r )
                         // TODO: reformat this rule !!!
                         format!(
-                            "{}: {}r{}{}{}r {} r{}{}r, {}r^-{}{}{}r^-",
+                            "T{}: {}r{}{}{}r {} r{}{}r, {}r^-{}{}{}r^-",
                             self.identifier(),
                             UNICODE_EXISTS,
                             UNICODE_SQSUBSETEQ,
@@ -364,13 +365,13 @@ impl CR {
                             UNICODE_EXISTS,
                         )
                     } else {
-                        String::from("R5: NONE")
+                        String::from("AR5: NONE")
                     }
                 }
                 CR::Sixth => {
                     if for_tbi {
                         // ( X < Y AND Y < Z ) THEN  X < Z
-                        format!("{}: X{}Y {} Y{}Z {} X{}Z",
+                        format!("T{}: X{}Y {} Y{}Z {} X{}Z",
                             self.identifier(),
                             UNICODE_SQSUBSETEQ,
                             UNICODE_WEDGE,
@@ -379,7 +380,7 @@ impl CR {
                             UNICODE_SQSUBSETEQ
                         )
                     } else {
-                        String::from("R6: NONE")
+                        String::from("AR6: NONE")
                     }
                 },
                 CR::Seventh => {
@@ -387,7 +388,7 @@ impl CR {
                     if for_tbi {
                         // ( r < s AND  X < E.r) THEN X < E.s
 
-                        format!("{}: r{}s {} X{}{}.r {} X{}{}.s",
+                        format!("T{}: r{}s {} X{}{}.r {} X{}{}.s",
                             self.identifier(),
                             UNICODE_SUBSETEQ,
                             UNICODE_WEDGE,
@@ -399,7 +400,7 @@ impl CR {
                         )
 
                     } else {
-                        String::from("R7: NONE")
+                        String::from("AR7: NONE")
                     }
                 }
                 CR::Eight => {
@@ -408,7 +409,7 @@ impl CR {
                         // ( r < s AND X < E.r^- ) THEN X < E.s^-
 
                         format!(
-                            "{}: r{}s {} r^-{}s^-, {}r{}{}s ",
+                            "T{}: r{}s {} r^-{}s^-, {}r{}{}s ",
                             self.identifier(),
                             UNICODE_SUBSETEQ,
                             UNICODE_RIGHTARROW,
@@ -418,13 +419,13 @@ impl CR {
                             UNICODE_EXISTS
                         )
                     } else {
-                        String::from("R8: NONE")
+                        String::from("AR8: NONE")
                     }
                 },
                 CR::Ninth => {
                     if for_tbi {
                         // ( r < s AND s < q ) THEN r < q
-                        format!("{}: r{}s {} s{}q {} r{}q",
+                        format!("T{}: r{}s {} s{}q {} r{}q",
                             self.identifier(),
                             UNICODE_SUBSETEQ,
                             UNICODE_WEDGE,
@@ -433,14 +434,14 @@ impl CR {
                             UNICODE_SUBSETEQ
                         )
                     } else {
-                        String::from("R9: NONE")
+                        String::from("AR9: NONE")
                     }
 
                 },
                 CR::Tenth => {
                     if for_tbi {
                         // ( r < s OR r^- < s^- ) THEN ( r < s AND r^- < s^- )
-                       format!("{}: (r{}s {} r^-{}s^-) {} (r{}s {} r^-{}s^-)",
+                       format!("T{}: (r{}s {} r^-{}s^-) {} (r{}s {} r^-{}s^-)",
                            self.identifier(),
                            UNICODE_SUBSETEQ,
                            UNICODE_VEE,
@@ -451,7 +452,7 @@ impl CR {
                            UNICODE_SUBSETEQ
                        )
                     } else {
-                        String::from("R10: NONE")
+                        String::from("AR10: NONE")
                     }
                 },
                 // _ => String::from("to be implemented!!!"),
