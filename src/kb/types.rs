@@ -243,15 +243,21 @@ impl CR {
             match self {
                 CR::First => {
                     if for_tbi {
-                        format!(
-                            "T{}: X{}{}Y {} Y{}{}X",
+                        // X < Y AND (Y < -Z or Z < -Y) THEN X < -Z
+                        format!("T:{} X{}Y {} (Y{}{}Z {} Z{}{}Y) {} X{}{}Z",
                             self.identifier(),
+                            UNICODE_SQSUBSETEQ,
+                            UNICODE_WEDGE,
+                            UNICODE_SQSUBSETEQ,
+                            UNICODE_NEG,
+                            UNICODE_VEE,
                             UNICODE_SQSUBSETEQ,
                             UNICODE_NEG,
                             UNICODE_RIGHTARROW,
                             UNICODE_SQSUBSETEQ,
                             UNICODE_NEG
                         )
+
                     } else {
                         // if (a,b):r then a:Er and b:Er^⁻
                         format!(
