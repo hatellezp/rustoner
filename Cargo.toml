@@ -16,6 +16,10 @@ path = "src/main_dl_lite.rs"
 # name = "bench"
 # path = "src/bencher.rs"
 
+[[bin]]
+name = "bench2"
+path = "src/bencher2.rs"
+
 # for useless stuff
 [[bin]]
 name = "scracth"
@@ -27,6 +31,10 @@ path = "src/scratch.rs"
 serde = { version = "*", features = ["derive"] }
 serde_json = "*"
 
+# I'm doing concurrency now
+# crossbeam = "*"
+rayon = "1"
+
 # make the functions using float generics
 num-traits = "0.2"
 
@@ -35,6 +43,7 @@ structopt = { version = "0.3", features = ["paw"] }
 paw = "1.0"
 exitcode = "*"
 question = "0.2.2"
+pad = "0.1.6"
 
 # for combinations of higher complexity logics, unused feature
 itertools = "*"
@@ -56,6 +65,7 @@ tempfile = "3"
 
 # apparently we must import rand, not part of std...
 rand = "*"
+rand_distr = "*"
 
 # for benchmarking
 [dev-dependencies]
