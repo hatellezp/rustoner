@@ -113,10 +113,9 @@ fn find_bound_complex_concurrency(
                 current_max
             };
 
-        let split_of_n = (0..n).collect::<Vec<usize>>();
-        prov_scale = split_of_n
-            .par_iter()
-            .map(|x| find_line_maxes_one(matrix, *x, n))
+        prov_scale = (0..n)
+            .into_par_iter()
+            .map(|x| find_line_maxes_one(matrix, x, n))
             .reduce_with(|x1, x2| x1.max(x2))
             .unwrap();
 

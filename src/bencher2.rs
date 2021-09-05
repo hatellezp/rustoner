@@ -162,7 +162,7 @@ pub fn bench_rank_finding(
     let upper_str = format!("{}", upper_bound).pad_to_width(width);
     let density_str = format!("{}", density).pad_to_width(width);
     let iterations_str = format!("{}", inner_iterations).pad_to_width(width);
-    let use_concurrency_str = format!("{}", use_concurrency).pad_to_width(width);
+    let use_concurrency_str = if use_concurrency { format!("{}", "concurrency").pad_to_width(width) } else { format!("{}", "linear").pad_to_width(width) };
 
     let min_str = format!("{0:.6}", min).pad_to_width(width);
     let mean_str = format!("{0:.6}", mean).pad_to_width(width);
