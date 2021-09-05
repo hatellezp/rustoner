@@ -61,6 +61,7 @@ pub fn rank_abox(
     aggr: AggrFn,
     adjusters: Adjusters,
     verbose: bool,
+    use_concurrency: bool,
 ) -> RankRemainder {
     // before everything we need to normalize
 
@@ -135,8 +136,13 @@ pub fn rank_abox(
         );
 
         // compute the bound
-        let bound_op =
-            find_bound_complex_wrapper(aggr_matrix.clone(), tolerance, m_scale, b_translate);
+        let bound_op = find_bound_complex_wrapper(
+            aggr_matrix.clone(),
+            tolerance,
+            m_scale,
+            b_translate,
+            use_concurrency,
+        );
 
         match bound_op {
             Option::None => (before_matrix, virtual_to_real, conflict_type),

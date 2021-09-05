@@ -1,0 +1,55 @@
+BEGINABOX
+John : Professor, 1
+Ava : Student, 1
+DB2 : Course, 1
+KR : Course, 1
+John, DB2: teaches, 1
+John, KR: attends, 1
+Ava, IA: attends, 1
+Bob, KR: attends, 1
+IA : Course, 1
+John : Student, 1
+Bob : Student, 1
+John : Person, 1
+Ava : Person, 1
+Bob : Person, 1
+John : EXISTS attends, 1
+Ava : EXISTS attends, 1
+Bob : EXISTS attends, 1
+John : EXISTS teaches, 1
+KR : EXISTS INV attends, 1
+IA : EXISTS INV attends, 1
+DB2 : EXISTS INV teaches, 1
+John : NOT Course, 1
+Ava : NOT Course, 1
+Bob : NOT Course, 1
+John : NOT Student, 1
+DB2 : NOT Student, 1
+KR : NOT Student, 1
+IA : NOT Student, 1
+John : NOT Professor, 1
+Ava : NOT Professor, 1
+DB2 : NOT Professor, 1
+KR : NOT Professor, 1
+IA : NOT Professor, 1
+Bob : NOT Professor, 1
+DB2 : NOT Person, 1
+KR : NOT Person, 1
+IA : NOT Person, 1
+John : NOT EXISTS attends, 1
+DB2 : NOT EXISTS attends, 1
+KR : NOT EXISTS attends, 1
+IA : NOT EXISTS attends, 1
+John : NOT EXISTS teaches, 1
+Ava : NOT EXISTS teaches, 1
+DB2 : NOT EXISTS teaches, 1
+KR : NOT EXISTS teaches, 1
+IA : NOT EXISTS teaches, 1
+Bob : NOT EXISTS teaches, 1
+John : NOT EXISTS INV attends, 1
+Ava : NOT EXISTS INV attends, 1
+Bob : NOT EXISTS INV attends, 1
+John : NOT EXISTS INV teaches, 1
+Ava : NOT EXISTS INV teaches, 1
+Bob : NOT EXISTS INV teaches, 1
+ENDABOX

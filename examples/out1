@@ -1,0 +1,30 @@
+[
+  level 0: {
+    {
+      tbi: Man < Human
+    },
+    {
+      tbi: Human < Mortal
+    },
+    {
+      tbi: Mortal < NOT Man
+    },
+  },
+  level 1: {
+    {
+      tbi: Man < Mortal
+      impliers: [Human < Mortal, Man < Human, ]
+    },
+    {
+      tbi: Human < NOT Man
+      impliers: [Human < Mortal, Mortal < NOT Man, ]
+    },
+  },
+  level 2: {
+    {
+      tbi: Man < NOT Man
+      impliers: [Man < Mortal, Mortal < NOT Man, ]
+                [Human < NOT Man, Man < Human, ]
+    },
+  },
+]

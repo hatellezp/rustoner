@@ -1,0 +1,10 @@
+BEGINABOX
+John : Professor, 1, 1.0018560833972223
+Ava : Student, 1, 1.0421260040186242
+DB2 : Course, 1, 1.040498167431316
+KR : Course, 1, 1.0807680880527177
+John, DB2: teaches, 1, 0.9613579159659066
+John, KR: attends, 1, 0.9172976391734095
+Ava, IA: attends, 1, 1
+Bob, KR: attends, 1, 1
+ENDABOX

@@ -340,3 +340,47 @@ pub fn null_vector(v: &[i8]) -> bool {
 
     true
 }
+
+pub fn remove_clean_facts(matrix: &[f64]) -> Vec<f64> {
+    let n_square = matrix.len();
+
+    let n = (n_square as f64).sqrt() as usize;
+
+    let mut clean_index_vec: Vec<usize> = Vec::new();
+
+    for index in 0..n {
+
+        let mut index_is_clean = true;
+
+        for j in 0..n {
+            index_is_clean = index_is_clean && matrix[n*index + j] == 0_f64 && matrix[n*j + index] == 0_f64;
+
+            if !index_is_clean {
+                break;
+            }
+
+        }
+
+        if index_is_clean {
+            clean_index_vec.push(index);
+        }
+    }
+
+    let mut new_matrix: Vec<f64> = vec![];
+
+    for i in 0..n {
+        if clean_index_vec.contains(&i) {
+            continue;
+        } else {
+            for j in 0..n {
+                if clean_index_vec.contains(&j) {
+                    continue;
+                } else {
+                    new_matrix.push(matrix[n*i + j]);
+                }
+            }
+        }
+    }
+
+    new_matrix
+}

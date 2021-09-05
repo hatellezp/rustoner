@@ -641,8 +641,19 @@ pub fn task_rank_abox(
     // defined the adjusters
     let adjusters: Adjusters = (TOLERANCE, M_SCALE, B_TRANSLATE);
 
-    let (before_matrix, virtual_to_real, conflict_type) =
-        rank_abox(&onto, &mut abox, deduction_tree, aggr, adjusters, verbose);
+    // TODO: after the test of concurrency come back here and use concurrency if it is better
+    let use_concurrency = false;
+    // let use_concurrency = true;
+
+    let (before_matrix, virtual_to_real, conflict_type) = rank_abox(
+        &onto,
+        &mut abox,
+        deduction_tree,
+        aggr,
+        adjusters,
+        verbose,
+        use_concurrency,
+    );
     // now the abox is ranked
 
     if !silent {

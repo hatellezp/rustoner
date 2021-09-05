@@ -91,4 +91,3 @@ pub const UNICODE_WEDGE: &str = "\u{22C0}";
 
 // \vee (or)
 pub const UNICODE_VEE: &str = "\u{22C1}";
-
