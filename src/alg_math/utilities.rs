@@ -349,16 +349,15 @@ pub fn remove_clean_facts(matrix: &[f64]) -> Vec<f64> {
     let mut clean_index_vec: Vec<usize> = Vec::new();
 
     for index in 0..n {
-
         let mut index_is_clean = true;
 
         for j in 0..n {
-            index_is_clean = index_is_clean && matrix[n*index + j] == 0_f64 && matrix[n*j + index] == 0_f64;
+            index_is_clean =
+                index_is_clean && matrix[n * index + j] == 0_f64 && matrix[n * j + index] == 0_f64;
 
             if !index_is_clean {
                 break;
             }
-
         }
 
         if index_is_clean {
@@ -376,7 +375,7 @@ pub fn remove_clean_facts(matrix: &[f64]) -> Vec<f64> {
                 if clean_index_vec.contains(&j) {
                     continue;
                 } else {
-                    new_matrix.push(matrix[n*i + j]);
+                    new_matrix.push(matrix[n * i + j]);
                 }
             }
         }
@@ -385,16 +384,45 @@ pub fn remove_clean_facts(matrix: &[f64]) -> Vec<f64> {
     new_matrix
 }
 
-
+#[derive(Clone, Debug, PartialEq)]
 pub struct UpperTriangle {
     n: usize,
     index: usize,
+    limit: usize,
     current_state: (usize, usize),
 }
 
 impl UpperTriangle {
-    pub fn new(n: usize) -> UpperTriangle {
-        UpperTriangle { n, index: 0, current_state: (0, 1) }
+    // TODO: come back here and implement the chunks functionality
+    pub fn new(n: usize, many_chunks: usize) -> Vec<UpperTriangle> {
+        let global_limit = (n * (n - 1)) / 2;
+
+        match many_chunks {
+            1 => vec![UpperTriangle {
+                n,
+                index: 0,
+                limit: global_limit,
+                current_state: (0, 1),
+            }],
+            _ => {
+                let elements_by_chunk = n / many_chunks;
+                if elements_by_chunk <= 1 {
+                    vec![UpperTriangle {
+                        n,
+                        index: 0,
+                        limit: global_limit,
+                        current_state: (0, 1),
+                    }]
+                } else {
+                    vec![UpperTriangle {
+                        n,
+                        index: 0,
+                        limit: global_limit,
+                        current_state: (0, 1),
+                    }]
+                }
+            }
+        }
     }
 }
 
@@ -402,7 +430,7 @@ impl Iterator for UpperTriangle {
     type Item = (usize, usize);
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index == ((self.n * (self.n - 1)) / 2) {
+        if self.index == self.limit {
             None
         } else {
             let this_state = self.current_state;

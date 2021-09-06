@@ -28,8 +28,8 @@ along with this program.  If not, see https://www.gnu.org/licenses/.
    good luck.
 */
 
-use rayon::prelude::*;
 use rayon::iter::ParallelBridge;
+use rayon::prelude::*;
 
 use fftw::array::AlignedVec;
 use fftw::plan::*;
@@ -41,7 +41,7 @@ use nalgebra::{DMatrix, DVector};
 
 use crate::alg_math::utilities::{
     matrix_is_zero_complex, matrix_subtraction, multiply_matrix_complex, multiply_vector_complex,
-    output_unity_root, round_to_15_f64, remove_clean_facts, UpperTriangle,
+    output_unity_root, remove_clean_facts, round_to_15_f64, UpperTriangle,
 };
 
 use crate::alg_math::polynomial_roots::{find_bound_on_polynomial_roots, Method};
@@ -272,17 +272,18 @@ fn find_bound_complex_concurrency(
                 Method::CauchyCubic,
             );
 
+            // println!("    bound found is: {}", bound_found);
             bound_found
         };
 
         // TODO: find a way to avoid calling a parallel computing inside a parallel computing
 
-        let upper_triangle = UpperTriangle::new(n);
-        let val = upper_triangle.par_bridge().map(
-            |(pi, pj)| {
-               find_bound(&pvalues, &pi, &pj)
-            }
-        ).reduce_with(|x1, x2| x1.max(x2)).unwrap();
+        let upper_triangle = UpperTriangle::new(n, 1)[0].to_owned();
+        let val = upper_triangle
+            .par_bridge()
+            .map(|(pi, pj)| find_bound(&pvalues, &pi, &pj))
+            .reduce_with(|x1, x2| x1.max(x2))
+            .unwrap();
 
         current_max = val.max(current_max);
 

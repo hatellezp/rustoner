@@ -643,7 +643,7 @@ pub fn task_rank_abox(
 
     // TODO: after the test of concurrency come back here and use concurrency if it is better
     let use_concurrency = false;
-    // let use_concurrency = true;
+    let use_concurrency = true;
 
     let (before_matrix, virtual_to_real, conflict_type) = rank_abox(
         &onto,
