@@ -29,6 +29,7 @@ along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
 use rayon::prelude::*;
+use rayon::iter::ParallelBridge;
 
 use fftw::array::AlignedVec;
 use fftw::plan::*;
@@ -40,7 +41,7 @@ use nalgebra::{DMatrix, DVector};
 
 use crate::alg_math::utilities::{
     matrix_is_zero_complex, matrix_subtraction, multiply_matrix_complex, multiply_vector_complex,
-    output_unity_root, round_to_15_f64, remove_clean_facts,
+    output_unity_root, round_to_15_f64, remove_clean_facts, UpperTriangle,
 };
 
 use crate::alg_math::polynomial_roots::{find_bound_on_polynomial_roots, Method};
@@ -275,17 +276,14 @@ fn find_bound_complex_concurrency(
         };
 
         // TODO: find a way to avoid calling a parallel computing inside a parallel computing
-        let val: f64 = (0..(n - 1))
-            .into_par_iter()
-            .map(|pi| {
-                ((pi + 1)..n)
-                    .into_par_iter()
-                    .map(|pj| find_bound(&pvalues, &pi, &pj))
-                    .reduce_with(|x1, x2| x1.max(x2))
-                    .unwrap()
-            })
-            .reduce_with(|x1, x2| x1.max(x2))
-            .unwrap();
+
+        let upper_triangle = UpperTriangle::new(n);
+        let val = upper_triangle.par_bridge().map(
+            |(pi, pj)| {
+               find_bound(&pvalues, &pi, &pj)
+            }
+        ).reduce_with(|x1, x2| x1.max(x2)).unwrap();
+
         current_max = val.max(current_max);
 
         // now unscale (the value was scaled because of the matrix) and deplace to avoid

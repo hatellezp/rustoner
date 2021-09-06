@@ -384,3 +384,37 @@ pub fn remove_clean_facts(matrix: &[f64]) -> Vec<f64> {
 
     new_matrix
 }
+
+
+pub struct UpperTriangle {
+    n: usize,
+    index: usize,
+    current_state: (usize, usize),
+}
+
+impl UpperTriangle {
+    pub fn new(n: usize) -> UpperTriangle {
+        UpperTriangle { n, index: 0, current_state: (0, 1) }
+    }
+}
+
+impl Iterator for UpperTriangle {
+    type Item = (usize, usize);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index == ((self.n * (self.n - 1)) / 2) {
+            None
+        } else {
+            let this_state = self.current_state;
+            self.index += 1;
+
+            if self.current_state.1 == self.n - 1 {
+                self.current_state = (self.current_state.0 + 1, self.current_state.0 + 2);
+            } else {
+                self.current_state = (self.current_state.0, self.current_state.1 + 1);
+            }
+
+            Some(this_state)
+        }
+    }
+}

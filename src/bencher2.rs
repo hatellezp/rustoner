@@ -15,6 +15,7 @@ use crate::kb::knowledge_base::{ABox, TBox, TBoxItem};
 use crate::kb::types::FileType;
 
 use crate::alg_math::bounds::find_bound_complex_wrapper;
+use crate::alg_math::utilities::UpperTriangle;
 
 use rand::Rng;
 use std::time::Instant;
@@ -54,6 +55,13 @@ const COMMAND_SHELL_WINDOWS: &str = "cmd";
 
 pub fn main() {
     println!("this is bench 2!!!");
+
+
+    let upper = UpperTriangle::new(10);
+
+    for tuple in upper {
+        println!("({}, {})", tuple.0, tuple.1);
+    }
 
     /*
        What I want to do:

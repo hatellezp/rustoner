@@ -32,7 +32,6 @@ serde = { version = "*", features = ["derive"] }
 serde_json = "*"
 
 # I'm doing concurrency now
-# crossbeam = "*"
 rayon = "1"
 
 # make the functions using float generics
