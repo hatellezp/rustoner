@@ -21,6 +21,8 @@ use std::collections::VecDeque;
 use std::fmt;
 use std::sync::{Arc, Mutex};
 
+use rayon::prelude::*;
+
 use crate::dl_lite::abox_item_quantum::AbiqDllite;
 use crate::dl_lite::helpers_and_utilities::{
     complete_helper_add_if_necessary_general, complete_helper_dump_from_mutex_temporal_to_current,
@@ -347,8 +349,15 @@ impl AbqDllite {
                (a,b):r -->  a: E.r AND b:E.r^-
            I need to decompact this time of items and add them to the refs used
         */
-        let mut decompacted: Vec<(AbiqDllite, &AbiqDllite)> = Vec::new();
-        for abiq in &refs {
+        let mut decompacted: Vec<Option<(AbiqDllite, &AbiqDllite)>> = vec![None; refs.len() * 2];
+
+        decompacted.par_chunks_exact_mut(2)
+            .enumerate()
+            .for_each(
+                |(index, chunk)|
+                    {
+           let abiq = refs.get(index).unwrap();
+
             if abiq.abi().symbol().t().is_role_type() && !abiq.abi().symbol().is_purely_negated() {
                 let nominals = abiq.abi().decompact_nominals_refs();
                 let role_name = abiq.abi().symbol();
@@ -379,10 +388,31 @@ impl AbqDllite {
                     abiq.level(),
                 );
 
-                decompacted.push((new_abiq, *abiq));
-                decompacted.push((new_abiq_inverse, *abiq));
+                chunk[0] = Some((new_abiq, *abiq));
+                chunk[1] = Some((new_abiq_inverse, *abiq));
+            }
+        });
+
+        let mut none_index: Vec<usize> = Vec::new();
+        for (index, item) in decompacted.iter().enumerate() {
+            if item.is_none() {
+                none_index.push(index);
             }
         }
+
+        // TODO: I'm no sure if I really need this block ...
+        {
+            for (index, index_none) in none_index.iter().enumerate() {
+                decompacted.remove(*index_none - index);
+            }
+
+            // TODO: come back here when you are going to release the new version
+            if decompacted.iter().any(|x| x.is_none()) {
+                panic!("you forgot some nones inside")
+            }
+
+        }
+
 
         let mut contradictions_found = false;
         let mut contradictions: Option<Vec<(Option<&TbiDllite>, Vec<&AbiqDllite>)>> = None;
@@ -401,8 +431,12 @@ impl AbqDllite {
 
         // add decompacted ones
         for item in &decompacted {
-            let (decomp, its_ref) = item;
-            inner_refs.push((decomp, *its_ref));
+
+            if item.is_some() {
+                let (decomp, its_ref) = item.as_ref().unwrap();
+                inner_refs.push((decomp, *its_ref));
+            }
+
         }
 
         for tbi in tbis {
