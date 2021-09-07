@@ -318,10 +318,10 @@ impl AbqDllite {
     pub fn is_inconsistent_refs_only<'a>(
         refs: Vec<&'a AbiqDllite>,
         tb: &'a TBDllite,
-        detailed: bool
+        detailed: bool,
     ) -> (
         bool,
-        Option<Vec<(Option<&'a TbiDllite>, Vec<&'a AbiqDllite>)>>
+        Option<Vec<(Option<&'a TbiDllite>, Vec<&'a AbiqDllite>)>>,
     ) {
         if detailed {
             AbqDllite::is_inconsistent_refs_only_detailed(refs, tb)
@@ -351,47 +351,48 @@ impl AbqDllite {
         */
         let mut decompacted: Vec<Option<(AbiqDllite, &AbiqDllite)>> = vec![None; refs.len() * 2];
 
-        decompacted.par_chunks_exact_mut(2)
+        decompacted
+            .par_chunks_exact_mut(2)
             .enumerate()
-            .for_each(
-                |(index, chunk)|
-                    {
-           let abiq = refs.get(index).unwrap();
+            .for_each(|(index, chunk)| {
+                let abiq = refs.get(index).unwrap();
 
-            if abiq.abi().symbol().t().is_role_type() && !abiq.abi().symbol().is_purely_negated() {
-                let nominals = abiq.abi().decompact_nominals_refs();
-                let role_name = abiq.abi().symbol();
+                if abiq.abi().symbol().t().is_role_type()
+                    && !abiq.abi().symbol().is_purely_negated()
+                {
+                    let nominals = abiq.abi().decompact_nominals_refs();
+                    let role_name = abiq.abi().symbol();
 
-                let role_inversed = role_name.clone().inverse().unwrap();
-                let exists_role_inversed = role_inversed.exists().unwrap();
+                    let role_inversed = role_name.clone().inverse().unwrap();
+                    let exists_role_inversed = role_inversed.exists().unwrap();
 
-                let exists_role = role_name.clone().exists().unwrap();
+                    let exists_role = role_name.clone().exists().unwrap();
 
-                /*
-                   TODO: come back here and see why my logic of the 'for_completion' item is bad
-                */
-                let new_ca_exists =
-                    AbiDllite::new_ca(exists_role, nominals[0].clone(), true).unwrap();
-                let new_ca_exists_inverse =
-                    AbiDllite::new_ca(exists_role_inversed, nominals[1].clone(), true).unwrap();
+                    /*
+                       TODO: come back here and see why my logic of the 'for_completion' item is bad
+                    */
+                    let new_ca_exists =
+                        AbiDllite::new_ca(exists_role, nominals[0].clone(), true).unwrap();
+                    let new_ca_exists_inverse =
+                        AbiDllite::new_ca(exists_role_inversed, nominals[1].clone(), true).unwrap();
 
-                let new_abiq = AbiqDllite::new(
-                    new_ca_exists,
-                    Some(abiq.credibility()),
-                    abiq.value(),
-                    abiq.level(),
-                );
-                let new_abiq_inverse = AbiqDllite::new(
-                    new_ca_exists_inverse,
-                    Some(abiq.credibility()),
-                    abiq.value(),
-                    abiq.level(),
-                );
+                    let new_abiq = AbiqDllite::new(
+                        new_ca_exists,
+                        Some(abiq.credibility()),
+                        abiq.value(),
+                        abiq.level(),
+                    );
+                    let new_abiq_inverse = AbiqDllite::new(
+                        new_ca_exists_inverse,
+                        Some(abiq.credibility()),
+                        abiq.value(),
+                        abiq.level(),
+                    );
 
-                chunk[0] = Some((new_abiq, *abiq));
-                chunk[1] = Some((new_abiq_inverse, *abiq));
-            }
-        });
+                    chunk[0] = Some((new_abiq, *abiq));
+                    chunk[1] = Some((new_abiq_inverse, *abiq));
+                }
+            });
 
         let mut none_index: Vec<usize> = Vec::new();
         for (index, item) in decompacted.iter().enumerate() {
@@ -410,13 +411,10 @@ impl AbqDllite {
             if decompacted.iter().any(|x| x.is_none()) {
                 panic!("you forgot some nones inside")
             }
-
         }
-
 
         let mut contradictions_found = false;
         let mut contradictions: Option<Vec<(Option<&TbiDllite>, Vec<&AbiqDllite>)>> = None;
-
 
         // first go to get the items
         let tbis = tb.items();
@@ -431,12 +429,10 @@ impl AbqDllite {
 
         // add decompacted ones
         for item in &decompacted {
-
             if item.is_some() {
                 let (decomp, its_ref) = item.as_ref().unwrap();
                 inner_refs.push((decomp, *its_ref));
             }
-
         }
 
         for tbi in tbis {
@@ -447,14 +443,14 @@ impl AbqDllite {
                 // early returning if a:Bottom is present
                 if (*abiq_i).abi().symbol().t() == DLType::Bottom {
                     contradictions_found = true;
-                    return (contradictions_found, contradictions)
+                    return (contradictions_found, contradictions);
                 }
 
                 // test for (a:A, A < -A)
                 // this is the case a:A and A<(-A)
                 if (*abiq_i).item() == lside && (*abiq_i).item().is_negation(rside) {
                     contradictions_found = true;
-                    return (contradictions_found, contradictions)
+                    return (contradictions_found, contradictions);
                 }
 
                 // only now we check for the next element
@@ -470,12 +466,12 @@ impl AbqDllite {
                             */
                             let is_contradiction = (*abiq_i).same_nominal(*abiq_j)
                                 && ((*abiq_i).item().is_negation((*abiq_j).item())
-                                || ((*abiq_i).item() == lside
-                                && (*abiq_j).item().is_negation(rside)));
+                                    || ((*abiq_i).item() == lside
+                                        && (*abiq_j).item().is_negation(rside)));
 
                             if is_contradiction {
                                 contradictions_found = true;
-                                return (contradictions_found, contradictions)
+                                return (contradictions_found, contradictions);
                             }
                         }
                     }
@@ -544,8 +540,8 @@ impl AbqDllite {
         }
 
         let mut contradictions_found = false;
-        let mut contradictions: Option<Vec<(Option<&TbiDllite>, Vec<&AbiqDllite>)>> = Some(Vec::new());
-
+        let mut contradictions: Option<Vec<(Option<&TbiDllite>, Vec<&AbiqDllite>)>> =
+            Some(Vec::new());
 
         // first go to get the items
         let tbis = tb.items();
@@ -621,8 +617,7 @@ impl AbqDllite {
                                 let new_contradiction: (Option<&TbiDllite>, Vec<&AbiqDllite>);
 
                                 if *its_ref_i != *its_ref_j {
-                                    new_contradiction =
-                                        (Some(tbi), vec![*its_ref_i, *its_ref_j]);
+                                    new_contradiction = (Some(tbi), vec![*its_ref_i, *its_ref_j]);
                                 } else {
                                     new_contradiction = (Some(tbi), vec![*its_ref_i]);
                                 }

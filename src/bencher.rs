@@ -83,18 +83,6 @@ pub fn main() {
     // let densities: Vec<f64> = vec![0.2, 0.4, 0.6, 0.8, 1_f64];
     let densities: Vec<f64> = vec![0.6];
 
-    /*
-    bench_bound_finding(
-        lower_size,
-        upper_size,
-        iterations,
-        lower_value,
-        upper_value,
-        &densities,
-        filename,
-    );
-
-    */
     compute_all_benches();
 }
 

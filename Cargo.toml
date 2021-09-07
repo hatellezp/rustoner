@@ -12,21 +12,23 @@ name = "rustoner_dlliter"
 path = "src/main_dl_lite.rs"
 
 # I'm using for benches purpopses
-# [[bin]]
-# name = "bench"
-# path = "src/bencher.rs"
 
 [[bin]]
-name = "bench2"
-path = "src/bencher2.rs"
+name = "bench_bound_finding"
+path = "src/bench_bound_finding.rs"
+
+[[bin]]
+name = "bench_ontology_related"
+path = "src/bench_ontology_related.rs"
 
 # for useless stuff
-[[bin]]
-name = "scracth"
-path = "src/scratch.rs"
+# [[bin]]
+# name = "scracth"
+# path = "src/scratch.rs"
 
 
 [dependencies]
+
 # json parsing, feature not used for the moment
 serde = { version = "*", features = ["derive"] }
 serde_json = "*"
