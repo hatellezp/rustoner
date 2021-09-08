@@ -368,7 +368,16 @@ impl TBDllite {
                 // get index from 'to_treat' and put it in current_index
                 {
                     let mut to_treat = to_treat.lock().unwrap();
-                    current_index = to_treat.pop_back().unwrap();
+                    let current_index_op = to_treat.pop_back();
+
+                    // this should not happen
+                    // TODO: after your shower come back to this
+                    if current_index_op.is_none() {
+                        println!("corrupted value in the index to treat in 'cln_completion'");
+                        break;
+                    } else {
+                        current_index = current_index_op.unwrap();
+                    }
                 }
 
                 // here the test for 'already_treated'

@@ -8,10 +8,10 @@ mod kb;
 
 use rayon::prelude::*;
 
-use regex::Regex;
 use crate::dl_lite::abox::AbqDllite;
 use crate::dl_lite::abox_item_quantum::AbiqDllite;
 use crate::dl_lite::tbox::TBDllite;
+use regex::Regex;
 use std::fs::{File, OpenOptions};
 use std::path::Path;
 use std::str::FromStr;
@@ -27,10 +27,10 @@ use crate::kb::types::FileType;
 
 use crate::alg_math::bounds::{find_bound_complex_wrapper, Adjusters};
 
-use std::io::Write;
-use std::time::Instant;
 use pad::PadStr;
 use std::cmp::Ordering;
+use std::io::Write;
+use std::time::Instant;
 
 const onto_path: &str = "onto/";
 const symbols_path: &str = "onto/symbols.txt";
@@ -55,7 +55,6 @@ pub fn main() {
 }
 
 pub fn bench_ontology_related() {
-
     println!("===============================================");
     println!("benching\n - benching of ontology related tasks");
     println!("===============================================");
@@ -64,7 +63,6 @@ pub fn bench_ontology_related() {
     let line_to_write = "tb_size, tb_depth, tb_chain, abox_size, gencontb, vertb, verab, genconab, cleanab, matrix_building, rankab";
 
     let filename = create_csv_file(filename_without_extension, line_to_write);
-
 
     let header = "| tbox size       | tbox depth      | tbox chain      | abox size       | gencon tbox     | ver tbox        | ver abox        | gencon abox     | clean abox      | matrix building | rank abox       |";
     let header_length = header.len();
@@ -81,11 +79,11 @@ pub fn bench_ontology_related() {
         let y_str = y.to_str().unwrap();
 
         if x_str.contains("symbols") {
-            return Ordering::Greater
+            return Ordering::Greater;
         }
 
         if y_str.contains("symbols") {
-            return Ordering::Less
+            return Ordering::Less;
         }
 
         let x_name = extract_onto_from_path(x_str);
@@ -98,7 +96,6 @@ pub fn bench_ontology_related() {
     });
 
     println!("done sorting: {:?}", &entries[0..2]);
-
 
     println!("-------------------------");
     println!("| ontology related tasks |");
@@ -117,6 +114,12 @@ pub fn bench_ontology_related() {
 
         let onto_name = extract_onto_from_path(p_str);
         let (chain, depth, tbis, _) = extract_from_onto_name(&onto_name);
+
+        // the treatement for tboxes of size up to 6 is already done
+        let tbi_size_already_treated = 12;
+        if tbis <= tbi_size_already_treated {
+            continue;
+        }
 
         let mut tbox_name = onto_name.clone();
         tbox_name.push_str(".txt");
@@ -210,16 +213,33 @@ pub fn bench_ontology_related() {
             let x_str = x.to_str().unwrap();
             let y_str = y.to_str().unwrap();
 
+            let x_op = extract_abox_from_path(x_str);
+            let y_op = extract_abox_from_path(y_str);
 
-            let (_, ax) = extract_abox_from_path(x_str);
-            let (_, ay) = extract_abox_from_path(y_str);
+            if x_op.is_none() {
+                return Ordering::Greater;
+            }
+
+            if y_op.is_none() {
+                return Ordering::Less;
+            }
+
+            let (_, ax) = x_op.unwrap();
+            let (_, ay) = y_op.unwrap();
 
             ax.cmp(&ay)
         });
 
         for inner_p in inner_entries {
             let inner_p_str = inner_p.to_str().unwrap();
-            let (_, assertion_number) = extract_abox_from_path(inner_p_str);
+
+            let ass_op = extract_abox_from_path(inner_p_str);
+
+            if ass_op.is_none() {
+                continue;
+            }
+
+            let (_, assertion_number) = ass_op.unwrap();
 
             if assertion_number > 2000 {
                 continue;
@@ -350,9 +370,9 @@ pub fn bench_ontology_related() {
                 let verab_time_str = format!("{:.9}", verab_time).pad_to_width(width);
                 let genconab_time_str = format!("{:.9}", genconab_time).pad_to_width(width);
                 let cleanab_time_str = format!("{:.9}", cleanab_time).pad_to_width(width);
-                let matrix_building_time_str = format!("{:.9}", matrix_building_time).pad_to_width(width);
+                let matrix_building_time_str =
+                    format!("{:.9}", matrix_building_time).pad_to_width(width);
                 let rankab_time_str = format!("{:.9}", rankab_time).pad_to_width(width);
-
 
                 println!(
                     "| {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} |",
@@ -368,8 +388,6 @@ pub fn bench_ontology_related() {
                     matrix_building_time_str,
                     rankab_time_str
                 );
-
-
             }
         }
 
@@ -415,7 +433,7 @@ pub fn create_csv_file(filename: &str, line_to_write: &str) -> String {
     String::from(&possible_filename)
 }
 
-pub fn extract_abox_from_path(s: &str) -> (String, usize) {
+pub fn extract_abox_from_path(s: &str) -> Option<(String, usize)> {
     let reg = Regex::new(r"\w*/\w*/\w*/(\w*_a(\d*).txt)").unwrap();
 
     let mut v: Vec<(String, usize)> = Vec::new();
@@ -427,7 +445,10 @@ pub fn extract_abox_from_path(s: &str) -> (String, usize) {
         break;
     }
 
-    v[0].clone()
+    match v.len() {
+        0 => None,
+        _ => Some(v[0].to_owned()),
+    }
 }
 
 // if there is a match then is the first one

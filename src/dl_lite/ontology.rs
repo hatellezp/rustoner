@@ -39,6 +39,8 @@ use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 
+use rayon::prelude::*;
+
 /*
 some types to avoid large names
  */
@@ -382,14 +384,13 @@ impl OntologyDllite {
 
         WARNING: if the order of elements is changed this matrix is worthless
          */
-        let abq_length = abq.len();
+
         let matrix: Vec<i8> = Vec::new();
 
         // map to both sides
         let mut real_to_virtual: HashMap<usize, Option<usize>> = HashMap::new();
         let mut virtual_to_real: HashMap<usize, usize> = HashMap::new();
-
-        let mut already_computed: HashMap<(usize, usize), i8> = HashMap::new();
+        let abq_length = abq.len();
 
         if abq_length == 0 {
             if verbose {
@@ -399,45 +400,56 @@ impl OntologyDllite {
             (matrix, real_to_virtual, virtual_to_real)
         } else {
             // first find every self conflicting node
-            let mut self_conflicting: Vec<usize> = Vec::new();
 
-            for index in 0..abq_length {
-                if verbose {
-                    println!(
-                        " -- Ontology::conflict_matrix: analysing if {:?} is self conflicting",
-                        abq.get(index)
-                    );
-                }
+            let mut self_conflicting: Vec<Option<usize>> = vec![None; abq.len()];
 
-                /*
-                   when analysing if an item is self-conflicting, it comes from the original
-                   abox and thus is not negated, the negative closure is the only one needed
-                   to find a contradcition
-                */
-
-                // using get_unchecked force me to label the function unsafe, thus passing
-                let (abox_is_inconsistent, _) = AbqDllite::is_inconsistent_refs_only(
-                    vec![abq.items().get(index).unwrap()],
-                    self.cln(false),
-                    false,
-                );
-                if abox_is_inconsistent {
+            self_conflicting
+                .par_chunks_exact_mut(1)
+                .enumerate()
+                .for_each(|(index, chunk)| {
                     if verbose {
                         println!(
-                            " -- Ontology::conflict_matrix: {:?} found to be self conflicting",
+                            " -- Ontology::conflict_matrix: analysing if {:?} is self conflicting",
                             abq.get(index)
                         );
                     }
 
-                    self_conflicting.push(index);
-                } else if verbose {
-                    println!(
-                        " -- Ontology::conflict_matrix: {:?} found to be NOT self conflicting",
-                        abq.get(index)
+                    /*
+                       when analysing if an item is self-conflicting, it comes from the original
+                       abox and thus is not negated, the negative closure is the only one needed
+                       to find a contradcition
+                    */
+
+                    // using get_unchecked force me to label the function unsafe, thus passing
+                    let (abox_is_inconsistent, _) = AbqDllite::is_inconsistent_refs_only(
+                        vec![abq.items().get(index).unwrap()],
+                        self.cln(false),
+                        false,
                     );
-                }
-            }
+
+                    if abox_is_inconsistent {
+                        if verbose {
+                            println!(
+                                " -- Ontology::conflict_matrix: {:?} found to be self conflicting",
+                                abq.get(index)
+                            );
+                        }
+
+                        chunk[0] = Some(index);
+                    } else if verbose {
+                        println!(
+                            " -- Ontology::conflict_matrix: {:?} found to be NOT self conflicting",
+                            abq.get(index)
+                        );
+                    }
+                });
+
             // now we know which are the self conflicting elements
+            let self_conflicting = self_conflicting
+                .iter()
+                .filter(|x| x.is_some())
+                .map(|x| x.unwrap())
+                .collect::<Vec<usize>>();
 
             // before the matrix create a vector pointing to the good values
             let mut current_length: usize = 0;
@@ -459,6 +471,7 @@ impl OntologyDllite {
             // now the matrix
             let virtual_length = virtual_to_real.len();
             let mut matrix: Vec<i8> = vec![0; virtual_length * virtual_length];
+            let mut already_computed: HashMap<(usize, usize), i8> = HashMap::new();
 
             // conflicts are always binary at this point
             /*

@@ -402,16 +402,11 @@ impl AbqDllite {
         }
 
         // TODO: I'm no sure if I really need this block ...
-        {
-            for (index, index_none) in none_index.iter().enumerate() {
-                decompacted.remove(*index_none - index);
-            }
-
-            // TODO: come back here when you are going to release the new version
-            if decompacted.iter().any(|x| x.is_none()) {
-                panic!("you forgot some nones inside")
-            }
-        }
+        let decompacted = decompacted
+            .iter()
+            .filter(|x| x.is_some())
+            .map(|x| x.to_owned())
+            .collect::<Vec<Option<(AbiqDllite, &AbiqDllite)>>>();
 
         let mut contradictions_found = false;
         let mut contradictions: Option<Vec<(Option<&TbiDllite>, Vec<&AbiqDllite>)>> = None;
