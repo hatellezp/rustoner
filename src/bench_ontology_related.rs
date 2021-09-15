@@ -116,7 +116,7 @@ pub fn bench_ontology_related() {
         let (chain, depth, tbis, _) = extract_from_onto_name(&onto_name);
 
         // the treatement for tboxes of size up to 6 is already done
-        let tbi_size_already_treated = 0;
+        let tbi_size_already_treated = 38;
         if tbis <= tbi_size_already_treated {
             continue;
         }
@@ -246,8 +246,14 @@ pub fn bench_ontology_related() {
                 continue;
             }
 
-            let complexity_limit = 10000;
+            /*
+            let complexity_limit = 100_000;
             if assertion_number * tbis > complexity_limit {
+                continue;
+            }
+
+             */
+            if assertion_number != 500 {
                 continue;
             }
 

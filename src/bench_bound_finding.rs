@@ -89,7 +89,7 @@ pub fn bench_bound_finding() {
     ];
     let ns = [700, 800, 900, 1000];
     let ns = [800, 900, 1000];
-    let ns = [1000];
+    let ns = [2000, 3000, 4000, 5000, ]; // 6000, 7000, 8000, 9000, 10_000];
     let densities = [
         0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85,
         0.9, 0.95, 1.,
@@ -97,6 +97,9 @@ pub fn bench_bound_finding() {
     let densities = [0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.];
     let densities = [
         0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.8, 0.85, 0.9, 0.95, 1_f64
+    ];
+    let densities = [
+        0.05, 0.1, 0.15, 0.2, 0.25, 0.3
     ];
 
     let lower_bound = -5_f64;
@@ -155,12 +158,13 @@ pub fn bench_bound_finding() {
             // for the moment no concurrency implemented
 
             let mut iterations = (((full_iterations / *n) as f64) * (2_f64 / *density)) as usize;
+            let mut iterations = 50;
 
             if iterations <= 1 {
                 iterations = 2;
             }
 
-            for use_concurency in &[false, true] {
+            for use_concurency in &[true] { //&[false, true] {
                 let _ = bench_bound_finding_one_line(
                     &possible_filename,
                     *n,
@@ -191,7 +195,6 @@ pub fn bench_bound_finding_one_line(
     // repeat the processus for the number of iterations
 
     let inner_iterations = iterations;
-    // let inner_iterations = 1;
 
     let mut values = vec![0_f64; inner_iterations];
     for iteration in 0..inner_iterations {
