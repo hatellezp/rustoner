@@ -32,8 +32,8 @@ use std::cmp::Ordering;
 use std::io::Write;
 use std::time::Instant;
 
-const onto_path: &str = "onto/";
-const symbols_path: &str = "onto/symbols.txt";
+const onto_path: &str = "new_onto/";
+const symbols_path: &str = "new_onto/symbols.txt";
 const all_file_type: FileType = FileType::Native;
 const verbose: bool = false;
 
@@ -60,11 +60,11 @@ pub fn bench_ontology_related() {
     println!("===============================================");
 
     let filename_without_extension = "benchmark_ontology_related";
-    let line_to_write = "tb_size, tb_depth, tb_chain, abox_size, gencontb, vertb, verab, genconab, cleanab, matrix_building, rankab";
+    let line_to_write = "tb_size, tb_depth, tb_chain, abox_size, abox_conflict, gencontb, vertb, verab, genconab, cleanab, matrix_building, rankab";
 
     let filename = create_csv_file(filename_without_extension, line_to_write);
 
-    let header = "| tbox size       | tbox depth      | tbox chain      | abox size       | gencon tbox     | ver tbox        | ver abox        | gencon abox     | clean abox      | matrix building | rank abox       |";
+    let header = "| tbox size        | tbox depth       | tbox conflict    | abox size        | abox interaction | gencon tbox      | ver tbox         | ver abox         | gencon abox      | clean abox       | matrix building  | rank abox        |";
     let header_length = header.len();
     let line_divisor = vec!["-"; header_length].join("");
 
@@ -113,10 +113,10 @@ pub fn bench_ontology_related() {
         }
 
         let onto_name = extract_onto_from_path(p_str);
-        let (chain, depth, tbis, _) = extract_from_onto_name(&onto_name);
+        let (conflict, depth, tbis, _) = extract_from_onto_name(&onto_name);
 
         // the treatement for tboxes of size up to 6 is already done
-        let tbi_size_already_treated = 38;
+        let tbi_size_already_treated = 0;
         if tbis <= tbi_size_already_treated {
             continue;
         }
@@ -224,10 +224,14 @@ pub fn bench_ontology_related() {
                 return Ordering::Less;
             }
 
-            let (_, ax) = x_op.unwrap();
-            let (_, ay) = y_op.unwrap();
+            let (_, ax, dx) = x_op.unwrap();
+            let (_, ay, dy) = y_op.unwrap();
 
-            ax.cmp(&ay)
+
+            match ax.cmp(&ay) {
+                Ordering::Equal => if dx < dy { Ordering::Less } else if dx > dy { Ordering::Greater } else { Ordering::Equal },
+                _ => ax.cmp(&ay)
+            }
         });
 
         for inner_p in inner_entries {
@@ -239,23 +243,8 @@ pub fn bench_ontology_related() {
                 continue;
             }
 
-            let (_, assertion_number) = ass_op.unwrap();
+            let (_, assertion_number, abox_conflict) = ass_op.unwrap();
 
-            let assertion_number_limit = 2000;
-            if assertion_number >= assertion_number_limit {
-                continue;
-            }
-
-            /*
-            let complexity_limit = 100_000;
-            if assertion_number * tbis > complexity_limit {
-                continue;
-            }
-
-             */
-            if assertion_number != 500 {
-                continue;
-            }
 
             let path_to_abox = String::from(inner_p_str);
             let clone_tbox_name = tbox_name.clone();
@@ -263,7 +252,7 @@ pub fn bench_ontology_related() {
             let tbox_abox_complexity = assertion_number * tbis;
             let tbox_abox_complexity = (tbox_abox_complexity as f64) / (COMPLEXITY_LIMIT as f64);
 
-            if tbox_abox_complexity <= 1_f64 {
+            if tbox_abox_complexity <= 5000_f64 { // 1_f64 {
                 /*
                    verify abox measure time
                 */
@@ -349,11 +338,12 @@ pub fn bench_ontology_related() {
                 */
 
                 let line_to_write = format!(
-                    "{},{},{},{},{},{},{},{},{},{},{}",
+                    "{},{},{},{},{},{},{},{},{},{},{},{}",
                     tbis,
                     depth,
-                    chain,
+                    conflict,
                     assertion_number,
+                    abox_conflict,
                     gencontb_time,
                     vertb_time,
                     verab_time,
@@ -371,11 +361,12 @@ pub fn bench_ontology_related() {
                     .unwrap();
                 writeln!(file, "{}", line_to_write);
 
-                let width: usize = 15;
+                let width: usize = 16;
                 let tbis_str = format!("{}", tbis).pad_to_width(width);
                 let depth_str = format!("{}", depth).pad_to_width(width);
-                let chain_str = format!("{}", chain).pad_to_width(width);
+                let chain_str = format!("{}", conflict).pad_to_width(width);
                 let assertion_number_str = format!("{}", assertion_number).pad_to_width(width);
+                let abox_conflict_str = format!("{}", abox_conflict).pad_to_width(width);
 
                 let gencontb_time_str = format!("{:.9}", gencontb_time).pad_to_width(width);
                 let vertb_time_str = format!("{:.9}", vertb_time).pad_to_width(width);
@@ -387,11 +378,12 @@ pub fn bench_ontology_related() {
                 let rankab_time_str = format!("{:.9}", rankab_time).pad_to_width(width);
 
                 println!(
-                    "| {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} |",
+                    "| {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} |",
                     tbis_str,
                     depth_str,
                     chain_str,
                     assertion_number_str,
+                    abox_conflict_str,
                     gencontb_time_str,
                     vertb_time_str,
                     verab_time_str,
@@ -445,15 +437,16 @@ pub fn create_csv_file(filename: &str, line_to_write: &str) -> String {
     String::from(&possible_filename)
 }
 
-pub fn extract_abox_from_path(s: &str) -> Option<(String, usize)> {
-    let reg = Regex::new(r"\w*/\w*/\w*/(\w*_a(\d*).txt)").unwrap();
+pub fn extract_abox_from_path(s: &str) -> Option<(String, usize, f64)> {
 
-    let mut v: Vec<(String, usize)> = Vec::new();
+    let reg = Regex::new(r"\w*/\w*/\w*/(\w*_a(\d*)_d(.*).txt)").unwrap();
+
+    let mut v: Vec<(String, usize, f64)> = Vec::new();
 
     for cap in reg.captures_iter(s) {
         // println!("{:?}", &cap);
 
-        v.push((String::from(&cap[1]), usize::from_str(&cap[2]).unwrap()));
+        v.push((String::from(&cap[1]), usize::from_str(&cap[2]).unwrap(), f64::from_str(&cap[3]).unwrap()));
         break;
     }
 
