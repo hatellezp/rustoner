@@ -1,6 +1,6 @@
 [package]
 name = "rustoner"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["hatellezp <hatellezp@gmail.com>"]
 edition = "2018"
 
@@ -13,13 +13,13 @@ path = "src/main_dl_lite.rs"
 
 # I'm using for benches purpopses
 
-[[bin]]
-name = "bench_bound_finding"
-path = "src/bench_bound_finding.rs"
+# [[bin]]
+# name = "bench_bound_finding"
+# path = "src/bench_bound_finding.rs"
 
-[[bin]]
-name = "bench_ontology_related"
-path = "src/bench_ontology_related.rs"
+# [[bin]]
+# name = "bench_ontology_related"
+# path = "src/bench_ontology_related.rs"
 
 # for useless stuff
 # [[bin]]
